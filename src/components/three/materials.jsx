@@ -1,0 +1,144 @@
+import * as THREE from 'three'
+import { shaderMaterial } from '@react-three/drei'
+import { extend } from '@react-three/fiber'
+
+const noiseGLSL = /* glsl */ `
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+      u.y
+    );
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 5; i++) {
+      v += a * noise(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+`
+
+/**
+ * Fogo procedural: FBM rolando pra cima, recortado num formato de chama.
+ * Usado em planos cruzados com blending aditivo.
+ */
+export const FireMaterial = shaderMaterial(
+  { uTime: 0, uIntensity: 1 },
+  /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  /* glsl */ `
+    uniform float uTime;
+    uniform float uIntensity;
+    varying vec2 vUv;
+
+    ${noiseGLSL}
+
+    void main() {
+      vec2 uv = vUv;
+
+      float turbulence = fbm(vec2(uv.x * 4.0, uv.y * 5.0 - uTime * 2.4));
+      turbulence += 0.5 * fbm(vec2(uv.x * 9.0 + 13.7, uv.y * 11.0 - uTime * 4.1));
+
+      float centre = 1.0 - abs(uv.x - 0.5) * 2.0;
+      float body = centre * (1.0 - uv.y);
+      float flame = smoothstep(0.12, 0.62, body * 0.9 + turbulence * 0.45 - uv.y * 0.35);
+      flame *= uIntensity;
+
+      vec3 col = mix(vec3(0.55, 0.03, 0.0), vec3(1.0, 0.33, 0.02), flame);
+      col = mix(col, vec3(1.0, 0.85, 0.4), pow(flame, 3.0));
+
+      if (flame < 0.02) discard;
+      gl_FragColor = vec4(col * 1.5, flame);
+    }
+  `,
+  (mat) => {
+    mat.transparent = true
+    mat.depthWrite = false
+    mat.blending = THREE.AdditiveBlending
+    mat.side = THREE.DoubleSide
+  }
+)
+
+/**
+ * Tela CRT: fósforo verde, linhas de "código" fake, scanlines,
+ * banda rolante, flicker e sangramento laranja do fogo no topo.
+ */
+export const CRTMaterial = shaderMaterial(
+  { uTime: 0 },
+  /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  /* glsl */ `
+    uniform float uTime;
+    varying vec2 vUv;
+
+    ${noiseGLSL}
+
+    void main() {
+      // distorção de barril leve, coisa de tubo
+      vec2 c = vUv - 0.5;
+      vec2 uv = c * (1.0 + dot(c, c) * 0.45) + 0.5;
+
+      if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+      }
+
+      // glitch horizontal: linhas inteiras pulam de vez em quando
+      float rowSeed = floor(uv.y * 28.0);
+      float glitch = step(0.96, hash(vec2(rowSeed, floor(uTime * 6.0))));
+      uv.x = fract(uv.x + glitch * (hash(vec2(rowSeed, 1.0)) - 0.5) * 0.2);
+
+      // linhas de "código": blocos verdes aleatórios numa grade
+      vec2 grid = vec2(floor(uv.x * 34.0), floor(uv.y * 22.0));
+      float charOn = step(0.45, hash(grid + floor(uTime * 1.5) * 0.31));
+      float lineOn = step(0.25, hash(vec2(grid.y, 7.0)));
+      float text = charOn * lineOn * step(0.06, uv.x) * step(uv.x, 0.94);
+
+      vec3 col = vec3(0.01, 0.05, 0.02);
+      col += vec3(0.18, 1.0, 0.45) * text * 0.85;
+
+      // scanlines + banda rolante
+      col *= 0.78 + 0.22 * sin(uv.y * 320.0);
+      float band = smoothstep(0.0, 0.25, fract(uv.y - uTime * 0.12)) *
+                   smoothstep(0.5, 0.25, fract(uv.y - uTime * 0.12));
+      col += vec3(0.02, 0.1, 0.04) * band;
+
+      // flicker global
+      col *= 0.85 + 0.15 * hash(vec2(floor(uTime * 24.0), 3.0));
+
+      // o fogo sangrando pelo topo da tela
+      float heat = smoothstep(0.55, 1.0, uv.y) * (0.6 + 0.4 * fbm(vec2(uv.x * 5.0, uTime * 2.0)));
+      col = mix(col, vec3(1.0, 0.45, 0.08), heat * 0.7);
+
+      // vinheta
+      float vig = 1.0 - dot(c, c) * 1.4;
+      col *= vig;
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `
+)
+
+extend({ FireMaterial, CrtMaterial: CRTMaterial })
