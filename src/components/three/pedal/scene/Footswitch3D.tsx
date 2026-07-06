@@ -10,6 +10,7 @@ export function Footswitch3D({
   onCancel,
   metal,
   accent = "#ffffff",
+  active = false,
 }: {
   position: [number, number, number];
   pressed: boolean;
@@ -18,12 +19,15 @@ export function Footswitch3D({
   onCancel: () => void;
   metal: string;
   accent?: string;
+  active?: boolean;
 }) {
   const plungerRef = useRef<THREE.Group>(null);
   const bezelMat = useRef<THREE.MeshStandardMaterial>(null);
   const yRef = useRef(0);
   const vRef = useRef(0);
   const flashRef = useRef(0);
+  const hoverRef = useRef(0);
+  const isHoveredRef = useRef(false);
   const prevPressed = useRef(false);
 
   useFrame((_, delta) => {
@@ -40,17 +44,30 @@ export function Footswitch3D({
     if (pressed && !prevPressed.current) flashRef.current = 1;
     prevPressed.current = pressed;
     flashRef.current = Math.max(0, flashRef.current - dt * 4);
-    if (bezelMat.current) bezelMat.current.emissiveIntensity = 0.12 + flashRef.current * 0.9;
+    hoverRef.current = THREE.MathUtils.damp(hoverRef.current, isHoveredRef.current ? 1 : 0, 12, dt);
+    if (bezelMat.current) {
+      const base = active ? 0.55 : 0;
+      const target = base + hoverRef.current * 1.5 + flashRef.current * 0.7;
+      bezelMat.current.emissiveIntensity = THREE.MathUtils.damp(
+        bezelMat.current.emissiveIntensity,
+        target,
+        9,
+        dt,
+      );
+    }
   });
 
   return (
     <group
       position={position}
       scale={0.8}
-      onPointerEnter={() => {
+      onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+        e.stopPropagation();
+        isHoveredRef.current = true;
         document.body.style.cursor = "pointer";
       }}
-      onPointerLeave={() => {
+      onPointerOut={() => {
+        isHoveredRef.current = false;
         document.body.style.cursor = "";
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
@@ -68,10 +85,10 @@ export function Footswitch3D({
         <cylinderGeometry args={[0.22, 0.22, 0.02, 32]} />
         <meshStandardMaterial
           ref={bezelMat}
-          color={accent}
+          color="#0b0d0c"
           roughness={0.5}
           emissive={accent}
-          emissiveIntensity={0.12}
+          emissiveIntensity={0}
         />
       </mesh>
 

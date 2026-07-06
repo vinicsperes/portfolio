@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Pedal3D from './three/pedal/Pedal3D.tsx'
 import { InView } from './three/InView.jsx'
 
@@ -16,6 +16,8 @@ const GHOST_PALETTE = {
 function GhostPedal() {
   const [playing, setPlaying] = useState(true)
   const [stompCount, setStompCount] = useState(0)
+  const [explode, setExplode] = useState(0)
+  const targetRef = useRef(0)
   const [knobs, setKnobs] = useState({
     drive: 0.35,
     echo: 0.58,
@@ -24,6 +26,36 @@ function GhostPedal() {
     mod: 0.3,
     master: 0.85,
   })
+
+  useEffect(() => {
+    const el = document.getElementById('ghost')
+    if (!el) return
+    const onScroll = () => {
+      const rect = el.getBoundingClientRect()
+      const vh = window.innerHeight
+      const center = rect.top + rect.height / 2
+      const raw = (vh - center) / (vh * 0.5)
+      targetRef.current = Math.min(1, Math.max(0, raw))
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    let raf = 0
+    const tick = () => {
+      setExplode((e) => {
+        const t = targetRef.current
+        const next = e + (t - e) * 0.14
+        return Math.abs(t - next) < 0.0015 ? t : next
+      })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      cancelAnimationFrame(raf)
+    }
+  }, [])
 
   return (
     <Pedal3D
@@ -41,6 +73,8 @@ function GhostPedal() {
       palette={GHOST_PALETTE}
       stompCount={stompCount}
       view={[-4.4, 3.0, 5.2]}
+      explode={explode}
+      split={explode > 0.002}
     />
   )
 }

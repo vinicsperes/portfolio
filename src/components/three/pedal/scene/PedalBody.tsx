@@ -1,7 +1,18 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
-import { FrontSide, MathUtils, type Group, type PointLight } from "three";
+import {
+  DoubleSide,
+  FrontSide,
+  MathUtils,
+  Path,
+  Plane,
+  Shape,
+  Vector3,
+  type Group,
+  type PointLight,
+  type Side,
+} from "three";
 import { Wire, CableClip, SideJack, PotBody, SwitchBody, Battery9V } from "../parts";
 import { Knob3D, MasterKnob3D } from "../knobs";
 import { Internals } from "../internals";
@@ -77,6 +88,11 @@ const PRESET_VISUALS: PresetVisual[] = [
 export function PedalBody({
   palette,
   xray = false,
+  explode = 0,
+  circuitOnly = false,
+  hideTag = false,
+  split = false,
+  spin = null,
   ledColor,
   ledActive,
   knobDrive,
@@ -98,6 +114,11 @@ export function PedalBody({
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
+  explode?: number;
+  circuitOnly?: boolean;
+  hideTag?: boolean;
+  split?: boolean;
+  spin?: number | null;
   ledColor: string;
   ledActive: boolean;
   knobDrive: number;
@@ -128,11 +149,18 @@ export function PedalBody({
 
   const rootRef = useRef<Group>(null);
   const glowRef = useRef<PointLight>(null);
-  useFrame((_, delta) => {
+  const clipBottom = useMemo(() => new Plane(new Vector3(0, -1, 0), 0), []);
+  const clipTop = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
+  useFrame((state, delta) => {
     const g = rootRef.current;
     if (g) {
-      g.position.y = MathUtils.damp(g.position.y, pressed ? -0.011 : 0, 9, delta);
+      const bob = explode > 0.01 ? Math.sin(state.clock.elapsedTime * 0.8) * 0.06 * explode : 0;
+      g.position.y = MathUtils.damp(g.position.y, (pressed ? -0.011 : 0) + bob, 9, delta);
       g.rotation.x = MathUtils.damp(g.rotation.x, pressed ? 0.009 : 0, 9, delta);
+      if (spin != null) g.rotation.y = spin;
+      else g.rotation.y += delta * 0.22 * explode;
+      clipBottom.constant = g.position.y;
+      clipTop.constant = -(explode * 0.95 + g.position.y);
     }
     const gl = glowRef.current;
     if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
@@ -141,6 +169,29 @@ export function PedalBody({
   const W = 2.1;
   const H = 0.95;
   const L = 3.2;
+  const WALL = 0.075;
+
+  const rimShape = useMemo(() => {
+    const rr = (ctx: Shape | Path, w: number, l: number, r: number) => {
+      const x = w / 2;
+      const z = l / 2;
+      ctx.moveTo(-x + r, -z);
+      ctx.lineTo(x - r, -z);
+      ctx.quadraticCurveTo(x, -z, x, -z + r);
+      ctx.lineTo(x, z - r);
+      ctx.quadraticCurveTo(x, z, x - r, z);
+      ctx.lineTo(-x + r, z);
+      ctx.quadraticCurveTo(-x, z, -x, z - r);
+      ctx.lineTo(-x, -z + r);
+      ctx.quadraticCurveTo(-x, -z, -x + r, -z);
+    };
+    const shape = new Shape();
+    rr(shape, W, L, 0.08);
+    const hole = new Path();
+    rr(hole, W - 2 * WALL, L - 2 * WALL, Math.max(0.02, 0.08 - WALL));
+    shape.holes.push(hole);
+    return shape;
+  }, []);
 
   const FSZ = 1.05;
 
@@ -153,9 +204,35 @@ export function PedalBody({
     master: [0.62, H / 2, -0.52] as [number, number, number],
   };
 
+  const LY = {
+    circuit: explode * 0.5,
+    top: explode * 0.95,
+    above: explode * 1.15,
+  };
+  const baseOp = xray ? 0.12 : 0.82;
+  const splitOp = xray ? 0.12 : baseOp - 0.26 * Math.min(1, explode / 0.25);
+  const chassisMat = (opacity: number, clip?: Plane[], side: Side = FrontSide) => (
+    <meshPhysicalMaterial
+      color={palette.pedal}
+      roughness={0.3}
+      metalness={0.2}
+      envMapIntensity={0.5}
+      clearcoat={0.45}
+      clearcoatRoughness={0.12}
+      transparent
+      opacity={opacity}
+      depthWrite={false}
+      clippingPlanes={clip}
+      clipShadows={!!clip}
+      side={side}
+    />
+  );
+
   return (
     <group ref={rootRef}>
-      <Internals width={W} length={L} height={H} />
+      <group position={[0, LY.circuit, 0]}>
+        <Internals width={W} length={L} height={H} />
+      </group>
 
       <pointLight
         ref={glowRef}
@@ -166,45 +243,73 @@ export function PedalBody({
         decay={2}
       />
 
-      <RoundedBox
-        position={[0, 0, 0]}
-        args={[W, H, L]}
-        radius={0.08}
-        smoothness={8}
-        onPointerEnter={onChassisEnter}
-        onPointerLeave={onChassisLeave}
-      >
-        <meshPhysicalMaterial
-          color={palette.pedal}
-          roughness={0.3}
-          metalness={0.2}
-          envMapIntensity={0.5}
-          clearcoat={0.45}
-          clearcoatRoughness={0.12}
-          transparent
-          opacity={xray ? 0.12 : 0.82}
-          depthWrite={false}
-        />
-      </RoundedBox>
+      {!circuitOnly &&
+        (split ? (
+          <>
+            <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
+              {chassisMat(splitOp, [clipBottom], DoubleSide)}
+            </RoundedBox>
+            <group position={[0, LY.top, 0]}>
+              <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
+                {chassisMat(splitOp, [clipTop], DoubleSide)}
+              </RoundedBox>
+            </group>
+          </>
+        ) : (
+          <RoundedBox
+            position={[0, 0, 0]}
+            args={[W, H, L]}
+            radius={0.08}
+            smoothness={8}
+            onPointerEnter={onChassisEnter}
+            onPointerLeave={onChassisLeave}
+          >
+            {chassisMat(baseOp)}
+          </RoundedBox>
+        ))}
 
-      <SideJack position={[-W / 2 - 0.04, 0.08, -0.6]} metal={palette.metal} />
-      <SideJack position={[W / 2 + 0.04, 0.08, -0.6]} metal={palette.metal} />
-      <HangTag />
+      {!circuitOnly && split && (
+        <>
+          <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
+            <extrudeGeometry args={[rimShape, { depth: 0.05, bevelEnabled: false }]} />
+            <meshStandardMaterial color={palette.pedal} roughness={0.95} metalness={0} />
+          </mesh>
+          <mesh position={[0, LY.top, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
+            <extrudeGeometry args={[rimShape, { depth: 0.05, bevelEnabled: false }]} />
+            <meshStandardMaterial color={palette.pedal} roughness={0.95} metalness={0} />
+          </mesh>
+        </>
+      )}
 
-      {(
-        [
-          [-0.8, -1.25],
-          [0.8, -1.25],
-          [0.8, 1.25],
-          [-0.8, 1.25],
-        ] as [number, number][]
-      ).map(([fx, fz], i) => (
-        <mesh key={`foot${i}`} position={[fx, -H / 2 - 0.02, fz]} castShadow>
-          <cylinderGeometry args={[0.085, 0.095, 0.04, 20]} />
-          <meshStandardMaterial color="#0e0e10" roughness={0.9} metalness={0} />
-        </mesh>
-      ))}
+      {!circuitOnly && (
+        <group position={[0, LY.top, 0]}>
+          <SideJack orient="back" position={[-0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
+          <SideJack orient="back" position={[0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
+        </group>
+      )}
+      {!hideTag && !circuitOnly && (
+        <group position={[0, LY.top, 0]}>
+          <HangTag />
+        </group>
+      )}
 
+      {!circuitOnly &&
+        (
+          [
+            [-0.8, -1.25],
+            [0.8, -1.25],
+            [0.8, 1.25],
+            [-0.8, 1.25],
+          ] as [number, number][]
+        ).map(([fx, fz], i) => (
+          <mesh key={`foot${i}`} position={[fx, -H / 2 - 0.035, fz]} castShadow>
+            <cylinderGeometry args={[0.085, 0.095, 0.04, 20]} />
+            <meshStandardMaterial color="#0e0e10" roughness={0.9} metalness={0} />
+          </mesh>
+        ))}
+
+      {!circuitOnly && (
+      <group position={[0, LY.top, 0]}>
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
         <Svg
           src="/ghost-led-solo.svg"
@@ -321,30 +426,42 @@ export function PedalBody({
       </LabelText>
 
       <LabelText
-        position={[W / 2 + 0.002, 0.33, -0.6]}
-        rotation={[0, Math.PI / 2, 0]}
-        fontSize={0.062}
+        position={[-0.5, 0.3, -L / 2 - 0.002]}
+        rotation={[0, Math.PI, 0]}
+        fontSize={0.052}
         color={silkColor}
         outlineColor={silkColor}
         outlineWidth="1%"
         anchorX="center"
-        letterSpacing={0.14}
       >
         OUT
       </LabelText>
       <LabelText
-        position={[-W / 2 - 0.002, 0.33, -0.6]}
-        rotation={[0, -Math.PI / 2, 0]}
-        fontSize={0.062}
+        position={[0.5, 0.3, -L / 2 - 0.002]}
+        rotation={[0, Math.PI, 0]}
+        fontSize={0.052}
         color={silkColor}
         outlineColor={silkColor}
         outlineWidth="1%"
         anchorX="center"
-        letterSpacing={0.14}
       >
         IN
       </LabelText>
+      {[kp.drive, kp.echo, kp.reverb, kp.tone, kp.mod, kp.master].map((p, i) => (
+        <mesh key={`hole${i}`} position={[p[0], H / 2 + 0.002, p[2]]}>
+          <cylinderGeometry args={[0.15, 0.15, 0.02, 28]} />
+          <meshStandardMaterial color="#050505" roughness={0.85} metalness={0.1} />
+        </mesh>
+      ))}
+      <mesh position={[0, H / 2 + 0.002, FSZ]}>
+        <cylinderGeometry args={[0.19, 0.19, 0.02, 28]} />
+        <meshStandardMaterial color="#050505" roughness={0.85} metalness={0.1} />
+      </mesh>
+      </group>
+      )}
 
+      {!circuitOnly && (
+      <group position={[0, LY.above, 0]}>
       <Knob3D
         position={kp.drive}
         value={knobDrive}
@@ -426,17 +543,25 @@ export function PedalBody({
         knobTheme={knobTheme}
         knobStyle="default"
         showArc={v?.showArc}
+        mutedHint={ledActive && knobMaster < 0.02}
       />
+      </group>
+      )}
 
-      <Footswitch3D
-        position={[0, H / 2 + 0.01, FSZ]}
-        pressed={pressed}
-        onPress={onPress}
-        onRelease={onRelease}
-        onCancel={onCancel}
-        metal={palette.metal}
-        accent={palette.accent}
-      />
+      {!circuitOnly && (
+        <group position={[0, LY.above, 0]}>
+          <Footswitch3D
+            position={[0, H / 2 + 0.01, FSZ]}
+            pressed={pressed}
+            onPress={onPress}
+            onRelease={onRelease}
+            onCancel={onCancel}
+            metal={palette.metal}
+            accent={palette.accent}
+            active={ledActive}
+          />
+        </group>
+      )}
 
       {(() => {
         const topY = H / 2;
@@ -446,7 +571,7 @@ export function PedalBody({
         const LED_Y = topY - 0.06;
         const PAD_Y = -0.026;
         return (
-          <group>
+          <group position={[0, LY.circuit, 0]}>
             <PotBody x={kp.drive[0]} z={kp.drive[2]} topY={topY} />
             <PotBody x={kp.echo[0]} z={kp.echo[2]} topY={topY} />
             <PotBody x={kp.reverb[0]} z={kp.reverb[2]} topY={topY} />
@@ -513,28 +638,30 @@ export function PedalBody({
               color="#3a6ad0"
             />
             <Wire
-              start={[0.705, 0.13, -0.6]}
+              start={[0.5, 0.15, -1.42]}
               mids={[
-                [0.8, -0.01, -0.45],
-                [0.8, -0.02, 0.3],
-                [0.8, -0.02, 0.8],
-                [0.46, -0.01, 1.02],
-                [0.16, -0.01, 1.08],
+                [0.8, -0.01, -1.05],
+                [0.8, -0.02, -0.2],
+                [0.8, -0.02, 0.4],
+                [0.8, -0.02, 0.72],
+                [0.42, -0.01, 1.02],
               ]}
               end={[0.08, SW_LUG_Y, FSZ - 0.08]}
               color="#e8e8e8"
               r={0.009}
             />
             <Wire
-              start={[0.705, 0.03, -0.6]}
-              end={[0.74, PAD_Y, -0.4]}
+              start={[0.42, 0.06, -1.42]}
+              end={[0.7, PAD_Y, -1.12]}
               color="#181818"
-              sag={0.05}
+              sag={0.03}
               r={0.009}
             />
             <CableClip x={0.8} z={-0.2} />
             <CableClip x={0.8} z={0.4} />
             <CableClip x={0.8} z={0.72} />
+            <CableClip x={-0.8} z={-0.35} />
+            <CableClip x={-0.8} z={0.1} />
             <Wire
               start={[0.08, SW_LUG_Y, FSZ + 0.08]}
               end={[-0.08, SW_LUG_Y, FSZ + 0.08]}
@@ -562,16 +689,20 @@ export function PedalBody({
             />
 
             <Wire
-              start={[-0.705, 0.13, -0.6]}
-              end={[-0.74, PAD_Y, -0.57]}
+              start={[-0.5, 0.15, -1.42]}
+              mids={[
+                [-0.8, -0.01, -1.05],
+                [-0.8, -0.02, -0.35],
+              ]}
+              end={[-0.78, PAD_Y, 0.2]}
               color="#3a8ade"
-              sag={0.04}
+              sag={0.03}
             />
             <Wire
-              start={[-0.705, 0.03, -0.6]}
-              end={[-0.74, PAD_Y, -0.4]}
+              start={[-0.42, 0.06, -1.42]}
+              end={[-0.68, PAD_Y, -1.12]}
               color="#181818"
-              sag={0.05}
+              sag={0.03}
               r={0.009}
             />
 
