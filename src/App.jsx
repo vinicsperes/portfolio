@@ -1,15 +1,10 @@
 import { Hero } from './components/Hero.jsx'
-import { CallMe } from './components/CallMe.jsx'
-import { Projects } from './components/Projects.jsx'
-import { Contact } from './components/Contact.jsx'
+import { LanguageProvider } from './i18n/LanguageContext.jsx'
 
 export default function App() {
   return (
-    <main>
+    <LanguageProvider>
       <Hero />
-      <CallMe />
-      <Projects />
-      <Contact />
-    </main>
+    </LanguageProvider>
   )
 }

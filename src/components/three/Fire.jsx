@@ -9,11 +9,17 @@ import './materials.jsx'
  * de fogo. Várias instâncias em tamanhos/posições diferentes se sobrepõem e
  * dão volume — sem a "cruz" dos planos fixos.
  */
-export function Flame({ position = [0, 0, 0], scale = 1, intensity = 1, seed = 0 }) {
+export function Flame({ position = [0, 0, 0], scale = 1, intensity = 1, seed = 0, level = 1, dimRef }) {
   const mat = useRef()
+  const cur = useRef(1)
 
-  useFrame(({ clock }) => {
-    if (mat.current) mat.current.uTime = clock.elapsedTime + seed * 10
+  useFrame(({ clock }, delta) => {
+    const target = level * (1 - (dimRef?.current ?? 0) * 0.92)
+    cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
+    if (mat.current) {
+      mat.current.uTime = clock.elapsedTime + seed * 10
+      mat.current.uIntensity = intensity * cur.current
+    }
   })
 
   return (
@@ -29,8 +35,9 @@ export function Flame({ position = [0, 0, 0], scale = 1, intensity = 1, seed = 0
 /**
  * Fumaça: pontos subindo com turbulência, esmaecendo com a altura.
  */
-export function Smoke({ position = [0, 0, 0], count = 60, height = 2.2 }) {
+export function Smoke({ position = [0, 0, 0], count = 40, height = 2.2, level = 1, dimRef }) {
   const points = useRef()
+  const cur = useRef(1)
 
   const positions = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -51,7 +58,9 @@ export function Smoke({ position = [0, 0, 0], count = 60, height = 2.2 }) {
       pos.setX(i, pos.getX(i) + Math.sin(t * 1.2 + seeds[i] * 20) * delta * 0.08)
     }
     pos.needsUpdate = true
-    points.current.material.opacity = 0.28 + Math.sin(t * 3) * 0.04
+    const target = level * (1 - (dimRef?.current ?? 0) * 0.92)
+    cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
+    points.current.material.opacity = (0.28 + Math.sin(t * 3) * 0.04) * cur.current
   })
 
   return (

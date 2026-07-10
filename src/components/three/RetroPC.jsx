@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Flame, Smoke } from './Fire.jsx'
+import { VerveTerminal } from './VerveTerminal.jsx'
 import './materials.jsx'
 
 const BEIGE = '#d3c9b2'
@@ -13,12 +14,16 @@ function Plastic({ color = BEIGE, ...props }) {
 }
 
 /** Luz laranja tremeluzente que vende o fogo no resto da cena. */
-function FireLight({ position }) {
+function FireLight({ position, level = 1, dimRef }) {
   const light = useRef()
-  useFrame(({ clock }) => {
+  const cur = useRef(1)
+  useFrame(({ clock }, delta) => {
+    const target = level * (1 - (dimRef?.current ?? 0) * 0.92)
+    cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
     const t = clock.elapsedTime
     light.current.intensity =
-      9 + Math.sin(t * 11.3) * 2 + Math.sin(t * 23.7) * 1.4 + Math.sin(t * 5.1) * 1.8
+      (9 + Math.sin(t * 11.3) * 2 + Math.sin(t * 23.7) * 1.4 + Math.sin(t * 5.1) * 1.8) *
+      cur.current
   })
   return <pointLight ref={light} position={position} color="#ff7a2a" distance={9} decay={2} />
 }
@@ -46,12 +51,7 @@ function Scorch({ position, scale = 1 }) {
   )
 }
 
-function Monitor({ position }) {
-  const crt = useRef()
-  useFrame(({ clock }) => {
-    crt.current.uTime = clock.elapsedTime
-  })
-
+function Monitor({ position, view, statsRef, idleText }) {
   return (
     <group position={position}>
       {/* base giratória */}
@@ -79,15 +79,18 @@ function Monitor({ position }) {
           <Plastic color={BEIGE_DARK} />
         </mesh>
 
-        {/* moldura interna escura + tela */}
+        {/* moldura interna escura + tela: o verve mora aqui (idle ou live) */}
         <mesh position={[0, 0.08, 0.33]}>
           <boxGeometry args={[2.05, 1.62, 0.08]} />
           <meshStandardMaterial color={PLASTIC_DARK} roughness={0.5} />
         </mesh>
-        <mesh position={[0, 0.08, 0.378]}>
-          <planeGeometry args={[1.9, 1.48]} />
-          <crtMaterial ref={crt} toneMapped={false} />
-        </mesh>
+        <group position={[0, 0.08, 0.378]}>
+          <VerveTerminal
+            mode={view === 'verve' ? 'live' : 'idle'}
+            statsRef={statsRef}
+            idleText={idleText}
+          />
+        </group>
 
         {/* respiros no topo, de onde sai o fogo */}
         {[-0.9, -0.6, -0.3, 0, 0.3, 0.6, 0.9].map((x) => (
@@ -180,25 +183,30 @@ function Keyboard({ position }) {
 /**
  * O PC completo: gabinete deitado, monitor CRT em cima pegando fogo,
  * teclado na frente. Origem no chão, centro do gabinete.
+ * Em `view='verve'` o fogo acalma (a máquina segura a respiração
+ * enquanto você digita) e devolve o drama ao sair.
  */
-export function RetroPC(props) {
+export function RetroPC({ view, statsRef, idleText, dimRef, ...props }) {
   const monitorTop = 3.15 // altura do topo do monitor
+  // dimRef (0..1, dirigido pelo scroll da página) "apaga as luzes" ao sair do hero
+  const fireLevel = view === 'verve' ? 0.28 : 1
 
   return (
     <group {...props}>
       <Case />
-      <Monitor position={[0, 0.76, -0.1]} />
+      <Monitor position={[0, 0.76, -0.1]} view={view} statsRef={statsRef} idleText={idleText} />
+
       <Keyboard position={[0, 0.06, 2.15]} />
 
       {/* fogo saindo dos respiros do monitor */}
-      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.5} seed={0} />
-      <Flame position={[-0.62, monitorTop - 0.08, -0.15]} scale={0.95} intensity={0.85} seed={1} />
-      <Flame position={[0.58, monitorTop - 0.08, -0.3]} scale={1.1} intensity={0.8} seed={2} />
-      <Flame position={[0.95, monitorTop - 0.5, 0.12]} scale={0.55} intensity={0.65} seed={3} />
+      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.5} seed={0} level={fireLevel} dimRef={dimRef} />
+      <Flame position={[-0.62, monitorTop - 0.08, -0.15]} scale={0.95} intensity={0.85} seed={1} level={fireLevel} dimRef={dimRef} />
+      <Flame position={[0.58, monitorTop - 0.08, -0.3]} scale={1.1} intensity={0.8} seed={2} level={fireLevel} dimRef={dimRef} />
+      <Flame position={[0.95, monitorTop - 0.5, 0.12]} scale={0.55} intensity={0.65} seed={3} level={fireLevel} dimRef={dimRef} />
 
       <Scorch position={[0, monitorTop + 0.006, -0.2]} scale={2.4} />
-      <Smoke position={[0, monitorTop + 0.5, -0.2]} />
-      <FireLight position={[0, monitorTop + 0.7, 0.4]} />
+      <Smoke position={[0, monitorTop + 0.5, -0.2]} level={fireLevel} dimRef={dimRef} />
+      <FireLight position={[0, monitorTop + 0.7, 0.4]} level={fireLevel} dimRef={dimRef} />
     </group>
   )
 }

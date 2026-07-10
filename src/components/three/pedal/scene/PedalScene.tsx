@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { PedalBody } from "./PedalBody";
 
+const noop = () => {};
+
 export function PedalScene({
   palette,
   xray = false,
@@ -10,21 +12,21 @@ export function PedalScene({
   spin = null,
   hideTag = false,
   ledColor,
-  ledActive,
-  onTap,
-  onStomp,
-  knobDrive,
-  knobEcho,
-  knobTone,
-  knobReverb,
-  knobMod,
-  knobMaster,
-  onKnobChange,
-  setControlsEnabled,
-  bootTrigger,
+  ledActive = false,
+  onTap = noop,
+  onStomp = noop,
+  knobDrive = 0.55,
+  knobEcho = 0.5,
+  knobTone = 0.6,
+  knobReverb = 0.5,
+  knobMod = 0.35,
+  knobMaster = 0.7,
+  onKnobChange = noop,
+  setControlsEnabled = noop,
+  bootTrigger = 0,
   presetIdx = null,
-  onChassisEnter,
-  onChassisLeave,
+  onChassisEnter = noop,
+  onChassisLeave = noop,
 }: {
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
@@ -34,24 +36,24 @@ export function PedalScene({
   spin?: number | null;
   hideTag?: boolean;
   ledColor: string;
-  ledActive: boolean;
-  onTap: () => void;
-  onStomp: () => void;
-  knobDrive: number;
-  knobEcho: number;
-  knobTone: number;
-  knobReverb: number;
-  knobMod: number;
-  knobMaster: number;
-  onKnobChange: (
+  ledActive?: boolean;
+  onTap?: () => void;
+  onStomp?: () => void;
+  knobDrive?: number;
+  knobEcho?: number;
+  knobTone?: number;
+  knobReverb?: number;
+  knobMod?: number;
+  knobMaster?: number;
+  onKnobChange?: (
     knob: "drive" | "echo" | "tone" | "reverb" | "mod" | "master",
     value: number,
   ) => void;
-  setControlsEnabled: (enabled: boolean) => void;
-  bootTrigger: number;
+  setControlsEnabled?: (enabled: boolean) => void;
+  bootTrigger?: number;
   presetIdx?: number | null;
-  onChassisEnter: () => void;
-  onChassisLeave: () => void;
+  onChassisEnter?: () => void;
+  onChassisLeave?: () => void;
 }) {
   const [pressed, setPressed] = useState(false);
 

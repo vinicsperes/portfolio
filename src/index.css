@@ -4,6 +4,7 @@
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-poster: "Anton", "Space Grotesk", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-accent: "Instrument Serif", Georgia, serif;
 
   --color-paper: #eae8e3;
   --color-paper-dim: #ded9cf;
@@ -28,6 +29,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* marquee da faixa de skills (seção about) */
 @keyframes marquee {
   from {
     transform: translateX(0);
@@ -38,44 +40,25 @@ body {
 }
 
 .marquee-track {
-  animation: marquee 24s linear infinite;
+  animation: marquee 28s linear infinite;
 }
 
-@keyframes eq-bar {
-  from {
-    transform: scaleY(0.12);
-  }
-  to {
-    transform: scaleY(1);
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
   }
 }
 
-.eq-bar {
-  transform-origin: bottom;
-  animation: eq-bar 0.5s ease-in-out infinite alternate;
+/* títulos vazados (outline) — contraste tipográfico das seções */
+.text-stroke-paper {
+  -webkit-text-stroke: 2px var(--color-paper);
+  color: transparent;
 }
-
-@keyframes caret-blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
+.text-stroke-green {
+  -webkit-text-stroke: 2px #16a030;
+  color: transparent;
 }
-
-.caret {
-  animation: caret-blink 1.1s steps(1) infinite;
-}
-
-.scanlines {
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.14) 0px,
-    rgba(0, 0, 0, 0.14) 1px,
-    transparent 1px,
-    transparent 3px
-  );
+.text-stroke-ember {
+  -webkit-text-stroke: 2px #ff6b2b;
+  color: transparent;
 }

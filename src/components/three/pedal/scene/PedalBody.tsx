@@ -2,7 +2,6 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
 import {
-  DoubleSide,
   FrontSide,
   MathUtils,
   Path,
@@ -19,6 +18,9 @@ import { Internals } from "../internals";
 import { LabelText } from "./LabelText";
 import { Footswitch3D } from "./Footswitch3D";
 import { HangTag } from "./HangTag";
+
+const _worldPos = new Vector3();
+const _worldScale = new Vector3();
 
 const GHOST_ICON = {
   scale: 0.0094,
@@ -159,8 +161,12 @@ export function PedalBody({
       g.rotation.x = MathUtils.damp(g.rotation.x, pressed ? 0.009 : 0, 9, delta);
       if (spin != null) g.rotation.y = spin;
       else g.rotation.y += delta * 0.22 * explode;
-      clipBottom.constant = g.position.y;
-      clipTop.constant = -(explode * 0.95 + g.position.y);
+      // clipping planes vivem em espaço de MUNDO: usar a posição/escala
+      // global do pedal (ele pode estar transladado/escalado dentro da cena)
+      g.getWorldPosition(_worldPos);
+      g.getWorldScale(_worldScale);
+      clipBottom.constant = _worldPos.y;
+      clipTop.constant = -(_worldPos.y + explode * 0.95 * _worldScale.y);
     }
     const gl = glowRef.current;
     if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
@@ -209,19 +215,19 @@ export function PedalBody({
     top: explode * 0.95,
     above: explode * 1.15,
   };
-  const baseOp = xray ? 0.12 : 0.82;
-  const splitOp = xray ? 0.12 : baseOp - 0.26 * Math.min(1, explode / 0.25);
-  const chassisMat = (opacity: number, clip?: Plane[], side: Side = FrontSide) => (
+  const baseOp = xray ? 0.12 : 0.95;
+  const splitOp = xray ? 0.12 : baseOp; // Do not fade out when exploding
+  const chassisMat = (opacity: number, clip?: Plane[], side: Side = FrontSide, opaque = false) => (
     <meshPhysicalMaterial
       color={palette.pedal}
-      roughness={0.3}
+      roughness={0.2}
       metalness={0.2}
-      envMapIntensity={0.5}
-      clearcoat={0.45}
+      envMapIntensity={0.8}
+      clearcoat={0.6}
       clearcoatRoughness={0.12}
-      transparent
-      opacity={opacity}
-      depthWrite={false}
+      transparent={!opaque}
+      opacity={opaque ? 1 : opacity}
+      depthWrite={opaque}
       clippingPlanes={clip}
       clipShadows={!!clip}
       side={side}
@@ -247,11 +253,11 @@ export function PedalBody({
         (split ? (
           <>
             <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
-              {chassisMat(splitOp, [clipBottom], DoubleSide)}
+              {chassisMat(splitOp, [clipBottom], FrontSide)}
             </RoundedBox>
             <group position={[0, LY.top, 0]}>
               <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
-                {chassisMat(splitOp, [clipTop], DoubleSide)}
+                {chassisMat(splitOp, [clipTop], FrontSide)}
               </RoundedBox>
             </group>
           </>
@@ -264,7 +270,8 @@ export function PedalBody({
             onPointerEnter={onChassisEnter}
             onPointerLeave={onChassisLeave}
           >
-            {chassisMat(baseOp)}
+            {/* fechado: opaco com depthWrite — evita sorting errado contra o chão do quarto */}
+            {chassisMat(baseOp, undefined, FrontSide, !xray)}
           </RoundedBox>
         ))}
 

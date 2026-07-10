@@ -21,7 +21,8 @@ const noiseGLSL = /* glsl */ `
   float fbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
-    for (int i = 0; i < 5; i++) {
+    // 4 oitavas: visualmente ~igual a 5, bem mais leve em iGPU
+    for (int i = 0; i < 4; i++) {
       v += a * noise(p);
       p *= 2.0;
       a *= 0.5;
@@ -81,7 +82,7 @@ export const FireMaterial = shaderMaterial(
  * banda rolante, flicker e sangramento laranja do fogo no topo.
  */
 export const CRTMaterial = shaderMaterial(
-  { uTime: 0 },
+  { uTime: 0, uMap: null, uHasMap: 0, uHeat: 1 },
   /* glsl */ `
     varying vec2 vUv;
     void main() {
@@ -91,6 +92,9 @@ export const CRTMaterial = shaderMaterial(
   `,
   /* glsl */ `
     uniform float uTime;
+    uniform sampler2D uMap;
+    uniform float uHasMap;
+    uniform float uHeat;
     varying vec2 vUv;
 
     ${noiseGLSL}
@@ -110,14 +114,20 @@ export const CRTMaterial = shaderMaterial(
       float glitch = step(0.96, hash(vec2(rowSeed, floor(uTime * 6.0))));
       uv.x = fract(uv.x + glitch * (hash(vec2(rowSeed, 1.0)) - 0.5) * 0.2);
 
-      // linhas de "código": blocos verdes aleatórios numa grade
-      vec2 grid = vec2(floor(uv.x * 34.0), floor(uv.y * 22.0));
-      float charOn = step(0.45, hash(grid + floor(uTime * 1.5) * 0.31));
-      float lineOn = step(0.25, hash(vec2(grid.y, 7.0)));
-      float text = charOn * lineOn * step(0.06, uv.x) * step(uv.x, 0.94);
-
       vec3 col = vec3(0.01, 0.05, 0.02);
-      col += vec3(0.18, 1.0, 0.45) * text * 0.85;
+
+      if (uHasMap > 0.5) {
+        // We have a texture! Use it as the base color
+        vec4 texColor = texture2D(uMap, uv);
+        col = texColor.rgb;
+      } else {
+        // Fallback to green code matrix
+        vec2 grid = vec2(floor(uv.x * 34.0), floor(uv.y * 22.0));
+        float charOn = step(0.45, hash(grid + floor(uTime * 1.5) * 0.31));
+        float lineOn = step(0.25, hash(vec2(grid.y, 7.0)));
+        float text = charOn * lineOn * step(0.06, uv.x) * step(uv.x, 0.94);
+        col += vec3(0.18, 1.0, 0.45) * text * 0.85;
+      }
 
       // scanlines + banda rolante
       col *= 0.78 + 0.22 * sin(uv.y * 320.0);
@@ -128,9 +138,9 @@ export const CRTMaterial = shaderMaterial(
       // flicker global
       col *= 0.85 + 0.15 * hash(vec2(floor(uTime * 24.0), 3.0));
 
-      // o fogo sangrando pelo topo da tela
+      // o fogo sangrando pelo topo da tela (uHeat acalma no close do verve)
       float heat = smoothstep(0.55, 1.0, uv.y) * (0.6 + 0.4 * fbm(vec2(uv.x * 5.0, uTime * 2.0)));
-      col = mix(col, vec3(1.0, 0.45, 0.08), heat * 0.7);
+      col = mix(col, vec3(1.0, 0.45, 0.08), heat * 0.7 * uHeat);
 
       // vinheta
       float vig = 1.0 - dot(c, c) * 1.4;
