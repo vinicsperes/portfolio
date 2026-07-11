@@ -2,21 +2,12 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBox, useTexture } from '@react-three/drei'
+import { Hotspot } from './Hotspot.jsx'
+import { CandleCluster } from './Candles.jsx'
 
 const WOOD = '#5c3a24'
 const WOOD_DARK = '#3a2414'
 const WALL = '#18181f'
-
-/**
- * Acabamento padrão das texturas procedurais: sRGB (cores como autoradas)
- * + anisotropia (nitidez no ângulo rasante — chão/tapete deixam de virar
- * mancha ao longe). Custo de GPU desprezível.
- */
-function polish(tex, aniso = 8) {
-  tex.colorSpace = THREE.SRGBColorSpace
-  tex.anisotropy = aniso
-  return tex
-}
 
 /* ───────────────────────────────────────────────────────────
    Procedural Textures
@@ -84,98 +75,15 @@ function useWoodFloorTexture() {
     const tex = new THREE.CanvasTexture(canvas)
     tex.wrapS = THREE.RepeatWrapping
     tex.wrapT = THREE.RepeatWrapping
-    // 6x: tábuas ~1.2m — mais detalhe de perto sem ficar "busy" de longe
-    tex.repeat.set(6, 6)
-    return polish(tex)
-  }, [])
-}
-
-/** Tampo da mesa: madeira escura com veio horizontal — tira o "bloco chapado". */
-function useDeskWoodTexture() {
-  return useMemo(() => {
-    const S = 512
-    const canvas = document.createElement('canvas')
-    canvas.width = S
-    canvas.height = S
-    const ctx = canvas.getContext('2d')
-
-    ctx.fillStyle = WOOD_DARK
-    ctx.fillRect(0, 0, S, S)
-
-    // veios horizontais em dois tons, ondulando de leve
-    for (let i = 0; i < 46; i++) {
-      const y = (i * 137) % S
-      const light = i % 3 === 0
-      ctx.strokeStyle = light ? 'rgba(110,72,40,0.22)' : 'rgba(16,9,4,0.28)'
-      ctx.lineWidth = light ? 1.5 : 2.5
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      for (let x = 0; x <= S; x += 16) {
-        ctx.lineTo(x, y + Math.sin(x * 0.02 + i * 1.7) * 3)
-      }
-      ctx.stroke()
-    }
-
-    // nós discretos
-    for (let i = 0; i < 3; i++) {
-      const kx = (i * 197 + 80) % S
-      const ky = (i * 311 + 140) % S
-      const grad = ctx.createRadialGradient(kx, ky, 2, kx, ky, 14)
-      grad.addColorStop(0, 'rgba(12,7,3,0.6)')
-      grad.addColorStop(1, 'rgba(12,7,3,0)')
-      ctx.fillStyle = grad
-      ctx.beginPath()
-      ctx.arc(kx, ky, 14, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.set(2, 1)
-    return polish(tex)
-  }, [])
-}
-
-/** Parede: reboco com mancha sutil — quebra o preto chapado sem chamar atenção. */
-function useWallTexture() {
-  return useMemo(() => {
-    const S = 256
-    const canvas = document.createElement('canvas')
-    canvas.width = S
-    canvas.height = S
-    const ctx = canvas.getContext('2d')
-
-    ctx.fillStyle = WALL
-    ctx.fillRect(0, 0, S, S)
-
-    // manchas suaves claras e escuras (determinístico, sem Math.random)
-    for (let i = 0; i < 240; i++) {
-      const x = (i * 97.3) % S
-      const y = (i * 57.7) % S
-      const r = 6 + (i % 5) * 4
-      const up = i % 2 === 0
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, r)
-      grad.addColorStop(0, up ? 'rgba(200,205,225,0.022)' : 'rgba(0,0,0,0.05)')
-      grad.addColorStop(1, 'rgba(0,0,0,0)')
-      ctx.fillStyle = grad
-      ctx.beginPath()
-      ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.set(8, 4)
-    return polish(tex, 4)
+    tex.repeat.set(4, 4)
+    return tex
   }, [])
 }
 
 /**
- * Tapete persa (paisagem): campo em vermelho-tijolo apagado, bordas finas,
- * treliça sutil de losangos, medalhão central em contorno e cantos
- * arredondados via clip + alpha.
+ * Tapete persa redesenhado (paisagem): campo em vermelho-tijolo apagado,
+ * bordas finas, treliça sutil de losangos, medalhão central em CONTORNO,
+ * cantos arredondados via clip + alpha, e leve vinheta de tecido.
  */
 function useRugTexture() {
   return useMemo(() => {
@@ -295,16 +203,12 @@ function useRugTexture() {
     ctx.fillStyle = vig
     ctx.fillRect(0, 0, W, H)
 
-    return polish(new THREE.CanvasTexture(canvas))
+    return new THREE.CanvasTexture(canvas)
   }, [])
 }
 
-/**
- * Vista de golden hour de um apartamento alto: céu em degradê quente
- * (âmbar → rosa → azul), sol baixo com halo, skyline distante recortada
- * contra a luz e reflexos nas janelas dos prédios.
- */
-function useGoldenViewTexture() {
+/** Vista noturna pela janela panorâmica: céu com estrelas, lua e skyline. */
+function useNightViewTexture() {
   return useMemo(() => {
     const W = 1024
     const H = 512
@@ -313,65 +217,64 @@ function useGoldenViewTexture() {
     canvas.height = H
     const ctx = canvas.getContext('2d')
 
-    // céu golden hour: azul lá em cima descendo pra âmbar/rosa no horizonte
+    // céu em gradiente
     const sky = ctx.createLinearGradient(0, 0, 0, H)
-    sky.addColorStop(0, '#3b4a7a')
-    sky.addColorStop(0.35, '#8a6a92')
-    sky.addColorStop(0.62, '#e08b5c')
-    sky.addColorStop(0.82, '#f6b25a')
-    sky.addColorStop(1, '#ffd47a')
+    sky.addColorStop(0, '#0a1220')
+    sky.addColorStop(0.7, '#14263e')
+    sky.addColorStop(1, '#1d3450')
     ctx.fillStyle = sky
     ctx.fillRect(0, 0, W, H)
 
-    // brilho difuso do sol perto do horizonte
-    const sx = W * 0.7
-    const sy = H * 0.6
-    const glow = ctx.createRadialGradient(sx, sy, 10, sx, sy, 300)
-    glow.addColorStop(0, 'rgba(255,240,200,0.95)')
-    glow.addColorStop(0.3, 'rgba(255,210,140,0.55)')
-    glow.addColorStop(1, 'rgba(255,200,120,0)')
-    ctx.fillStyle = glow
-    ctx.fillRect(0, 0, W, H)
-
-    // disco do sol
-    ctx.fillStyle = '#fff2d0'
-    ctx.beginPath()
-    ctx.arc(sx, sy, 34, 0, Math.PI * 2)
-    ctx.fill()
-
-    // nuvens finas alongadas pegando a luz
-    for (let i = 0; i < 7; i++) {
-      const cy = 60 + i * 34 + (i % 2) * 10
-      const cw = 180 + (i * 90) % 360
-      const cx = (i * 260 + 60) % W
-      ctx.fillStyle = `rgba(255,${210 - i * 8},${170 - i * 6},${0.1 + (i % 3) * 0.05})`
+    // estrelas
+    for (let i = 0; i < 90; i++) {
+      const x = (i * 137.5) % W
+      const y = ((i * 89.3) % (H * 0.6))
+      const r = i % 11 === 0 ? 1.6 : 0.9
+      ctx.fillStyle = i % 7 === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(200,215,235,0.55)'
       ctx.beginPath()
-      ctx.ellipse(cx, cy, cw, 9, 0, 0, Math.PI * 2)
+      ctx.arc(x, y, r, 0, Math.PI * 2)
       ctx.fill()
     }
 
-    // skyline distante recortada contra a luz (silhueta quente-escura)
-    const farBuildings = [
-      [0, 70], [60, 100], [130, 55], [200, 120], [280, 80], [350, 140],
-      [420, 70], [500, 110], [580, 90], [660, 135], [740, 75], [820, 115],
-      [900, 60], [960, 95],
-    ]
-    farBuildings.forEach(([x, h], i) => {
-      const w = 46 + (i % 3) * 16
-      ctx.fillStyle = i % 2 ? '#5a3f44' : '#4a343d'
-      ctx.fillRect(x, H - h, w, h)
-      // janelas refletindo o pôr do sol
-      ctx.fillStyle = 'rgba(255,200,120,0.5)'
-      for (let r = 0; r < Math.floor(h / 22); r++) {
-        for (let c = 0; c < 3; c++) {
-          if ((r + c + i) % 2 === 0) {
-            ctx.fillRect(x + 8 + c * 14, H - h + 12 + r * 20, 7, 10)
-          }
-        }
-      }
-    })
+    // lua com halo
+    const mx = W * 0.74
+    const my = H * 0.26
+    const halo = ctx.createRadialGradient(mx, my, 8, mx, my, 90)
+    halo.addColorStop(0, 'rgba(220,230,245,0.5)')
+    halo.addColorStop(1, 'rgba(220,230,245,0)')
+    ctx.fillStyle = halo
+    ctx.fillRect(mx - 90, my - 90, 180, 180)
+    ctx.fillStyle = '#dfe8f4'
+    ctx.beginPath()
+    ctx.arc(mx, my, 26, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = 'rgba(160,175,195,0.5)'
+    ctx.beginPath()
+    ctx.arc(mx - 8, my - 4, 5, 0, Math.PI * 2)
+    ctx.arc(mx + 7, my + 8, 4, 0, Math.PI * 2)
+    ctx.fill()
 
-    return polish(new THREE.CanvasTexture(canvas), 2)
+    // skyline distante
+    ctx.fillStyle = '#0b1420'
+    const buildings = [
+      [0, 90], [55, 130], [125, 70], [195, 150], [270, 100], [335, 170],
+      [410, 90], [480, 140], [555, 110], [625, 165], [700, 95], [770, 135],
+      [845, 75], [910, 120], [975, 85],
+    ]
+    buildings.forEach(([x, h], i) => {
+      const w = 42 + (i % 3) * 14
+      ctx.fillRect(x, H - h, w, h)
+    })
+    // janelinhas acesas
+    ctx.fillStyle = 'rgba(245,166,35,0.55)'
+    for (let i = 0; i < 26; i++) {
+      const b = buildings[i % buildings.length]
+      const x = b[0] + 6 + ((i * 13) % 34)
+      const y = H - ((i * 29) % (b[1] - 14)) - 8
+      ctx.fillRect(x, y, 3, 4)
+    }
+
+    return new THREE.CanvasTexture(canvas)
   }, [])
 }
 
@@ -393,33 +296,171 @@ function DeskGlow({ position }) {
   )
 }
 
+
+function Books({ position, rotation = [0, 0, 0] }) {
+  const books = [
+    { w: 0.2, h: 0.9, d: 0.65, color: '#2a4a3a', x: 0 },
+    { w: 0.18, h: 0.85, d: 0.6, color: '#4a2020', x: 0.22 },
+    { w: 0.22, h: 0.95, d: 0.68, color: '#1a2a4a', x: 0.45 },
+    { w: 0.16, h: 0.8, d: 0.58, color: '#4a3a1a', x: 0.64 },
+  ]
+
+  return (
+    <group position={position} rotation={rotation}>
+      {books.map((b, i) => (
+        <RoundedBox key={i} args={[b.w, b.h, b.d]} radius={0.01} position={[b.x, b.h / 2, 0]} castShadow>
+          <meshStandardMaterial color={b.color} roughness={0.85} />
+        </RoundedBox>
+      ))}
+    </group>
+  )
+}
+
+/** Caneca de café na mesa. */
+function Mug({ position }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.14, 0]} castShadow>
+        <cylinderGeometry args={[0.11, 0.1, 0.28, 20]} />
+        <meshStandardMaterial color="#274a3d" roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 0.27, 0]}>
+        <cylinderGeometry args={[0.095, 0.095, 0.02, 20]} />
+        <meshStandardMaterial color="#241408" roughness={0.6} />
+      </mesh>
+      <mesh position={[0.15, 0.15, 0]} rotation-y={Math.PI / 2}>
+        <torusGeometry args={[0.07, 0.018, 10, 20]} />
+        <meshStandardMaterial color="#274a3d" roughness={0.35} />
+      </mesh>
+    </group>
+  )
+}
+
+/** Bloco de notas com caneta. */
+function Notepad({ position, rotation = [0, 0, 0] }) {
+  return (
+    <group position={position} rotation={rotation}>
+      <RoundedBox args={[0.5, 0.03, 0.68]} radius={0.008} position={[0, 0.015, 0]} castShadow>
+        <meshStandardMaterial color="#e5dfd0" roughness={0.95} />
+      </RoundedBox>
+      {/* linhas do caderno */}
+      {[0.14, 0.04, -0.06, -0.16].map((z) => (
+        <mesh key={z} position={[0, 0.032, z]} rotation-x={-Math.PI / 2}>
+          <planeGeometry args={[0.4, 0.008]} />
+          <meshBasicMaterial color="#8a94a8" />
+        </mesh>
+      ))}
+      {/* caneta */}
+      <mesh position={[0.18, 0.05, 0.12]} rotation={[0, 0.7, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.014, 0.014, 0.42, 10]} />
+        <meshStandardMaterial color="#8a1e1e" roughness={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+/** Prateleiras suspensas na parede — hotspot do blog. */
+function WallShelves() {
+  const shelfBooks = [
+    // prateleira de cima: só um par no canto — o porta-retrato é o protagonista
+    [
+      { w: 0.16, h: 0.5, color: '#2a3a4a', lean: 0 },
+      { w: 0.2, h: 0.55, color: '#4a2a20', lean: -0.2 },
+    ],
+    // prateleira de baixo concentra os livros
+    [
+      { w: 0.2, h: 0.52, color: '#4a3a1a', lean: 0 },
+      { w: 0.16, h: 0.46, color: '#1a3a3a', lean: 0 },
+      { w: 0.14, h: 0.48, color: '#2a4a30', lean: 0 },
+      { w: 0.18, h: 0.55, color: '#4a1a2a', lean: 0.2 },
+    ],
+  ]
+
+  const boardY = [0.7, 0]
+
+  return (
+    <group>
+      {boardY.map((y, si) => (
+        <group key={si} position={[0, y, 0]}>
+          {/* tábua */}
+          <RoundedBox args={[2.3, 0.06, 0.34]} radius={0.01} castShadow>
+            <meshStandardMaterial color={WOOD_DARK} roughness={0.6} />
+          </RoundedBox>
+          {/* mãos francesas */}
+          {[-0.9, 0.9].map((x) => (
+            <mesh key={x} position={[x, -0.09, -0.06]}>
+              <boxGeometry args={[0.05, 0.14, 0.2]} />
+              <meshStandardMaterial color="#141414" roughness={0.4} metalness={0.6} />
+            </mesh>
+          ))}
+          {/* livros */}
+          {(() => {
+            let bx = -1.0
+            return shelfBooks[si].map((b, bi) => {
+              const x = bx + b.w / 2
+              bx += b.w + 0.045
+              return (
+                <RoundedBox
+                  key={bi}
+                  args={[b.w, b.h, 0.26]}
+                  radius={0.008}
+                  position={[x + (b.lean ? 0.05 : 0), 0.035 + b.h / 2 - Math.abs(b.lean) * 0.04, 0]}
+                  rotation-z={b.lean}
+                  castShadow
+                >
+                  <meshStandardMaterial color={b.color} roughness={0.85} />
+                </RoundedBox>
+              )
+            })
+          })()}
+        </group>
+      ))}
+      {/* plantinha na ponta da prateleira de cima */}
+      <group position={[0.95, 0.73, 0]} scale={0.45}>
+        <mesh position={[0, 0.12, 0]} castShadow>
+          <cylinderGeometry args={[0.16, 0.12, 0.24, 12]} />
+          <meshStandardMaterial color="#b8654a" roughness={0.9} />
+        </mesh>
+        {[
+          [0, 0.36, 0, 0.13],
+          [0.09, 0.3, 0.04, 0.09],
+          [-0.08, 0.32, -0.03, 0.1],
+        ].map(([x, y, z, r], i) => (
+          <mesh key={i} position={[x, y, z]}>
+            <sphereGeometry args={[r, 8, 8]} />
+            <meshStandardMaterial color="#2a5a30" roughness={0.8} />
+          </mesh>
+        ))}
+      </group>
+      {/* cubo-troféu na de baixo */}
+      <mesh position={[0.85, 0.14, 0]} rotation-y={0.5} castShadow>
+        <boxGeometry args={[0.16, 0.16, 0.16]} />
+        <meshStandardMaterial color="#f5a623" emissive="#f5a623" emissiveIntensity={0.35} roughness={0.3} metalness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
 /* ───────────────────────────────────────────────────────────
    Main Room Component
    ─────────────────────────────────────────────────────────── */
 
-/**
- * O quarto enxuto: chão, tapete, parede, janela panorâmica, mesa com o PC
- * e o porta-retrato pendurado na parede (a view do about dá zoom nele).
- * Sem hotspots — a cena é um quadro vivo; a navegação mora no HTML.
- */
-export function Room() {
+export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   const woodTex = useWoodFloorTexture()
-  const deskTex = useDeskWoodTexture()
-  const wallTex = useWallTexture()
   const rugTex = useRugTexture()
-  const skyTex = useGoldenViewTexture()
-  const kidTex = useTexture('/img/vini-kid.jpg', (t) => polish(t, 4))
+  const nightTex = useNightViewTexture()
+  const collageTex = useTexture('/img/ghost-collage-tex.jpg')
+  const kidTex = useTexture('/img/vini-kid.jpg')
 
   return (
     <group>
       {/* ─── Floor ─── */}
       <mesh position={[0, -2.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
-        {/* bump reusa a própria textura — relevo sutil dos veios, custo ~zero */}
-        <meshStandardMaterial map={woodTex} bumpMap={woodTex} bumpScale={0.9} roughness={0.72} />
+        <meshStandardMaterial map={woodTex} roughness={0.75} />
       </mesh>
 
-      {/* ─── Rug (no vão livre à frente da mesa) ─── */}
+      {/* ─── Rug (horizontal, no vão livre à frente da mesa) ─── */}
       <mesh position={[0.2, -2.09, 2.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[9.2, 6.2]} />
         <meshStandardMaterial map={rugTex} roughness={1} transparent />
@@ -428,7 +469,7 @@ export function Room() {
       {/* ─── Back Wall ─── */}
       <mesh position={[0, 4, -6]} receiveShadow>
         <planeGeometry args={[60, 20]} />
-        <meshStandardMaterial map={wallTex} roughness={0.95} />
+        <meshStandardMaterial color={WALL} roughness={0.95} />
       </mesh>
 
       {/* ─── Baseboard ─── */}
@@ -437,11 +478,11 @@ export function Room() {
         <meshStandardMaterial color={WOOD_DARK} roughness={0.7} />
       </mesh>
 
-      {/* ─── Desk ─── */}
+      {/* ─── Desk (mais funda: o PC precisa caber inteiro) ─── */}
       <group position={[3, -2.1, -2]}>
         {/* Table top */}
         <RoundedBox args={[8, 0.18, 4.4]} radius={0.03} position={[0, 2.1, 0]} receiveShadow castShadow>
-          <meshStandardMaterial map={deskTex} roughness={0.5} />
+          <meshStandardMaterial color={WOOD_DARK} roughness={0.55} />
         </RoundedBox>
         {/* Front apron */}
         <mesh position={[0, 1.95, 2.1]} castShadow>
@@ -459,64 +500,116 @@ export function Room() {
         )}
       </group>
 
-      {/* luz quente da mesa */}
+      {/* ─── Desk props ─── */}
       <DeskGlow position={[5.8, 1.2, -2.4]} />
+      <Books position={[-0.5, 0.1, -2.9]} rotation={[0, 0.25, 0]} />
+      <Mug position={[0.55, 0.09, -1.35]} />
+      <Notepad position={[5.2, 0.1, -1.6]} rotation={[0, 0.35, 0]} />
 
-      {/* ─── Window (panorâmica) ─── */}
+      {/* ─── Cozy: velas no parapeito da janela ─── */}
+      <CandleCluster position={[-2.55, 1.21, -5.68]} />
+
+      {/* ─── Wall shelves (clicável → blog), à esquerda entre a janela e o PC ─── */}
+      <Hotspot
+        position={[0.55, 2.62, -5.78]}
+        label={labels.shelf}
+        labelPosition={[0, -0.85, 0.25]}
+        onActivate={() => onNavigate?.('blog')}
+        disabled={activeView === 'blog'}
+        marker={markers.blog}
+      >
+        <WallShelves />
+        {/* luz de leitura discreta — dá vida ao close do blog */}
+        <pointLight position={[0, 0.4, 1.2]} color="#ffd090" intensity={1.6} distance={4} decay={2} />
+      </Hotspot>
+
+      {/* ─── Window (panorâmica, atrás do lockup do título) ─── */}
       <group position={[-5.2, 3.0, -5.9]}>
-        {/* Caixilho fino, moderno (alumínio claro) — apartamento contemporâneo */}
-        <RoundedBox args={[7.4, 3.6, 0.2]} radius={0.04} castShadow>
-          <meshStandardMaterial color="#3a4048" roughness={0.35} metalness={0.5} />
+        {/* Outer frame */}
+        <RoundedBox args={[7.4, 3.6, 0.2]} radius={0.05} castShadow>
+          <meshStandardMaterial color="#2d3340" roughness={0.5} />
         </RoundedBox>
-        {/* Golden hour view */}
+        {/* Night view */}
         <mesh position={[0, 0, 0.11]}>
-          <planeGeometry args={[7.0, 3.15]} />
-          <meshBasicMaterial map={skyTex} toneMapped={false} />
+          <planeGeometry args={[6.9, 3.05]} />
+          <meshBasicMaterial map={nightTex} toneMapped={false} />
         </mesh>
-        {/* leve reflexo de vidro quente */}
+        {/* leve reflexo de vidro */}
         <mesh position={[0, 0, 0.12]}>
-          <planeGeometry args={[7.0, 3.15]} />
+          <planeGeometry args={[6.9, 3.05]} />
           <meshStandardMaterial
-            color="#ffcf99"
-            roughness={0.06}
+            color="#88aacc"
+            roughness={0.08}
             metalness={0.3}
             transparent
-            opacity={0.06}
+            opacity={0.08}
           />
         </mesh>
-        {/* Caixilho moderno: 1 travessa fina + 1 montante central (2 panos amplos) */}
-        <RoundedBox args={[7.1, 0.06, 0.08]} radius={0.015} position={[0, 0, 0.13]}>
-          <meshStandardMaterial color="#2a2f36" roughness={0.3} metalness={0.5} />
+        {/* Cross bars: 1 horizontal + 2 verticais (3 panos) */}
+        <RoundedBox args={[7.0, 0.09, 0.08]} radius={0.02} position={[0, 0, 0.13]}>
+          <meshStandardMaterial color="#1e2530" roughness={0.4} metalness={0.3} />
         </RoundedBox>
-        <RoundedBox args={[0.06, 3.2, 0.08]} radius={0.015} position={[0, 0, 0.13]}>
-          <meshStandardMaterial color="#2a2f36" roughness={0.3} metalness={0.5} />
-        </RoundedBox>
+        {[-1.16, 1.16].map((x) => (
+          <RoundedBox key={x} args={[0.09, 3.15, 0.08]} radius={0.02} position={[x, 0, 0.13]}>
+            <meshStandardMaterial color="#1e2530" roughness={0.4} metalness={0.3} />
+          </RoundedBox>
+        ))}
         {/* Window sill */}
         <RoundedBox args={[7.8, 0.1, 0.4]} radius={0.02} position={[0, -1.85, 0.15]} castShadow>
           <meshStandardMaterial color="#2d3340" roughness={0.5} />
         </RoundedBox>
       </group>
 
-      {/* ─── Porta-retrato pendurado na parede (view do about dá zoom aqui):
-          foto da primeira vez no palco — a origem da história ─── */}
-      <group position={[0.6, 3.1, -5.86]}>
-        {/* Frame */}
-        <RoundedBox args={[1.06, 0.78, 0.1]} radius={0.025} castShadow>
-          <meshStandardMaterial color="#1a1510" roughness={0.7} metalness={0.1} />
-        </RoundedBox>
-        {/* passe-partout */}
-        <mesh position={[0, 0, 0.06]}>
-          <planeGeometry args={[0.94, 0.66]} />
-          <meshStandardMaterial color="#e8e2d2" roughness={1} />
+      {/* ─── Pôster colagem GHOSTFX: papel colado direto na parede (sem
+          moldura), levemente torto, com fita adesiva nos cantos ─── */}
+      <group position={[3.6, 3.95, -5.965]} rotation-z={-0.028}>
+        <mesh castShadow>
+          <planeGeometry args={[2.5, 1.42]} />
+          <meshStandardMaterial map={collageTex} roughness={0.92} />
         </mesh>
-        {/* foto */}
-        <mesh position={[0, 0, 0.07]}>
-          <planeGeometry args={[0.86, 0.57]} />
-          <meshStandardMaterial map={kidTex} roughness={0.9} />
-        </mesh>
-        {/* luz de leitura discreta — dá vida ao close do about */}
-        <pointLight position={[0, 0.35, 1.1]} color="#ffd090" intensity={1.4} distance={3.5} decay={2} />
+        {[
+          [-1.17, 0.63, 0.7],
+          [1.17, 0.63, -0.7],
+          [-1.17, -0.63, -0.7],
+          [1.17, -0.63, 0.7],
+        ].map(([x, y, rz], i) => (
+          <mesh key={i} position={[x, y, 0.006]} rotation-z={rz}>
+            <planeGeometry args={[0.32, 0.11]} />
+            <meshStandardMaterial color="#d8d4c8" transparent opacity={0.5} roughness={0.45} />
+          </mesh>
+        ))}
       </group>
+
+      {/* ─── Porta-retrato (clicável → about): em pé, apoiado na prateleira
+          de cima, levemente reclinado contra a parede ─── */}
+      <Hotspot
+        position={[0.85, 3.74, -5.72]}
+        rotation-x={-0.07}
+        label={labels.painting}
+        labelPosition={[0, 0.62, 0.2]}
+        onActivate={() => onNavigate?.('about')}
+        disabled={activeView === 'about'}
+        marker={markers.about}
+      >
+        {(hovered) => (
+          <>
+            {/* Frame pequeno, de porta-retrato */}
+            <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
+              <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
+            </RoundedBox>
+            {/* passe-partout */}
+            <mesh position={[0, 0, 0.08]}>
+              <planeGeometry args={[0.94, 0.66]} />
+              <meshStandardMaterial color="#e8e2d2" roughness={1} />
+            </mesh>
+            {/* foto: primeira apresentação — a origem do canto musical */}
+            <mesh position={[0, 0, 0.09]}>
+              <planeGeometry args={[0.86, 0.57]} />
+              <meshStandardMaterial map={kidTex} roughness={0.9} />
+            </mesh>
+          </>
+        )}
+      </Hotspot>
     </group>
   )
 }

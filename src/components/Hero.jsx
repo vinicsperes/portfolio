@@ -171,7 +171,7 @@ export function Hero() {
             className="pointer-events-none absolute inset-0 z-[1]"
             style={{
               background:
-                'linear-gradient(100deg, rgba(10,10,15,0.92) 0%, rgba(10,10,15,0.72) 34%, rgba(10,10,15,0.2) 58%, transparent 74%)',
+                'linear-gradient(100deg, rgba(10,10,15,0.78) 0%, rgba(10,10,15,0.46) 30%, rgba(10,10,15,0.12) 54%, transparent 70%)',
             }}
             aria-hidden="true"
           />
@@ -185,12 +185,12 @@ export function Hero() {
             view === 'home' ? '' : 'opacity-0'
           } transition-opacity duration-500`}
         >
-          <div className="max-w-2xl">
+          <div className="w-full sm:w-3/5">
             <p className={`font-accent italic text-4xl sm:text-6xl text-amber ${reveal(view === 'home')}`}>
               {t.hero.titleTop}
             </p>
             <h1
-              className={`mt-1 font-poster uppercase leading-[0.8] tracking-tight text-paper text-[19vw] sm:text-[14vw] lg:text-[11vw] drop-shadow-[0_6px_30px_rgba(0,0,0,0.7)] ${reveal(
+              className={`mt-1 font-poster uppercase leading-[0.8] tracking-tight text-paper text-[19vw] sm:text-[14vw] lg:text-[12vw] drop-shadow-[0_6px_30px_rgba(0,0,0,0.7)] ${reveal(
                 view === 'home',
                 'delay-150'
               )}`}
