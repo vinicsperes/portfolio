@@ -1,15 +1,10 @@
 import { Suspense, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { ContactShadows, Environment, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
+import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
-import { GhostPedal } from './GhostPedal.jsx'
-import { GuitarAmp } from './GuitarAmp.jsx'
-import { VinylCrate } from './VinylCrate.jsx'
-import { Hotspot } from './Hotspot.jsx'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
-import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -59,10 +54,10 @@ function CameraController({ view, reducedMotion }) {
 
     // parallax sutil de mouse no estado home
     if (view === 'home' && introDone.current && !reducedMotion) {
-      _pos.x += state.pointer.x * 0.35
-      _pos.y += state.pointer.y * 0.18
-      _look.x += state.pointer.x * 0.22
-      _look.y += state.pointer.y * 0.1
+      _pos.x += state.pointer.x * 0.3
+      _pos.y += state.pointer.y * 0.15
+      _look.x += state.pointer.x * 0.18
+      _look.y += state.pointer.y * 0.08
     }
 
     state.camera.position.lerp(_pos, lerpFactor)
@@ -83,19 +78,19 @@ function CameraController({ view, reducedMotion }) {
   return null
 }
 
-export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText, reducedMotion, markers, active = true, dimRef }) {
+/**
+ * A cena enxuta que vive na moldura do hero: quarto (chão, tapete, parede,
+ * janela, quadro), mesa com o PC passando o reel. Sem hotspots, sem
+ * post-processing, sem fogo — o clima vem da luz e do CRT.
+ */
+export function Scene({ view, reducedMotion, active = true }) {
   const [dpr, setDpr] = useState(1.1)
-  const showMarkers = view === 'home' && !reducedMotion
 
   return (
     <Canvas
       camera={{ position: INTRO_START.position, fov: 40 }}
       frameloop={active ? 'always' : 'never'}
-      gl={{ antialias: true, alpha: true, toneMappingExposure: 1.1, localClippingEnabled: true }}
-      onCreated={({ gl }) => {
-        // os clipping planes do chassi do pedal dependem disso
-        gl.localClippingEnabled = true
-      }}
+      gl={{ antialias: true, alpha: true, toneMappingExposure: 1.35 }}
       dpr={dpr}
       shadows
     >
@@ -109,23 +104,20 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
       <CameraController view={view} reducedMotion={reducedMotion} />
 
       <Suspense fallback={null}>
-        {/* gentle fog — fades distant floor edges */}
-        <fog attach="fog" args={['#0a0a0f', 22, 55]} />
+        {/* névoa quente — funde as bordas distantes do chão na golden hour */}
+        <fog attach="fog" args={['#1a1218', 24, 60]} />
 
-        {/* IBL environment for realistic reflections */}
-        <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.15} />
+        {/* fill ambiente morno e generoso — o quarto não é mais noturno */}
+        <ambientLight intensity={1.0} color="#c2b298" />
 
-        {/* cool fill light */}
-        <ambientLight intensity={0.3} color="#8890b0" />
-
-        {/* main directional (moonlight feel) */}
+        {/* sol baixo entrando pela janela (golden hour): quente e direcional */}
         <directionalLight
-          position={[-6, 6, 3]}
-          intensity={0.8}
-          color="#aab4cc"
+          position={[-7, 4.5, 2]}
+          intensity={1.7}
+          color="#ffb266"
           castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
           shadow-camera-far={30}
           shadow-camera-left={-10}
           shadow-camera-right={10}
@@ -134,42 +126,29 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
           shadow-bias={-0.001}
         />
 
-        {/* warm light from window */}
+        {/* feixe quente do pôr do sol pela janela panorâmica */}
         <spotLight
           position={[-4.5, 4, -4]}
-          intensity={3}
-          color="#6b8caa"
-          distance={16}
+          intensity={4.5}
+          color="#ffab54"
+          distance={18}
           decay={2}
-          angle={0.8}
+          angle={0.9}
           penumbra={0.6}
           castShadow
           shadow-mapSize-width={512}
           shadow-mapSize-height={512}
         />
 
-        {/* The room: floor, walls, desk, window, painting, shelves, furniture */}
-        <Room
-          onNavigate={onNavigate}
-          labels={labels}
-          activeView={view}
-          markers={{
-            about: showMarkers && markers?.about,
-            blog: showMarkers && markers?.blog,
-          }}
-        />
+        {/* céu frio de contraponto — impede que fique tudo laranja chapado */}
+        <hemisphereLight args={['#9db0d8', '#4a3a2e', 0.4]} />
 
-        {/* RetroPC on the desk — clicável → verve (terminal jogável) */}
-        <Hotspot
-          position={[3.2, 0, -2.7]}
-          rotation-y={-0.22}
-          label={labels?.pc}
-          labelPosition={[0, 4.5, 0]}
-          onActivate={() => onNavigate?.('verve')}
-          disabled={view === 'verve'}
-          marker={showMarkers && markers?.verve}
-        >
-          <RetroPC view={view} statsRef={statsRef} idleText={idleText} dimRef={dimRef} />
+        {/* O quarto: chão, tapete, parede, janela, quadro do about */}
+        <Room />
+
+        {/* RetroPC na mesa passando o reel dos trabalhos */}
+        <group position={[3.2, 0, -2.7]} rotation-y={-0.22}>
+          <RetroPC />
           <ContactShadows
             position={[0, 0.01, 0]}
             opacity={0.5}
@@ -179,43 +158,7 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
             color="#000000"
             frames={1}
           />
-        </Hotspot>
-
-        {/* Canto musical: pedal no chão (easter egg: clique = pulso abre-fecha) + amp + vinis */}
-        <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
-          <GhostPedal scrollRef={scrollRef} active={view === 'ghost'} />
         </group>
-        <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
-        <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />
-        <ContactShadows
-          position={[-2.9, -2.09, -3.9]}
-          opacity={0.55}
-          scale={7}
-          blur={2.2}
-          far={3}
-          color="#000000"
-          frames={1}
-        />
-        {/* luz de canto âmbar — dá leitura ao clearcoat do pedal no escuro */}
-        <pointLight
-          position={[-1.4, -0.5, -2.2]}
-          color="#f5a623"
-          intensity={2.4}
-          distance={7}
-          decay={2}
-        />
-
-        {/* Post-processing for cinematic realism */}
-        <EffectComposer multisampling={2}>
-          <Bloom
-            luminanceThreshold={0.6}
-            luminanceSmoothing={0.4}
-            intensity={0.6}
-            mipmapBlur
-          />
-          <Noise opacity={0.025} />
-          <Vignette eskil={false} offset={0.15} darkness={0.7} />
-        </EffectComposer>
 
         {/* compila shaders/texturas ANTES do primeiro frame — o loader só
             libera com a cena pronta de verdade */}

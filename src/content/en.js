@@ -1,9 +1,22 @@
 export const en = {
   hero: {
-    tag: '> FULLSTACK CREATIVE DEV',
+    tag: 'FULLSTACK CREATIVE DEVELOPER',
     titleTop: "Hi! I'm",
     titleBottom: 'Vinícius',
-    hint: 'explore the room: the objects tell the story',
+    // faixa de selos sob o lockup (estilo carimbo de coleção)
+    badge: {
+      mono: 'VP',
+      l1: 'VINICIUS PERES — DEV',
+      l2: 'CODE, AUDIO AND 3D, HANDMADE',
+    },
+    note: {
+      l1: "Hey! Curious about how it's built?",
+      l2: 'The whole site is open on GitHub →',
+    },
+    welcome:
+      'HI! WELCOME TO MY SITE. HERE YOU WILL FIND MY LATEST WORK AS A FULLSTACK DEV — WEB AUDIO, 3D ON THE WEB AND, ESPECIALLY, THINGS YOU CAN PLAY WITH. HOPE YOU HAVE FUN!',
+    // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
+    langCta: { label: 'chega aí, meu parça', flag: '🇧🇷', to: 'pt' },
   },
 
   about: {
@@ -23,9 +36,6 @@ export const en = {
     subtitle: 'A GUITAR PEDAL IN YOUR BROWSER',
     intro:
       'Plug in, stomp to arm, and shape your tone with drive, echo, modulation and reverb on a real-time 3D pedal whose knobs you actually turn. No install, no plugins, no native app: the entire signal chain is hand-built on the Web Audio API.',
-    scene: {
-      hint: 'SCROLL ↓',
-    },
     features: {
       knobs: {
         title: 'Real knobs',
@@ -59,12 +69,6 @@ export const en = {
     p2Prefix: 'Built with Rust, ',
     p2Suffix: '. Single self-contained binary.',
     source: 'SOURCE CODE',
-    liveHint: 'TYPING IN THE MONITOR IS LIVE: JUST START',
-    stats: { wpm: 'WPM', acc: 'ACC', time: 'TIME', best: 'BEST' },
-    idle: {
-      line1: 'a typing test in your terminal',
-      cta: 'click the computer to play_',
-    },
   },
 
   contact: {
@@ -96,18 +100,9 @@ export const en = {
     contact: 'CONTACT',
   },
 
-  labels: {
-    pc: '→ VERVE — TYPE IN THE TERMINAL',
-    painting: '→ ABOUT ME',
-    ghost: '→ GHOST FX — OPEN THE PEDAL',
-    phone: '→ CONTACT',
-    shelf: '→ BLOG — COMING SOON',
-  },
-
   ui: {
-    backToRoom: '← BACK TO ROOM',
-    openInScene: 'OPEN IN SCENE →',
+    backToRoom: '← BACK',
     scrollHint: 'SCROLL TO EXPLORE',
-    footer: 'built with React, Three.js and a burning CRT',
+    footer: 'built with React, Three.js and an old CRT',
   },
 }

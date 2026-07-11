@@ -1,9 +1,22 @@
 export const pt = {
   hero: {
-    tag: '> DEV CRIATIVO FULLSTACK',
+    tag: 'DEV CRIATIVO FULLSTACK',
     titleTop: 'Oi! Eu sou',
     titleBottom: 'o Vinícius',
-    hint: 'explore o quarto: os objetos contam a história',
+    // faixa de selos sob o lockup (estilo carimbo de coleção)
+    badge: {
+      mono: 'VP',
+      l1: 'VINICIUS PERES — DEV',
+      l2: 'CÓDIGO, ÁUDIO E 3D, FEITOS À MÃO',
+    },
+    note: {
+      l1: 'Ei! Curioso pra ver como foi feito?',
+      l2: 'O site inteiro tá aberto no GitHub →',
+    },
+    welcome:
+      'OI! BEM-VINDO AO MEU SITE. AQUI VOCÊ VAI ENCONTRAR MEUS TRABALHOS MAIS RECENTES COMO DEV FULLSTACK — WEB AUDIO, 3D NA WEB E, PRINCIPALMENTE, COISAS QUE DÁ PRA BRINCAR. ESPERO QUE APROVEITE!',
+    // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
+    langCta: { label: 'oh no! I got lost!', flag: '🇺🇸', to: 'en' },
   },
 
   about: {
@@ -23,9 +36,6 @@ export const pt = {
     subtitle: 'UM PEDAL DE GUITARRA NO SEU NAVEGADOR',
     intro:
       'Plugue, pise para armar e esculpa seu timbre com drive, echo, modulação e reverb num pedal 3D em tempo real cujos knobs você realmente gira. Sem instalação, sem plugins, sem app nativo: toda a cadeia de sinal é construída à mão na Web Audio API.',
-    scene: {
-      hint: 'ROLE ↓',
-    },
     features: {
       knobs: {
         title: 'Knobs de verdade',
@@ -59,12 +69,6 @@ export const pt = {
     p2Prefix: 'Feito com Rust, ',
     p2Suffix: '. Um único binário auto-contido.',
     source: 'CÓDIGO FONTE',
-    liveHint: 'A DIGITAÇÃO NO MONITOR É AO VIVO: É SÓ COMEÇAR',
-    stats: { wpm: 'WPM', acc: 'PREC', time: 'TEMPO', best: 'RECORDE' },
-    idle: {
-      line1: 'um teste de digitação no seu terminal',
-      cta: 'clique no computador para jogar_',
-    },
   },
 
   contact: {
@@ -96,18 +100,9 @@ export const pt = {
     contact: 'CONTATO',
   },
 
-  labels: {
-    pc: '→ VERVE — DIGITE NO TERMINAL',
-    painting: '→ SOBRE MIM',
-    ghost: '→ GHOST FX — ABRA O PEDAL',
-    phone: '→ CONTATO',
-    shelf: '→ BLOG — EM BREVE',
-  },
-
   ui: {
-    backToRoom: '← VOLTAR AO QUARTO',
-    openInScene: 'ABRIR NA CENA →',
+    backToRoom: '← VOLTAR',
     scrollHint: 'ROLE PARA EXPLORAR',
-    footer: 'feito com React, Three.js e um CRT em chamas',
+    footer: 'feito com React, Three.js e um CRT velho de guerra',
   },
 }

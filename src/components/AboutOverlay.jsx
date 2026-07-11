@@ -1,6 +1,5 @@
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReveal } from '../hooks/useReveal.js'
-import { SceneNav } from './SceneNav.jsx'
 
 /**
  * View "about" da cena: a câmera aproxima do quadro na parede e o texto
@@ -14,7 +13,14 @@ export function AboutOverlay({ onNavigate, onContact }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col p-6 sm:p-12 pt-24 sm:pt-28">
-      <SceneNav current="about" onNavigate={onNavigate} />
+      <div className="pointer-events-auto">
+        <button
+          onClick={() => onNavigate('home')}
+          className="font-mono text-xs sm:text-sm tracking-widest text-paper hover:text-amber transition-colors"
+        >
+          {t.ui.backToRoom}
+        </button>
+      </div>
 
       {/* texto sobre a parede escura; o quadro respira à direita */}
       <div className="flex flex-1 items-center">

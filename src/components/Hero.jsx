@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Scene } from './three/Scene.jsx'
-import { GhostOverlay } from './GhostOverlay.jsx'
-import { VerveOverlay } from './VerveOverlay.jsx'
 import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
 import { NavMenu } from './NavMenu.jsx'
@@ -15,24 +13,14 @@ import { useReveal } from '../hooks/useReveal.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
 import { links } from '../content/index.js'
 
-// views com câmera própria (demos jogáveis + quadro do about); o resto é âncora de seção
-const VALID_VIEWS = ['home', 'ghost', 'verve', 'about']
-const SECTION_TARGETS = ['blog', 'contact']
-const SEEN_KEY = 'vp.seen'
+// única view com câmera própria além da home: o quadro do about
+const VALID_VIEWS = ['home', 'about']
 const GREEN = '#16a030'
 const EMBER = '#ff6b2b'
 
 function initialView() {
   const v = new URLSearchParams(window.location.search).get('view')
   return VALID_VIEWS.includes(v) ? v : 'home'
-}
-
-function loadSeen() {
-  try {
-    return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}')
-  } catch {
-    return {}
-  }
 }
 
 function supportsWebGL() {
@@ -62,14 +50,10 @@ export function Hero() {
   const { lang, setLang, t } = useLang()
   const reducedMotion = useReducedMotion()
   const webgl = useMemo(supportsWebGL, [])
-  const [view, setView] = useState(initialView) // home | about | ghost | verve | contact | blog
-  const [seen, setSeen] = useState(loadSeen)
+  const [view, setView] = useState(initialView) // home | about
   const [copied, setCopied] = useState(false)
 
-  const scrollRef = useRef({ scroll: 0 })
-  const verveStatsRef = useRef({ wpm: 0, acc: 100, time: 0, best: 0, finished: false })
-  // onde a página estava antes de abrir uma view da cena (restaurado na volta —
-  // sem isso o usuário volta pro topo com o fogo aceso, "até o reload")
+  // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
 
   // pausa o canvas do hero fora da viewport; monta/pausa o canvas do pedal da seção
@@ -80,48 +64,12 @@ export function Hero() {
   // a abertura acontecer com o palco já em cena)
   const [ghostStageRef, ghostStageVisible] = useNearViewport('0px')
 
-  // "apagar as luzes": 0 no topo → 1 quando o hero sai da tela (dirige o fogo)
-  const dimRef = useRef(0)
-  useEffect(() => {
-    const onScroll = () => {
-      dimRef.current = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.85)))
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const markSeen = (v) => {
-    setSeen((s) => {
-      if (s[v]) return s
-      const next = { ...s, [v]: true }
-      try {
-        localStorage.setItem(SEEN_KEY, JSON.stringify(next))
-      } catch {
-        /* private mode */
-      }
-      return next
-    })
-  }
-
   const navigate = (v) => {
-    // quadro/estante/telefone: atalhos que rolam para a seção correspondente
-    if (SECTION_TARGETS.includes(v)) {
-      markSeen(v)
-      document.getElementById(v)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
-      return
-    }
-    if (v === 'ghost') scrollRef.current.scroll = 0
     if (v !== 'home') {
-      markSeen(v)
       if (returnScrollRef.current == null) returnScrollRef.current = window.scrollY
+      window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' })
     }
     setView(v)
-  }
-
-  const openInScene = (v) => {
-    window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' })
-    navigate(v)
   }
 
   const copyEmail = async () => {
@@ -167,15 +115,6 @@ export function Hero() {
 
   if (!webgl) return <StaticFallback />
 
-  const markers = {
-    about: !seen.about,
-    ghost: !seen.ghost,
-    verve: !seen.verve,
-    contact: !seen.contact,
-    blog: !seen.blog,
-  }
-  const anySeen = Object.keys(seen).length > 0
-
   const socials = [
     { label: 'GH', href: links.github },
     { label: 'IN', href: links.linkedin },
@@ -215,59 +154,43 @@ export function Hero() {
         </button>
 
         <div className="pointer-events-auto flex items-center gap-5">
-          <NavMenu onAbout={() => openInScene('about')} />
-          <div
-            className="flex items-center gap-2 font-mono text-xs tracking-widest"
-            role="group"
-            aria-label="Language"
-          >
-            {['pt', 'en'].map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                aria-pressed={lang === l}
-                className={`px-1 transition-colors ${
-                  lang === l ? 'text-amber' : 'text-paper/50 hover:text-paper'
-                }`}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <NavMenu onAbout={() => navigate('about')} />
         </div>
       </div>
 
-      {/* ─────────── HERO: a cena 3D ─────────── */}
-      <section ref={heroRef} className="relative h-[100dvh] overflow-hidden">
+      {/* ─────────── HERO: cena full-bleed + lockup tipográfico à esquerda ─────────── */}
+      <section ref={heroRef} className="relative min-h-[100dvh] overflow-hidden">
+        {/* A cena 3D é o fundo inteiro; a tela do CRT dentro dela passa o reel
+            dos trabalhos (o "vídeo"). O texto vive por cima, à esquerda. */}
         <div className="absolute inset-0 z-0" aria-hidden="true">
-          <Scene
-            view={view}
-            scrollRef={scrollRef}
-            statsRef={verveStatsRef}
-            onNavigate={navigate}
-            labels={t.labels}
-            idleText={t.verve.idle}
-            reducedMotion={reducedMotion}
-            markers={markers}
-            active={heroNear}
-            dimRef={dimRef}
-          />
+          <Scene view={view} reducedMotion={reducedMotion} active={heroNear} />
         </div>
+        {/* degradê à esquerda: garante leitura da tipografia sobre a cena */}
+        {view === 'home' && (
+          <div
+            className="pointer-events-none absolute inset-0 z-[1]"
+            style={{
+              background:
+                'linear-gradient(100deg, rgba(10,10,15,0.92) 0%, rgba(10,10,15,0.72) 34%, rgba(10,10,15,0.2) 58%, transparent 74%)',
+            }}
+            aria-hidden="true"
+          />
+        )}
 
         <BootLoader />
 
-        {/* Home overlay — lockup tipográfico sobre a janela */}
-        <div className="pointer-events-none absolute inset-0 z-10">
-          <div className="absolute left-[4%] sm:left-[6%] top-[12%]">
-            <p
-              className={`font-accent italic text-3xl sm:text-5xl text-amber ${reveal(
-                view === 'home'
-              )}`}
-            >
+        {/* Lockup tipográfico (a estrela) — sobreposto à cena */}
+        <div
+          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-center px-6 pt-24 sm:px-12 ${
+            view === 'home' ? '' : 'opacity-0'
+          } transition-opacity duration-500`}
+        >
+          <div className="max-w-2xl">
+            <p className={`font-accent italic text-4xl sm:text-6xl text-amber ${reveal(view === 'home')}`}>
               {t.hero.titleTop}
             </p>
             <h1
-              className={`font-poster uppercase leading-[0.85] tracking-tight text-paper text-[15vw] sm:text-[10vw] lg:text-[8.5vw] drop-shadow-[0_6px_28px_rgba(0,0,0,0.65)] ${reveal(
+              className={`mt-1 font-poster uppercase leading-[0.8] tracking-tight text-paper text-[19vw] sm:text-[14vw] lg:text-[11vw] drop-shadow-[0_6px_30px_rgba(0,0,0,0.7)] ${reveal(
                 view === 'home',
                 'delay-150'
               )}`}
@@ -277,69 +200,72 @@ export function Hero() {
               <span className="text-stroke-paper">Peres</span>
             </h1>
             <p
-              className={`mt-4 font-mono text-[10px] sm:text-xs tracking-[0.25em] sm:tracking-[0.35em] text-paper/70 ${reveal(
+              className={`mt-5 font-mono text-[11px] sm:text-sm tracking-[0.3em] sm:tracking-[0.42em] text-paper/85 ${reveal(
                 view === 'home',
                 'delay-300'
               )}`}
             >
               {t.hero.tag}
             </p>
-          </div>
 
-          {/* hint + socials */}
-          {/* no mobile o rodapé fica só com o cue de scroll + socials */}
-          {!anySeen && (
+            {/* faixa de selos: monograma + nota curiosa + ano (vibe carimbo) */}
+            <div className={`mt-7 hidden sm:flex items-stretch gap-5 ${reveal(view === 'home', 'delay-300')}`}>
+              <div className="flex items-stretch border-2 border-paper/60">
+                <div className="flex items-center border-r-2 border-paper/60 px-3 font-poster text-3xl text-paper">
+                  {t.hero.badge.mono}
+                </div>
+                <div className="flex flex-col justify-center px-3 py-1.5 font-mono text-[9px] leading-relaxed tracking-widest text-paper/85">
+                  <span className="font-bold">{t.hero.badge.l1}</span>
+                  <span>{t.hero.badge.l2}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-paper/60" aria-hidden="true">
+                <span className="text-[8px]">●</span>
+                <span className="text-xl">✦</span>
+                <span className="text-[8px]">●</span>
+              </div>
+              <a
+                href={links.portfolioSource ?? links.github}
+                target="_blank"
+                rel="noreferrer"
+                className="pointer-events-auto flex flex-col justify-center border-l-2 border-paper/60 pl-3 font-mono text-[9px] leading-relaxed tracking-widest text-paper/75 hover:text-amber transition-colors"
+              >
+                <span>{t.hero.note.l1}</span>
+                <span className="font-bold">{t.hero.note.l2}</span>
+              </a>
+              <div
+                className="flex items-center font-mono text-xs font-bold tracking-[0.2em] text-paper/70 [writing-mode:vertical-rl]"
+                aria-hidden="true"
+              >
+                2026
+              </div>
+            </div>
+
+            {/* boas-vindas */}
             <p
-              className={`hidden sm:block absolute bottom-6 left-6 sm:left-12 max-w-xs font-mono text-[10px] tracking-widest text-paper/40 ${reveal(
+              className={`mt-7 max-w-lg font-mono text-[10px] sm:text-xs font-bold leading-relaxed tracking-wider text-paper/80 ${reveal(
                 view === 'home',
                 'delay-500'
               )}`}
             >
-              {t.hero.hint}
+              {t.hero.welcome}
             </p>
-          )}
-          <div
-            className={`absolute bottom-6 right-6 sm:right-12 flex items-center gap-6 ${
-              view === 'home' ? 'pointer-events-auto' : ''
-            } ${reveal(view === 'home', 'delay-300')}`}
-          >
-            {socials.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                className="font-mono text-xs tracking-widest text-paper hover:text-amber transition-colors"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {s.label}
-              </a>
-            ))}
-          </div>
 
-          {/* hint de scroll */}
-          <div
-            className={`absolute bottom-5 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 ${reveal(
-              view === 'home',
-              'delay-500'
-            )}`}
-          >
-            <span className="font-mono text-[9px] tracking-[0.3em] text-paper/40">
-              {t.ui.scrollHint}
-            </span>
-            <span
-              className={`text-paper/40 text-xs ${reducedMotion ? '' : 'animate-bounce'}`}
-              aria-hidden="true"
+            {/* convite de idioma — no OUTRO idioma, de propósito */}
+            <button
+              onClick={() => setLang(t.hero.langCta.to)}
+              className={`pointer-events-auto mt-8 inline-flex items-center gap-3 font-accent italic text-xl sm:text-2xl text-paper underline decoration-1 underline-offset-8 hover:text-amber transition-colors ${reveal(
+                view === 'home',
+                'delay-500'
+              )}`}
             >
-              ↓
-            </span>
+              {t.hero.langCta.label}
+              <span aria-hidden="true">{t.hero.langCta.flag}</span>
+            </button>
           </div>
         </div>
 
-        {/* Views da cena */}
-        {view === 'ghost' && <GhostOverlay key="ghost" scrollRef={scrollRef} onNavigate={navigate} />}
-        {view === 'verve' && (
-          <VerveOverlay key="verve" statsRef={verveStatsRef} onNavigate={navigate} />
-        )}
+        {/* View do about: overlay sobre a cena (que já é fullscreen) */}
         {view === 'about' && (
           <AboutOverlay
             key="about"
@@ -356,6 +282,39 @@ export function Hero() {
             }}
           />
         )}
+
+        {/* rodapé do hero: socials à direita, cue de scroll no centro */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-5 sm:px-12">
+          <div className="w-16" aria-hidden="true" />
+          <div className={`flex flex-col items-center gap-1 ${reveal(view === 'home', 'delay-500')}`}>
+            <span className="font-mono text-[9px] tracking-[0.3em] text-paper/40">
+              {t.ui.scrollHint}
+            </span>
+            <span
+              className={`text-paper/40 text-xs ${reducedMotion ? '' : 'animate-bounce'}`}
+              aria-hidden="true"
+            >
+              ↓
+            </span>
+          </div>
+          <div
+            className={`flex items-center gap-6 ${
+              view === 'home' ? 'pointer-events-auto' : ''
+            } ${reveal(view === 'home', 'delay-300')}`}
+          >
+            {socials.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                className="font-mono text-xs tracking-widest text-paper hover:text-amber transition-colors"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {s.label}
+              </a>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ─────────── PÁGINA: seções roláveis ─────────── */}
@@ -416,12 +375,6 @@ export function Hero() {
                   >
                     {t.ghost.ready.play}
                   </a>
-                  <button
-                    onClick={() => openInScene('ghost')}
-                    className="border border-amber text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
-                  >
-                    {t.ui.openInScene}
-                  </button>
                   <a
                     href={links.ghostSource}
                     target="_blank"
@@ -473,12 +426,6 @@ export function Hero() {
                 {t.verve.p2Suffix}
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <button
-                  onClick={() => openInScene('verve')}
-                  className="border border-amber text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
-                >
-                  {t.ui.openInScene}
-                </button>
                 <a
                   href={links.verveSource}
                   target="_blank"
