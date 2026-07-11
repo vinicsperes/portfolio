@@ -460,8 +460,8 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         <meshStandardMaterial map={woodTex} roughness={0.75} />
       </mesh>
 
-      {/* ─── Rug (horizontal, no vão livre à frente da mesa) ─── */}
-      <mesh position={[0.2, -2.09, 2.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      {/* ─── Rug (horizontal, empurrado pra trás — encostado sob a mesa/parede) ─── */}
+      <mesh position={[0.2, -2.09, -1.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[9.2, 6.2]} />
         <meshStandardMaterial map={rugTex} roughness={1} transparent />
       </mesh>
@@ -478,8 +478,8 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         <meshStandardMaterial color={WOOD_DARK} roughness={0.7} />
       </mesh>
 
-      {/* ─── Desk (mais funda: o PC precisa caber inteiro) ─── */}
-      <group position={[3, -2.1, -2]}>
+      {/* ─── Desk (mais funda: o PC precisa caber inteiro) — encostada na parede ─── */}
+      <group position={[3, -2.1, -3.5]}>
         {/* Table top */}
         <RoundedBox args={[8, 0.18, 4.4]} radius={0.03} position={[0, 2.1, 0]} receiveShadow castShadow>
           <meshStandardMaterial color={WOOD_DARK} roughness={0.55} />
@@ -501,10 +501,10 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       </group>
 
       {/* ─── Desk props ─── */}
-      <DeskGlow position={[5.8, 1.2, -2.4]} />
-      <Books position={[-0.5, 0.1, -2.9]} rotation={[0, 0.25, 0]} />
-      <Mug position={[0.55, 0.09, -1.35]} />
-      <Notepad position={[5.2, 0.1, -1.6]} rotation={[0, 0.35, 0]} />
+      <DeskGlow position={[5.8, 1.2, -3.9]} />
+      <Books position={[-0.5, 0.1, -4.4]} rotation={[0, 0.25, 0]} />
+      <Mug position={[0.55, 0.09, -2.85]} />
+      <Notepad position={[5.2, 0.1, -3.1]} rotation={[0, 0.35, 0]} />
 
       {/* ─── Cozy: velas no parapeito da janela ─── */}
       <CandleCluster position={[-2.55, 1.21, -5.68]} />
@@ -523,20 +523,20 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         <pointLight position={[0, 0.4, 1.2]} color="#ffd090" intensity={1.6} distance={4} decay={2} />
       </Hotspot>
 
-      {/* ─── Window (panorâmica, atrás do lockup do título) ─── */}
-      <group position={[-5.2, 3.0, -5.9]}>
+      {/* ─── Window (panorâmica, maior, atrás do lockup do título) ─── */}
+      <group position={[-5.2, 3.4, -5.9]}>
         {/* Outer frame */}
-        <RoundedBox args={[7.4, 3.6, 0.2]} radius={0.05} castShadow>
+        <RoundedBox args={[8.8, 4.5, 0.2]} radius={0.05} castShadow>
           <meshStandardMaterial color="#2d3340" roughness={0.5} />
         </RoundedBox>
         {/* Night view */}
         <mesh position={[0, 0, 0.11]}>
-          <planeGeometry args={[6.9, 3.05]} />
+          <planeGeometry args={[8.2, 3.9]} />
           <meshBasicMaterial map={nightTex} toneMapped={false} />
         </mesh>
         {/* leve reflexo de vidro */}
         <mesh position={[0, 0, 0.12]}>
-          <planeGeometry args={[6.9, 3.05]} />
+          <planeGeometry args={[8.2, 3.9]} />
           <meshStandardMaterial
             color="#88aacc"
             roughness={0.08}
@@ -546,16 +546,16 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
           />
         </mesh>
         {/* Cross bars: 1 horizontal + 2 verticais (3 panos) */}
-        <RoundedBox args={[7.0, 0.09, 0.08]} radius={0.02} position={[0, 0, 0.13]}>
+        <RoundedBox args={[8.4, 0.09, 0.08]} radius={0.02} position={[0, 0, 0.13]}>
           <meshStandardMaterial color="#1e2530" roughness={0.4} metalness={0.3} />
         </RoundedBox>
-        {[-1.16, 1.16].map((x) => (
-          <RoundedBox key={x} args={[0.09, 3.15, 0.08]} radius={0.02} position={[x, 0, 0.13]}>
+        {[-1.37, 1.37].map((x) => (
+          <RoundedBox key={x} args={[0.09, 4.0, 0.08]} radius={0.02} position={[x, 0, 0.13]}>
             <meshStandardMaterial color="#1e2530" roughness={0.4} metalness={0.3} />
           </RoundedBox>
         ))}
         {/* Window sill */}
-        <RoundedBox args={[7.8, 0.1, 0.4]} radius={0.02} position={[0, -1.85, 0.15]} castShadow>
+        <RoundedBox args={[9.2, 0.1, 0.4]} radius={0.02} position={[0, -2.25, 0.15]} castShadow>
           <meshStandardMaterial color="#2d3340" roughness={0.5} />
         </RoundedBox>
       </group>

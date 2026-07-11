@@ -7,9 +7,9 @@ export const INTRO_START = { position: [-12, 7.5, 16], lookAt: [0, 1.5, -2] }
 
 export const VIEWS = {
   home: {
-    // um passo à frente: menos parede sobrando nas laterais
-    camera: { position: [0, 3.15, 9.6], lookAt: [0, 1.05, -0.4] },
-    cameraPortrait: { position: [0, 3.5, 15], lookAt: [1.2, 1, -1], fov: 50 },
+    // mais um passo à frente: entra no quarto, mesa/tapete encostados na parede
+    camera: { position: [0, 3.05, 7.7], lookAt: [0, 1.15, -1.4] },
+    cameraPortrait: { position: [0, 3.4, 12.5], lookAt: [1.0, 1.1, -1.6], fov: 50 },
   },
   // Zoom no porta-retrato apoiado na prateleira — o "sobre mim" mora na cena.
   // Leve 3/4 (vindo da esquerda): retrato + prateleira à direita, texto à esquerda

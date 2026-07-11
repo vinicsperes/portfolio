@@ -161,7 +161,7 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
 
         {/* RetroPC on the desk — clicável → verve (terminal jogável) */}
         <Hotspot
-          position={[3.2, 0, -2.7]}
+          position={[3.2, 0, -4.2]}
           rotation-y={-0.22}
           label={labels?.pc}
           labelPosition={[0, 4.5, 0]}
