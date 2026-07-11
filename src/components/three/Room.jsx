@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBox, useTexture } from '@react-three/drei'
 import { Hotspot } from './Hotspot.jsx'
+import { CandleCluster } from './Candles.jsx'
 
 const WOOD = '#5c3a24'
 const WOOD_DARK = '#3a2414'
@@ -361,17 +362,16 @@ function Notepad({ position, rotation = [0, 0, 0] }) {
 /** Prateleiras suspensas na parede — hotspot do blog. */
 function WallShelves() {
   const shelfBooks = [
-    // prateleira de cima
+    // prateleira de cima: só um par no canto — o porta-retrato é o protagonista
     [
       { w: 0.16, h: 0.5, color: '#2a3a4a', lean: 0 },
-      { w: 0.2, h: 0.55, color: '#4a2a20', lean: 0 },
-      { w: 0.14, h: 0.48, color: '#2a4a30', lean: 0 },
-      { w: 0.18, h: 0.52, color: '#3a2a4a', lean: -0.22 },
+      { w: 0.2, h: 0.55, color: '#4a2a20', lean: -0.2 },
     ],
-    // prateleira de baixo
+    // prateleira de baixo concentra os livros
     [
       { w: 0.2, h: 0.52, color: '#4a3a1a', lean: 0 },
       { w: 0.16, h: 0.46, color: '#1a3a3a', lean: 0 },
+      { w: 0.14, h: 0.48, color: '#2a4a30', lean: 0 },
       { w: 0.18, h: 0.55, color: '#4a1a2a', lean: 0.2 },
     ],
   ]
@@ -506,9 +506,12 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       <Mug position={[0.55, 0.09, -1.35]} />
       <Notepad position={[5.2, 0.1, -1.6]} rotation={[0, 0.35, 0]} />
 
-      {/* ─── Wall shelves (clicável → blog) ─── */}
+      {/* ─── Cozy: velas no parapeito da janela ─── */}
+      <CandleCluster position={[-2.55, 1.21, -5.68]} />
+
+      {/* ─── Wall shelves (clicável → blog), à esquerda entre a janela e o PC ─── */}
       <Hotspot
-        position={[6.2, 2.65, -5.78]}
+        position={[0.55, 2.62, -5.78]}
         label={labels.shelf}
         labelPosition={[0, -0.85, 0.25]}
         onActivate={() => onNavigate?.('blog')}
@@ -557,40 +560,51 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         </RoundedBox>
       </group>
 
-      {/* ─── Pôster colagem GHOSTFX (parede, acima da mesa) ─── */}
-      <group position={[3.6, 3.95, -5.93]} rotation-z={-0.012}>
-        <RoundedBox args={[2.34, 1.4, 0.05]} radius={0.01} castShadow>
-          <meshStandardMaterial color="#0d0d0d" roughness={0.7} />
-        </RoundedBox>
-        <mesh position={[0, 0, 0.03]}>
-          <planeGeometry args={[2.22, 1.25]} />
-          <meshStandardMaterial map={collageTex} roughness={0.85} />
+      {/* ─── Pôster colagem GHOSTFX: papel colado direto na parede (sem
+          moldura), levemente torto, com fita adesiva nos cantos ─── */}
+      <group position={[3.6, 3.95, -5.965]} rotation-z={-0.028}>
+        <mesh castShadow>
+          <planeGeometry args={[2.5, 1.42]} />
+          <meshStandardMaterial map={collageTex} roughness={0.92} />
         </mesh>
+        {[
+          [-1.17, 0.63, 0.7],
+          [1.17, 0.63, -0.7],
+          [-1.17, -0.63, -0.7],
+          [1.17, -0.63, 0.7],
+        ].map(([x, y, rz], i) => (
+          <mesh key={i} position={[x, y, 0.006]} rotation-z={rz}>
+            <planeGeometry args={[0.32, 0.11]} />
+            <meshStandardMaterial color="#d8d4c8" transparent opacity={0.5} roughness={0.45} />
+          </mesh>
+        ))}
       </group>
 
-      {/* ─── Painting (clicável → about, na parede direita da janela) ─── */}
+      {/* ─── Porta-retrato (clicável → about): em pé, apoiado na prateleira
+          de cima, levemente reclinado contra a parede ─── */}
       <Hotspot
-        position={[1.0, 3.35, -5.92]}
+        position={[0.85, 3.74, -5.72]}
+        rotation-x={-0.07}
         label={labels.painting}
-        labelPosition={[0, -1.6, 0.2]}
+        labelPosition={[0, 0.62, 0.2]}
         onActivate={() => onNavigate?.('about')}
         disabled={activeView === 'about'}
         marker={markers.about}
       >
         {(hovered) => (
           <>
-            {/* Frame */}
-            <RoundedBox args={[2.75, 1.95, 0.18]} radius={0.04} castShadow>
+            {/* Frame pequeno, de porta-retrato */}
+            <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
               <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
             </RoundedBox>
             {/* passe-partout */}
-            <mesh position={[0, 0, 0.1]}>
-              <planeGeometry args={[2.5, 1.72]} />
+            <mesh position={[0, 0, 0.08]}>
+              <planeGeometry args={[0.94, 0.66]} />
               <meshStandardMaterial color="#e8e2d2" roughness={1} />
             </mesh>
             {/* foto: primeira apresentação — a origem do canto musical */}
-            <mesh position={[0, 0, 0.11]}>
-              <planeGeometry args={[2.3, 1.54]} />
+            <mesh position={[0, 0, 0.09]}>
+              <planeGeometry args={[0.86, 0.57]} />
               <meshStandardMaterial map={kidTex} roughness={0.9} />
             </mesh>
           </>

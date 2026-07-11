@@ -1,6 +1,6 @@
 import { Suspense, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { ContactShadows, Environment, PerformanceMonitor, useProgress } from '@react-three/drei'
+import { ContactShadows, Environment, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
@@ -8,7 +8,6 @@ import { GhostPedal } from './GhostPedal.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { Hotspot } from './Hotspot.jsx'
-import { Wire } from './pedal/parts'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 
@@ -114,7 +113,7 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
         <fog attach="fog" args={['#0a0a0f', 22, 55]} />
 
         {/* IBL environment for realistic reflections */}
-        <Environment preset="apartment" environmentIntensity={0.15} />
+        <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.15} />
 
         {/* cool fill light */}
         <ambientLight intensity={0.3} color="#8890b0" />
@@ -182,48 +181,29 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
           />
         </Hotspot>
 
-        {/* Canto musical: pedal Ghost no chão + amp + guitarra — clicável → ghost */}
-        <Hotspot
-          label={labels?.ghost}
-          labelPosition={[-2.35, -0.85, -3.3]}
-          onActivate={() => onNavigate?.('ghost')}
-          disabled={view === 'ghost'}
-          marker={showMarkers && markers?.ghost}
-        >
-          <group position={[-2.35, -1.91, -3.3]} rotation-y={0.45} scale={0.4}>
-            <GhostPedal scrollRef={scrollRef} active={view === 'ghost'} />
-          </group>
-          <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
-          <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />
-          {/* cabo pedal → amp, deitado no chão até o jack frontal do amp */}
-          <Wire
-            start={[-1.98, -1.95, -3.12]}
-            end={[-2.72, -1.82, -4.28]}
-            mids={[
-              [-1.7, -2.08, -3.55],
-              [-2.1, -2.08, -4.05],
-            ]}
-            color="#2a2a30"
-            r={0.026}
-          />
-          <ContactShadows
-            position={[-2.9, -2.09, -3.9]}
-            opacity={0.55}
-            scale={7}
-            blur={2.2}
-            far={3}
-            color="#000000"
-            frames={1}
-          />
-          {/* luz de canto âmbar — dá leitura ao clearcoat do pedal no escuro */}
-          <pointLight
-            position={[-1.4, -0.5, -2.2]}
-            color="#f5a623"
-            intensity={2.4}
-            distance={7}
-            decay={2}
-          />
-        </Hotspot>
+        {/* Canto musical: pedal no chão (easter egg: clique = pulso abre-fecha) + amp + vinis */}
+        <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
+          <GhostPedal scrollRef={scrollRef} active={view === 'ghost'} />
+        </group>
+        <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
+        <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />
+        <ContactShadows
+          position={[-2.9, -2.09, -3.9]}
+          opacity={0.55}
+          scale={7}
+          blur={2.2}
+          far={3}
+          color="#000000"
+          frames={1}
+        />
+        {/* luz de canto âmbar — dá leitura ao clearcoat do pedal no escuro */}
+        <pointLight
+          position={[-1.4, -0.5, -2.2]}
+          color="#f5a623"
+          intensity={2.4}
+          distance={7}
+          decay={2}
+        />
 
         {/* Post-processing for cinematic realism */}
         <EffectComposer multisampling={2}>
@@ -236,6 +216,10 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
           <Noise opacity={0.025} />
           <Vignette eskil={false} offset={0.15} darkness={0.7} />
         </EffectComposer>
+
+        {/* compila shaders/texturas ANTES do primeiro frame — o loader só
+            libera com a cena pronta de verdade */}
+        <Preload all />
       </Suspense>
     </Canvas>
   )

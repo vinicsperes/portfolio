@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
 import {
+  DoubleSide,
   FrontSide,
   MathUtils,
   Path,
@@ -252,8 +253,10 @@ export function PedalBody({
       {!circuitOnly &&
         (split ? (
           <>
+            {/* base opaca e DoubleSide: o clipping abre o "tanque" e sem as
+                faces internas a parede do fundo some (parece transparente) */}
             <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
-              {chassisMat(splitOp, [clipBottom], FrontSide)}
+              {chassisMat(splitOp, [clipBottom], DoubleSide, !xray)}
             </RoundedBox>
             <group position={[0, LY.top, 0]}>
               <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>

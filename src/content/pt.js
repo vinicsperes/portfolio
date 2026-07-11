@@ -3,17 +3,17 @@ export const pt = {
     tag: '> DEV CRIATIVO FULLSTACK',
     titleTop: 'Oi! Eu sou',
     titleBottom: 'o Vinícius',
-    hint: 'explore o quarto — os objetos contam a história',
+    hint: 'explore o quarto: os objetos contam a história',
   },
 
   about: {
     titleTop: 'Sobre',
     titleBottom: 'Mim',
-    calloutTop: 'HEY! PODE ME CHAMAR DE',
-    nickname: 'Vini',
-    // TODO(vinicius): substituir pela sua bio real
-    p1: 'Sou um dev criativo fullstack que gosta de construir coisas que você pode tocar: um pedal de guitarra que vive no navegador, um teste de digitação que vive no terminal, um portfólio que vive dentro de um quarto.',
-    p2: 'Meu terreno favorito é o espaço entre design e engenharia — React, Three.js, WebGL e Web Audio de um lado, Rust e curiosidade por sistemas do outro.',
+    headTop: 'A MÚSICA',
+    headBottom: 'VEIO PRIMEIRO.',
+    // TODO(vinicius): ajustar com a sua história real
+    p1: 'O moleque do quadro sou eu, numa das primeiras vezes que subi num palco. A música chegou antes do código e nunca foi embora: é dela que vem o meu jeito de construir, de ouvido, no detalhe, repetindo até soar certo.',
+    p2: 'Hoje sou dev fullstack e moro no espaço entre design e engenharia: produto e interface no dia a dia, áudio, 3D e terminal nas horas vagas. Se dá pra tocar, girar ou apertar, provavelmente saiu daqui.',
     cta: 'VAMOS CONVERSAR',
   },
 
@@ -23,16 +23,19 @@ export const pt = {
     subtitle: 'UM PEDAL DE GUITARRA NO SEU NAVEGADOR',
     intro:
       'Plugue, pise para armar e esculpa seu timbre com drive, echo, modulação e reverb num pedal 3D em tempo real cujos knobs você realmente gira. Sem instalação, sem plugins, sem app nativo: toda a cadeia de sinal é construída à mão na Web Audio API.',
-    scrollHint: 'ROLE PARA ABRIR O CHASSI ↓',
-    underHood: {
-      title: 'Por dentro',
-      p1: 'Sob a tampa translúcida há uma placa de circuito completa: op amps DIP, resistores de carbono, eletrolíticos com marcações reais, um brick de reverb — tudo disposto a partir de uma referência analógica, até o silkscreen.',
-      p2: 'Conforme você rola, o pedal no chão se abre, revelando seus componentes internos. Cada peça é meticulosamente modelada e interativa.',
-      badge: 'WEB AUDIO · 3D',
+    scene: {
+      hint: 'ROLE ↓',
+    },
+    features: {
+      knobs: {
+        title: 'Knobs de verdade',
+        p: 'Modelados peça por peça a partir do hardware de referência, do knob ao circuito. No app, você gira cada um.',
+      },
     },
     presets: {
       title: 'Seis presets com voz própria',
-      p: 'Cada preset é um pedal diferente por dentro, não uma posição de knob salva. Trocar de rig troca a topologia do drive, a voz do delay, o circuito de modulação, o gabinete e o reverb — e re-tematiza a interface inteira.',
+      short: 'Cada um é um pedal diferente por dentro, não uma posição de knob salva.',
+      p: 'Cada preset é um pedal diferente por dentro, não uma posição de knob salva. Trocar de rig troca a topologia do drive, a voz do delay, o circuito de modulação, o gabinete e o reverb, e re-tematiza a interface inteira.',
       list: [
         { name: 'GHOST', desc: 'drive com médios empurrados que limpa no volume' },
         { name: 'DOOM', desc: 'muralha de fuzz afinado grave' },
@@ -56,7 +59,7 @@ export const pt = {
     p2Prefix: 'Feito com Rust, ',
     p2Suffix: '. Um único binário auto-contido.',
     source: 'CÓDIGO FONTE',
-    liveHint: 'A DIGITAÇÃO NO MONITOR É AO VIVO — É SÓ COMEÇAR',
+    liveHint: 'A DIGITAÇÃO NO MONITOR É AO VIVO: É SÓ COMEÇAR',
     stats: { wpm: 'WPM', acc: 'PREC', time: 'TEMPO', best: 'RECORDE' },
     idle: {
       line1: 'um teste de digitação no seu terminal',
@@ -78,7 +81,12 @@ export const pt = {
     title: 'Blog',
     soon: 'EM BREVE',
     soonSub:
-      'Notas de bastidores sobre como esses projetos são feitos — Web Audio por dentro, 3D na web, Rust no terminal.',
+      'Notas de bastidores sobre como esses projetos são feitos: Web Audio por dentro, 3D na web, Rust no terminal.',
+  },
+
+  projects: {
+    title: 'O que eu construo',
+    sub: 'Daqui pra baixo, os projetos. Cada um tem demo ao vivo, direto na página.',
   },
 
   sections: {
@@ -98,8 +106,6 @@ export const pt = {
 
   ui: {
     backToRoom: '← VOLTAR AO QUARTO',
-    switchToVerve: 'TROCAR PARA VERVE →',
-    switchToGhost: 'TROCAR PARA GHOST →',
     openInScene: 'ABRIR NA CENA →',
     scrollHint: 'ROLE PARA EXPLORAR',
     footer: 'feito com React, Three.js e um CRT em chamas',

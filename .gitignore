@@ -17,6 +17,10 @@ dist-ssr
 .env.*
 .zenith
 
+# Tooling local (fora do tracking)
+.agents/
+skills-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

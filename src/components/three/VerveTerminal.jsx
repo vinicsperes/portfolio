@@ -81,6 +81,17 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
       best: loadBest(),
     }
     confettiRef.current = []
+    // zera o espelho na hora: o fogo da cena lê `typing` daqui
+    if (statsRef) {
+      statsRef.current = {
+        wpm: 0,
+        acc: 100,
+        time: 0,
+        best: stateRef.current.best,
+        finished: false,
+        typing: false,
+      }
+    }
   }
 
   const computeStats = (s, now) => {
@@ -193,6 +204,25 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
 
+  // paleta fiel ao TUI real do verve (terminal escuro, acento laranja)
+  const UI = {
+    bg: '#141013',
+    border: '#413c3e',
+    dim: '#6f6a66',
+    upcoming: '#565250',
+    current: '#8d8781',
+    bright: '#ddd8cf',
+    wrong: '#ff7a7a',
+    accent: '#ff6b2b',
+  }
+
+  const drawDot = (x, y, r = 7) => {
+    ctx.fillStyle = UI.accent
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
   const drawLive = () => {
     const s = stateRef.current
     if (!s) return
@@ -207,55 +237,50 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
         time: s.startTime ? (now - s.startTime) / 1000 : 0,
         best: s.best,
         finished: s.finished,
+        typing: !!s.startTime,
       }
     }
 
     // background (scanlines vêm do crtMaterial)
-    ctx.fillStyle = '#070b08'
+    ctx.fillStyle = UI.bg
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    const pad = 46
+    const pad = 56
     ctx.textBaseline = 'top'
 
-    // title
-    ctx.fillStyle = '#4dff7c'
-    ctx.font = '700 40px "IBM Plex Mono", monospace'
-    ctx.fillText('verve', pad, pad)
-    ctx.fillStyle = '#3a6f4a'
-    ctx.font = '500 18px "IBM Plex Mono", monospace'
-    ctx.fillText('v0.1.0  ·  type the words', pad + 130, pad + 16)
+    // header: ● verve   5 / 25  (como o TUI real)
+    drawDot(pad + 7, pad + 18)
+    ctx.fillStyle = UI.bright
+    ctx.font = '700 34px "IBM Plex Mono", monospace'
+    ctx.fillText('verve', pad + 30, pad)
+    ctx.fillStyle = UI.dim
+    ctx.font = '500 28px "IBM Plex Mono", monospace'
+    ctx.fillText(`${Math.min(s.wordIndex + 1, s.words.length)} / ${s.words.length}`, pad + 170, pad + 4)
 
-    // stats line
-    const statsY = pad + 70
-    const t = s.startTime ? ((now - s.startTime) / 1000).toFixed(1) : '0.0'
-    const line = `WPM ${Math.round(stats.wpm).toString().padStart(3, ' ')}   ACC ${Math.round(stats.acc)
-      .toString()
-      .padStart(3, ' ')}%   TIME ${t.padStart(5, ' ')}s   BEST ${s.best.toString().padStart(3, ' ')}`
-    ctx.fillStyle = '#9be8b4'
-    ctx.font = '600 24px "IBM Plex Mono", monospace'
-    ctx.fillText(line, pad, statsY)
+    // caixa com borda onde vivem as palavras
+    const boxX = pad
+    const boxY = pad + 70
+    const boxW = canvas.width - pad * 2
+    const boxH = 440
+    ctx.strokeStyle = UI.border
+    ctx.lineWidth = 2
+    ctx.strokeRect(boxX, boxY, boxW, boxH)
 
-    if (s.finished) {
-      ctx.fillStyle = '#f5a623'
-      ctx.font = '700 28px "IBM Plex Mono", monospace'
-      ctx.fillText('— run complete · press TAB to restart —', pad, statsY + 44)
-    }
-
-    // words area
-    const startY = statsY + 110
-    ctx.font = '600 34px "IBM Plex Mono", monospace'
-    const lineH = 52
-    const maxX = canvas.width - pad
-    let x = pad
-    let y = startY
+    // words area (dentro da caixa)
+    const inPad = 34
+    ctx.font = '500 32px "IBM Plex Mono", monospace'
+    const lineH = 50
+    const maxX = boxX + boxW - inPad
+    let x = boxX + inPad
+    let y = boxY + inPad
 
     const drawChar = (ch, color, underline) => {
       const w = ctx.measureText(ch).width
       ctx.fillStyle = color
       ctx.fillText(ch, x, y)
       if (underline) {
-        ctx.fillStyle = '#ff4d4d'
-        ctx.fillRect(x, y + 40, w, 3)
+        ctx.fillStyle = UI.wrong
+        ctx.fillRect(x, y + 38, w, 3)
       }
       x += w
     }
@@ -268,41 +293,59 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
       // measure whole word first to know if it fits
       const wordW = ctx.measureText(target).width
       const gap = ctx.measureText(' ').width
-      if (x + wordW > maxX && x > pad) {
-        x = pad
+      if (x + wordW > maxX && x > boxX + inPad) {
+        x = boxX + inPad
         y += lineH
       }
-      if (y > canvas.height - 60) break
+      if (y > boxY + boxH - inPad - 40) break
 
       for (let c = 0; c < target.length; c++) {
-        let color = '#33523f' // not yet typed
+        let color = UI.upcoming // not yet typed
         let underline = false
         if (c < typed.length) {
-          if (typed[c] === target[c]) color = '#4dff7c'
+          if (typed[c] === target[c]) color = UI.bright
           else {
-            color = '#ff7a7a'
+            color = UI.wrong
             underline = true
           }
         } else if (isCurrent) {
-          color = '#5fae74'
+          color = UI.current
         }
         drawChar(target[c], color, underline)
       }
       // extra typed chars beyond target length (errors)
       if (typed.length > target.length) {
         for (let c = target.length; c < typed.length; c++) {
-          drawChar(typed[c], '#ff7a7a', true)
+          drawChar(typed[c], UI.wrong, true)
         }
       }
       if (isCurrent && !s.finished) {
-        // caret
+        // caret vertical, como no terminal
         const caretX = x
         if (Math.floor(now / 530) % 2 === 0) {
-          ctx.fillStyle = '#f5a623'
-          ctx.fillRect(caretX, y, 3, 38)
+          ctx.fillStyle = UI.bright
+          ctx.fillRect(caretX + 1, y - 2, 3, 40)
         }
       }
       x += gap
+    }
+
+    // rodapé: ● 84 wpm  ·  4s
+    const footY = boxY + boxH + 40
+    const t = s.startTime ? Math.round((now - s.startTime) / 1000) : 0
+    drawDot(pad + 7, footY + 16)
+    ctx.fillStyle = UI.bright
+    ctx.font = '600 30px "IBM Plex Mono", monospace'
+    const wpmStr = `${Math.round(stats.wpm)} wpm`
+    ctx.fillText(wpmStr, pad + 30, footY)
+    ctx.fillStyle = UI.dim
+    const wpmW = ctx.measureText(wpmStr).width
+    ctx.fillText(`  ·  ${t}s`, pad + 30 + wpmW, footY)
+
+    if (s.finished) {
+      ctx.fillStyle = UI.accent
+      ctx.font = '600 26px "IBM Plex Mono", monospace'
+      ctx.fillText('run complete · TAB restarts', pad + 300, footY + 2)
     }
 
     // confetti
@@ -333,43 +376,49 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
   }
 
   const drawIdle = (now) => {
-    ctx.fillStyle = '#070b08'
+    ctx.fillStyle = UI.bg
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     const pad = 64
     ctx.textBaseline = 'top'
 
-    // logo grande
-    ctx.fillStyle = '#4dff7c'
-    ctx.font = '700 110px "IBM Plex Mono", monospace'
-    ctx.fillText('verve', pad, 140)
+    // header como o TUI real: ● verve
+    drawDot(pad + 9, pad + 24, 9)
+    ctx.fillStyle = UI.bright
+    ctx.font = '700 46px "IBM Plex Mono", monospace'
+    ctx.fillText('verve', pad + 38, pad)
+    ctx.fillStyle = UI.dim
+    ctx.font = '500 26px "IBM Plex Mono", monospace'
+    ctx.fillText(idleText?.line1 ?? 'a typing test in your terminal', pad, pad + 76)
 
-    ctx.fillStyle = '#3a6f4a'
-    ctx.font = '500 30px "IBM Plex Mono", monospace'
-    ctx.fillText(idleText?.line1 ?? 'a typing test in your terminal', pad, 290)
+    // caixa com digitação fantasma em loop
+    const boxY = pad + 140
+    const boxH = 300
+    ctx.strokeStyle = UI.border
+    ctx.lineWidth = 2
+    ctx.strokeRect(pad, boxY, canvas.width - pad * 2, boxH)
 
-    // digitação fantasma em loop
     const CYCLE = 2400
     const word = IDLE_WORDS[Math.floor(now / CYCLE) % IDLE_WORDS.length]
     const prog = (now % CYCLE) / CYCLE
     const shown = word.slice(0, Math.floor(Math.min(1, prog * 1.6) * word.length))
-    ctx.fillStyle = '#33523f'
-    ctx.font = '600 44px "IBM Plex Mono", monospace'
-    ctx.fillText('> ', pad, 420)
-    ctx.fillStyle = '#4dff7c'
-    ctx.fillText(shown, pad + 56, 420)
+    ctx.font = '500 40px "IBM Plex Mono", monospace'
+    ctx.fillStyle = UI.bright
+    ctx.fillText(shown, pad + 40, boxY + 44)
+    ctx.fillStyle = UI.upcoming
+    ctx.fillText(word.slice(shown.length), pad + 40 + ctx.measureText(shown).width, boxY + 44)
     if (Math.floor(now / 530) % 2 === 0) {
       const w = ctx.measureText(shown).width
-      ctx.fillStyle = '#f5a623'
-      ctx.fillRect(pad + 56 + w + 6, 420, 4, 44)
+      ctx.fillStyle = UI.bright
+      ctx.fillRect(pad + 40 + w + 4, boxY + 42, 3, 46)
     }
 
     // convite
-    ctx.fillStyle = '#f5a623'
-    ctx.font = '600 32px "IBM Plex Mono", monospace'
+    ctx.fillStyle = UI.accent
+    ctx.font = '600 30px "IBM Plex Mono", monospace'
     const cta = idleText?.cta ?? 'click the computer to play_'
     const blinkOn = Math.floor(now / 600) % 2 === 0
-    ctx.fillText(blinkOn ? cta : cta.replace(/_$/, ' '), pad, 620)
+    ctx.fillText(blinkOn ? cta : cta.replace(/_$/, ' '), pad, boxY + boxH + 48)
 
     texture.needsUpdate = true
   }
@@ -377,8 +426,10 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
   useFrame(({ clock }, delta) => {
     if (crt.current) {
       crt.current.uTime = clock.elapsedTime
-      // no modo live o sangramento de fogo do shader acalma junto com o fogo
-      crt.current.uHeat = THREE.MathUtils.damp(crt.current.uHeat, mode === 'live' ? 0.25 : 1, 2.5, delta)
+      // no close do verve o fogo apaga; o sangramento só volta (pequeno)
+      // quando a digitação começa — acompanha o fogo da cena
+      const heat = mode === 'live' ? (stateRef.current?.startTime ? 0.3 : 0) : 1
+      crt.current.uHeat = THREE.MathUtils.damp(crt.current.uHeat, heat, 2.5, delta)
     }
     if (mode === 'live') {
       // ~30fps: o upload da textura 1024×800 por frame é o gargalo

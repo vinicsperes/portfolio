@@ -78,8 +78,8 @@ export const FireMaterial = shaderMaterial(
 )
 
 /**
- * Tela CRT: fósforo verde, linhas de "código" fake, scanlines,
- * banda rolante, flicker e sangramento laranja do fogo no topo.
+ * Tela CRT: tubo escuro quente, linhas de "código" fake, scanlines,
+ * mancha laranja rolante, flicker e sangramento do fogo no topo.
  */
 export const CRTMaterial = shaderMaterial(
   { uTime: 0, uMap: null, uHasMap: 0, uHeat: 1 },
@@ -114,7 +114,7 @@ export const CRTMaterial = shaderMaterial(
       float glitch = step(0.96, hash(vec2(rowSeed, floor(uTime * 6.0))));
       uv.x = fract(uv.x + glitch * (hash(vec2(rowSeed, 1.0)) - 0.5) * 0.2);
 
-      vec3 col = vec3(0.01, 0.05, 0.02);
+      vec3 col = vec3(0.035, 0.02, 0.015);
 
       if (uHasMap > 0.5) {
         // We have a texture! Use it as the base color
@@ -129,11 +129,11 @@ export const CRTMaterial = shaderMaterial(
         col += vec3(0.18, 1.0, 0.45) * text * 0.85;
       }
 
-      // scanlines + banda rolante
+      // scanlines + mancha laranja rolante (cor do acento do verve, não verde)
       col *= 0.78 + 0.22 * sin(uv.y * 320.0);
       float band = smoothstep(0.0, 0.25, fract(uv.y - uTime * 0.12)) *
                    smoothstep(0.5, 0.25, fract(uv.y - uTime * 0.12));
-      col += vec3(0.02, 0.1, 0.04) * band;
+      col += vec3(0.16, 0.06, 0.018) * band;
 
       // flicker global
       col *= 0.85 + 0.15 * hash(vec2(floor(uTime * 24.0), 3.0));

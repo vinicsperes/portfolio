@@ -12,8 +12,10 @@ export function useReveal(threshold = 0.25) {
     const el = ref.current
     if (!el) return
     const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => {
+        // qualquer entrada do batch intersectando conta — entries[0] pode ser
+        // uma transição antiga escondendo a mais recente
+        if (entries.some((e) => e.isIntersecting)) {
           setVisible(true)
           io.disconnect()
         }

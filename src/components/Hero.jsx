@@ -2,21 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Scene } from './three/Scene.jsx'
 import { GhostOverlay } from './GhostOverlay.jsx'
 import { VerveOverlay } from './VerveOverlay.jsx'
+import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
 import { NavMenu } from './NavMenu.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
 import { SectionPedal } from './SectionPedal.jsx'
+import { GhostCards, GhostSectionBg } from './GhostCards.jsx'
 import { VerveDemo } from './VerveDemo.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { useReveal } from '../hooks/useReveal.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
-import { useSectionProgress } from '../hooks/useSectionProgress.js'
-import { links, skills } from '../content/index.js'
+import { links } from '../content/index.js'
 
-// views com câmera própria: só os demos jogáveis; o resto vira âncora de seção
-const VALID_VIEWS = ['home', 'ghost', 'verve']
-const SECTION_TARGETS = ['about', 'blog', 'contact']
+// views com câmera própria (demos jogáveis + quadro do about); o resto é âncora de seção
+const VALID_VIEWS = ['home', 'ghost', 'verve', 'about']
+const SECTION_TARGETS = ['blog', 'contact']
 const SEEN_KEY = 'vp.seen'
 const GREEN = '#16a030'
 const EMBER = '#ff6b2b'
@@ -67,11 +68,17 @@ export function Hero() {
 
   const scrollRef = useRef({ scroll: 0 })
   const verveStatsRef = useRef({ wpm: 0, acc: 100, time: 0, best: 0, finished: false })
+  // onde a página estava antes de abrir uma view da cena (restaurado na volta —
+  // sem isso o usuário volta pro topo com o fogo aceso, "até o reload")
+  const returnScrollRef = useRef(null)
 
   // pausa o canvas do hero fora da viewport; monta/pausa o canvas do pedal da seção
   const [heroRef, heroNear] = useNearViewport('200px')
-  const [ghostNearRef, ghostNear] = useNearViewport('600px')
-  const [ghostProgressRef, ghostProgress] = useSectionProgress()
+  // margem generosa: o canvas do pedal monta e compila bem antes de aparecer
+  const [ghostNearRef, ghostNear] = useNearViewport('1600px')
+  // roda + abre o pedal quando o palco encosta na viewport (damp lento faz
+  // a abertura acontecer com o palco já em cena)
+  const [ghostStageRef, ghostStageVisible] = useNearViewport('0px')
 
   // "apagar as luzes": 0 no topo → 1 quando o hero sai da tela (dirige o fogo)
   const dimRef = useRef(0)
@@ -105,7 +112,10 @@ export function Hero() {
       return
     }
     if (v === 'ghost') scrollRef.current.scroll = 0
-    if (v !== 'home') markSeen(v)
+    if (v !== 'home') {
+      markSeen(v)
+      if (returnScrollRef.current == null) returnScrollRef.current = window.scrollY
+    }
     setView(v)
   }
 
@@ -123,6 +133,19 @@ export function Hero() {
       /* clipboard indisponível */
     }
   }
+
+  // nas views da cena o body não deve rolar (evita scrollbar dupla);
+  // ao voltar, devolve a página exatamente onde estava
+  useEffect(() => {
+    document.body.style.overflow = view === 'home' ? '' : 'hidden'
+    if (view === 'home' && returnScrollRef.current != null) {
+      window.scrollTo({ top: returnScrollRef.current, behavior: 'auto' })
+      returnScrollRef.current = null
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [view])
 
   // deep-link para seções (#ghost, #about…): rola após o layout assentar
   useEffect(() => {
@@ -192,7 +215,7 @@ export function Hero() {
         </button>
 
         <div className="pointer-events-auto flex items-center gap-5">
-          <NavMenu />
+          <NavMenu onAbout={() => openInScene('about')} />
           <div
             className="flex items-center gap-2 font-mono text-xs tracking-widest"
             role="group"
@@ -254,7 +277,7 @@ export function Hero() {
               <span className="text-stroke-paper">Peres</span>
             </h1>
             <p
-              className={`mt-4 font-mono text-[10px] sm:text-xs tracking-[0.35em] text-paper/70 ${reveal(
+              className={`mt-4 font-mono text-[10px] sm:text-xs tracking-[0.25em] sm:tracking-[0.35em] text-paper/70 ${reveal(
                 view === 'home',
                 'delay-300'
               )}`}
@@ -264,9 +287,10 @@ export function Hero() {
           </div>
 
           {/* hint + socials */}
+          {/* no mobile o rodapé fica só com o cue de scroll + socials */}
           {!anySeen && (
             <p
-              className={`absolute bottom-6 left-6 sm:left-12 font-mono text-[10px] tracking-widest text-paper/40 ${reveal(
+              className={`hidden sm:block absolute bottom-6 left-6 sm:left-12 max-w-xs font-mono text-[10px] tracking-widest text-paper/40 ${reveal(
                 view === 'home',
                 'delay-500'
               )}`}
@@ -312,150 +336,112 @@ export function Hero() {
         </div>
 
         {/* Views da cena */}
-        {view === 'ghost' && (
-          <GhostOverlay
-            key="ghost"
-            scrollRef={scrollRef}
-            onBack={() => navigate('home')}
-            onSwitch={() => navigate('verve')}
-          />
-        )}
+        {view === 'ghost' && <GhostOverlay key="ghost" scrollRef={scrollRef} onNavigate={navigate} />}
         {view === 'verve' && (
-          <VerveOverlay
-            key="verve"
-            statsRef={verveStatsRef}
-            onBack={() => navigate('home')}
-            onSwitch={() => navigate('ghost')}
+          <VerveOverlay key="verve" statsRef={verveStatsRef} onNavigate={navigate} />
+        )}
+        {view === 'about' && (
+          <AboutOverlay
+            key="about"
+            onNavigate={navigate}
+            onContact={() => {
+              navigate('home')
+              setTimeout(
+                () =>
+                  document
+                    .getElementById('contact')
+                    ?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }),
+                350
+              )
+            }}
           />
         )}
       </section>
 
       {/* ─────────── PÁGINA: seções roláveis ─────────── */}
       <main className="relative z-10 border-t border-paper/10">
-        {/* Sobre — headline gigante + retrato halftone + marquee de skills */}
-        <section id="about" className="relative overflow-hidden">
-          {/* grid editorial: foto à esquerda, texto à direita — sem truques */}
-          <div className="mx-auto max-w-6xl px-6 sm:px-12 pt-24 sm:pt-32 pb-20">
-            <RevealBlock className="grid items-center gap-12 md:grid-cols-[auto_1fr] lg:gap-20">
-              <figure className="mx-auto md:mx-0">
-                <img
-                  src="/img/vini-halftone.webp"
-                  alt={lang === 'pt' ? 'Retrato de Vinícius em meio-tom' : 'Halftone portrait of Vinícius'}
-                  className="w-56 rotate-[-3deg] transition-transform duration-500 hover:rotate-0 lg:w-72"
-                />
-                <figcaption className="mx-auto mt-3 w-fit border border-paper/25 px-3 py-1.5 font-mono text-[9px] tracking-[0.25em] text-paper/50">
-                  VINICIUS PERES · BR © {new Date().getFullYear()}
-                </figcaption>
-              </figure>
-
-              <div>
-                <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
-                  {t.sections.about}
-                </span>
-                <h2 className="mt-4 font-poster uppercase leading-[0.95] text-paper text-4xl sm:text-5xl lg:text-6xl">
-                  {t.about.calloutTop}{' '}
-                  <span className="font-accent italic normal-case text-amber text-5xl sm:text-7xl lg:text-8xl align-middle whitespace-nowrap">
-                    {t.about.nickname}
-                  </span>
-                </h2>
-                <div className="mt-8 grid gap-6 sm:grid-cols-2">
-                  <p className="font-mono text-sm text-paper/75 leading-relaxed">{t.about.p1}</p>
-                  <p className="font-mono text-sm text-paper/75 leading-relaxed">{t.about.p2}</p>
-                </div>
-              </div>
+        {/* Sobre mim mora na CENA (view do quadro); daqui pra baixo: projetos */}
+        <div id="projects" className="border-b border-paper/10">
+          <div className="mx-auto max-w-6xl px-6 sm:px-12 py-12 sm:py-14">
+            <RevealBlock>
+              <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
+                {t.sections.projects}
+              </span>
+              <h2 className="mt-3 font-poster uppercase leading-[0.95] text-3xl sm:text-5xl text-paper">
+                {t.projects.title}
+              </h2>
+              <p className="mt-3 max-w-xl font-mono text-xs sm:text-sm text-paper/60 leading-relaxed">
+                {t.projects.sub}
+              </p>
             </RevealBlock>
           </div>
+        </div>
 
-          {/* faixa marquee de skills */}
-          <div className="border-y border-paper/10 py-4 overflow-hidden" aria-hidden="true">
-            <div className="marquee-track flex w-max items-center gap-10 font-poster text-2xl sm:text-4xl uppercase text-paper/60">
-              {[...skills, ...skills].map((s, i) => (
-                <span key={i} className="flex items-center gap-10">
-                  {s}
-                  <span className="text-amber text-xl">✦</span>
+        {/* GHOST FX — tela única: o pedal abre sozinho ao entrar em cena; cards na mesma tela */}
+        <section id="ghost" ref={ghostNearRef} className="relative overflow-hidden">
+          <GhostSectionBg />
+          <div className="relative mx-auto flex min-h-[100dvh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12 py-14 sm:py-16">
+            {/* grid-cols-1 é obrigatório: sem template, o track auto dimensiona
+                pelo conteúdo (max-w-md = 448px) e estoura o viewport no mobile */}
+            <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+              <RevealBlock>
+                <span className="font-mono text-xs font-semibold tracking-[0.25em]" style={{ color: GREEN }}>
+                  {t.ghost.tag}
                 </span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* GHOST FX — sticky full-bleed: o pedal abre com o scroll no palco à direita */}
-        <section id="ghost" ref={ghostNearRef} className="relative">
-          <div ref={ghostProgressRef} className="h-[220vh]">
-            <div className="sticky top-0 h-screen overflow-hidden">
-              <div
-                className="absolute inset-0"
-                style={{ background: 'radial-gradient(55% 55% at 68% 50%, rgba(22,160,48,0.08), transparent 70%)' }}
-              />
-
-              {/* canvas full-bleed: a StageCamera desloca o pedal para a direita */}
-              <div className="absolute inset-0">
-                {ghostNear && <SectionPedal progressRef={ghostProgress} active={ghostNear} />}
-              </div>
-
-              {/* texto sobre o palco esquerdo */}
-              <div className="pointer-events-none relative z-10 mx-auto flex h-full max-w-6xl flex-col justify-center px-6 sm:px-12">
-                <div className="pointer-events-auto max-w-md">
-                  <span className="font-mono text-xs font-semibold tracking-[0.25em]" style={{ color: GREEN }}>
-                    {t.ghost.tag}
-                  </span>
-                  <h2 className="mt-3 font-poster uppercase leading-[0.85] text-6xl sm:text-8xl">
-                    <span className="text-paper">GHOST</span>
-                    <br />
-                    <span className="text-stroke-green">FX</span>
-                  </h2>
-                  <p className="mt-4 font-mono text-sm font-bold tracking-widest text-paper">
-                    {t.ghost.subtitle}
-                  </p>
-                  <p className="mt-4 font-mono text-xs sm:text-sm text-paper/70 leading-relaxed">
-                    {t.ghost.intro}
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2" aria-hidden="true">
-                    {t.ghost.presets.list.map((p) => (
-                      <span
-                        key={p.name}
-                        className="border px-2.5 py-1 font-mono text-[10px] font-bold tracking-widest"
-                        style={{ borderColor: `${GREEN}55`, color: GREEN }}
-                      >
-                        {p.name}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-7 flex flex-wrap gap-3">
-                    <a
-                      href={links.ghostApp}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="border-2 px-5 py-3 font-mono text-xs font-bold transition-colors"
-                      style={{ borderColor: GREEN, background: GREEN, color: '#0a0a0f' }}
-                    >
-                      {t.ghost.ready.play}
-                    </a>
-                    <button
-                      onClick={() => openInScene('ghost')}
-                      className="border border-amber text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
-                    >
-                      {t.ui.openInScene}
-                    </button>
-                    <a
-                      href={links.ghostSource}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="border border-paper/25 text-paper/80 px-5 py-3 font-mono text-xs font-bold hover:border-paper hover:text-paper transition-colors"
-                    >
-                      {t.ghost.ready.source}
-                    </a>
-                  </div>
+                {/* wordmark como a marca escreve (LoadingScreen do app): Saira 800, FX em verde */}
+                <h2
+                  className="mt-3 text-5xl sm:text-7xl leading-none"
+                  style={{
+                    fontFamily: "'Saira', sans-serif",
+                    fontWeight: 800,
+                    letterSpacing: '-0.01em',
+                    color: '#e7e4dc',
+                  }}
+                >
+                  GHOST<span style={{ color: '#20f040' }}>FX</span>
+                </h2>
+                <p className="mt-4 font-mono text-sm font-bold tracking-widest text-paper">
+                  {t.ghost.subtitle}
+                </p>
+                <p className="mt-4 max-w-md font-mono text-xs sm:text-sm text-paper/70 leading-relaxed">
+                  {t.ghost.intro}
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a
+                    href={links.ghostApp}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border-2 px-5 py-3 font-mono text-xs font-bold transition-colors"
+                    style={{ borderColor: GREEN, background: GREEN, color: '#0a0a0f' }}
+                  >
+                    {t.ghost.ready.play}
+                  </a>
+                  <button
+                    onClick={() => openInScene('ghost')}
+                    className="border border-amber text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
+                  >
+                    {t.ui.openInScene}
+                  </button>
+                  <a
+                    href={links.ghostSource}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border border-paper/25 text-paper/80 px-5 py-3 font-mono text-xs font-bold hover:border-paper hover:text-paper transition-colors"
+                  >
+                    {t.ghost.ready.source}
+                  </a>
                 </div>
-              </div>
+              </RevealBlock>
 
-              <p
-                className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 font-mono text-[10px] tracking-[0.3em]"
-                style={{ color: GREEN }}
-              >
-                {t.ghost.scrollHint}
-              </p>
+              {/* palco do pedal: monta cedo (Preload compila parado) e só RODA
+                  quando visível — canvas ativo fora da tela = lag no resto */}
+              <div ref={ghostStageRef} className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
+                {ghostNear && <SectionPedal open={ghostStageVisible} active={ghostStageVisible} />}
+              </div>
             </div>
+
+            {/* knobs interativos + colorways dos presets, na mesma tela */}
+            <GhostCards />
           </div>
         </section>
 
@@ -465,7 +451,7 @@ export function Hero() {
             className="absolute inset-0"
             style={{ background: 'radial-gradient(55% 55% at 30% 50%, rgba(255,107,43,0.07), transparent 70%)' }}
           />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
+          <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
             <RevealBlock className="order-2 md:order-1">
               <VerveDemo />
             </RevealBlock>

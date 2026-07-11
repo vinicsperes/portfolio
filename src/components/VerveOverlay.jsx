@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLang } from '../i18n/LanguageContext.jsx'
-import { links } from '../content/index.js'
+import { SceneNav } from './SceneNav.jsx'
 
 const sendKey = (key) => window.dispatchEvent(new CustomEvent('verve:key', { detail: { key } }))
 
-export function VerveOverlay({ statsRef, onBack, onSwitch }) {
+export function VerveOverlay({ statsRef, onNavigate }) {
   const { t, lang } = useLang()
   const v = t.verve
   const [stats, setStats] = useState({ wpm: 0, acc: 100, time: 0, best: 0, finished: false })
@@ -38,47 +38,14 @@ export function VerveOverlay({ statsRef, onBack, onSwitch }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-6 sm:p-12 pt-24 sm:pt-28">
-      {/* top bar */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={onBack}
-          className="pointer-events-auto font-mono text-xs sm:text-sm tracking-widest text-paper hover:text-amber transition-colors flex items-center gap-2"
-        >
-          {t.ui.backToRoom}
-        </button>
-        <button
-          onClick={onSwitch}
-          className="pointer-events-auto font-mono text-xs sm:text-sm tracking-widest text-paper/60 hover:text-[#16a030] transition-colors"
-        >
-          {t.ui.switchToGhost}
-        </button>
-      </div>
+      {/* top bar: navegação padrão da cena */}
+      <SceneNav current="verve" onNavigate={onNavigate} />
 
       {/* left info + live HUD */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-8 mt-auto">
-        <div className="pointer-events-auto max-w-md bg-ink-soft/80 p-6 backdrop-blur-md border-l-2 border-[#ff6b2b]">
-          <span className="font-mono text-xs font-semibold tracking-[0.2em] text-[#ff6b2b]">
-            {v.tag}
-          </span>
-          <h2 className="mt-2 font-poster text-4xl sm:text-5xl text-paper tracking-tight uppercase leading-none">
-            {v.title}
-          </h2>
-          <p className="font-mono text-xs sm:text-sm text-paper/70 leading-relaxed mt-4">{v.p1}</p>
-          <p className="font-mono text-[11px] text-paper/50 leading-relaxed mt-4">
-            {v.p2Prefix}
-            <span className="text-paper/80">ratatui</span> &amp;
-            <span className="text-paper/80"> crossterm</span>
-            {v.p2Suffix}
-          </p>
-          <div className="mt-5 flex flex-col gap-3">
-            <a
-              href={links.verveSource}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block w-fit border border-[#ff6b2b] text-[#ff6b2b] px-5 py-3 font-mono text-xs font-bold hover:bg-[#ff6b2b] hover:text-[#0a0a0f] transition-colors"
-            >
-              {v.source}
-            </a>
+        {/* puro easter egg: nada informativo aqui, só o necessário pra jogar */}
+        <div className="pointer-events-auto max-w-md">
+          <div className="flex flex-col gap-3">
             {isCoarse ? (
               <div className="flex gap-3">
                 <button
@@ -115,7 +82,7 @@ export function VerveOverlay({ statsRef, onBack, onSwitch }) {
         </div>
 
         {/* live stats mirrored from the terminal */}
-        <div className="pointer-events-auto self-start sm:self-auto flex gap-3">
+        <div className="pointer-events-auto self-start sm:self-auto flex flex-wrap gap-3">
           {[
             { label: v.stats.wpm, value: stats.wpm, color: '#4dff7c' },
             { label: v.stats.acc, value: `${stats.acc}%`, color: '#9be8b4' },

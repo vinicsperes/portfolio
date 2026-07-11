@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useProgress } from '@react-three/drei'
 
 /**
- * Loader minimalista: wordmark + barra fina + porcentagem,
- * amarrado ao progresso real dos assets 3D. Fade ao completar.
+ * Loader minimalista: só barra fina + porcentagem (sem wordmark — o dono
+ * não quis o nome aqui), amarrado ao progresso real dos assets 3D.
  */
 export function BootLoader({ onDone }) {
   const { progress } = useProgress()
@@ -35,9 +35,6 @@ export function BootLoader({ onDone }) {
       }`}
       aria-hidden="true"
     >
-      <span className="font-poster text-2xl sm:text-3xl uppercase tracking-tight text-paper">
-        Vinicius&nbsp;Peres
-      </span>
       <div className="w-48 sm:w-64 h-px bg-paper/15 relative overflow-hidden">
         <div
           className="absolute inset-y-0 left-0 bg-amber transition-[width] duration-300 ease-out"
