@@ -72,6 +72,17 @@ export function Hero() {
     setView(v)
   }
 
+  // Os objetos da cena voltam a navegar: o quadro na parede abre a view "about"
+  // na própria cena; o CRT e a prateleira rolam para as seções Verve e Blog.
+  const sceneNavigate = (target) => {
+    if (target === 'about') return navigate('about')
+    const id = target === 'verve' || target === 'blog' ? target : null
+    if (id) document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
+  }
+
+  // rótulos curtos (bilíngues) que surgem ao passar o mouse nos hotspots da cena
+  const sceneLabels = { pc: t.verve.title, painting: t.sections.about, shelf: t.blog.title }
+
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText(links.email)
@@ -163,7 +174,13 @@ export function Hero() {
         {/* A cena 3D é o fundo inteiro; a tela do CRT dentro dela passa o reel
             dos trabalhos (o "vídeo"). O texto vive por cima, à esquerda. */}
         <div className="absolute inset-0 z-0" aria-hidden="true">
-          <Scene view={view} reducedMotion={reducedMotion} active={heroNear} />
+          <Scene
+            view={view}
+            reducedMotion={reducedMotion}
+            active={heroNear}
+            onNavigate={sceneNavigate}
+            labels={sceneLabels}
+          />
         </div>
         {/* degradê à esquerda: garante leitura da tipografia sobre a cena */}
         {view === 'home' && (
