@@ -19,6 +19,8 @@ export const links = {
   email: 'vinicsperes@gmail.com',
   github: 'https://github.com/vinicsperes',
   linkedin: 'https://linkedin.com/in/vinicsperes',
+  // TODO(vinicius): confirmar o @ do Instagram
+  instagram: 'https://instagram.com/vinicsperes',
   ghostApp: 'https://ghostfx.app',
   ghostSource: 'https://github.com/vinicsperes',
   verveSource: 'https://github.com/vinicsperes/verve',

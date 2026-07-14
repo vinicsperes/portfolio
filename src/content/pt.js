@@ -6,15 +6,15 @@ export const pt = {
     // faixa de selos sob o lockup (estilo carimbo de coleção)
     badge: {
       mono: 'VP',
-      l1: 'VINICIUS PERES — DEV',
-      l2: 'CÓDIGO, ÁUDIO E 3D, FEITOS À MÃO',
+      l1: 'VINICIUS PERES · SOFTWARE DEV',
+      l2: 'SANTA CATARINA · BRASIL',
     },
     note: {
       l1: 'Ei! Curioso pra ver como foi feito?',
       l2: 'O site inteiro tá aberto no GitHub →',
     },
     welcome:
-      'OI! BEM-VINDO AO MEU SITE. AQUI VOCÊ VAI ENCONTRAR MEUS TRABALHOS MAIS RECENTES COMO DEV FULLSTACK — WEB AUDIO, 3D NA WEB E, PRINCIPALMENTE, COISAS QUE DÁ PRA BRINCAR. ESPERO QUE APROVEITE!',
+      'OI! SOU O VINÍCIUS, DESENVOLVEDOR DE SOFTWARE. AQUI FICAM MEUS TRABALHOS MAIS RECENTES: WEB AUDIO, 3D NA WEB E, PRINCIPALMENTE, COISAS QUE DÁ PRA BRINCAR. FIQUE À VONTADE!',
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
     langCta: { label: 'oh no! I got lost!', flag: '🇺🇸', to: 'en' },
   },
@@ -22,11 +22,10 @@ export const pt = {
   about: {
     titleTop: 'Sobre',
     titleBottom: 'Mim',
-    headTop: 'A MÚSICA',
-    headBottom: 'VEIO PRIMEIRO.',
-    // TODO(vinicius): ajustar com a sua história real
-    p1: 'O moleque do quadro sou eu, numa das primeiras vezes que subi num palco. A música chegou antes do código e nunca foi embora: é dela que vem o meu jeito de construir, de ouvido, no detalhe, repetindo até soar certo.',
-    p2: 'Hoje sou dev fullstack e moro no espaço entre design e engenharia: produto e interface no dia a dia, áudio, 3D e terminal nas horas vagas. Se dá pra tocar, girar ou apertar, provavelmente saiu daqui.',
+    headTop: 'DESENVOLVEDOR',
+    headBottom: 'DE SOFTWARE.',
+    p1: 'Prazer, sou o Vinícius, desenvolvedor de software. Moro em Santa Catarina, no Brasil, e passo os dias construindo produtos e interfaces para a web, do design à engenharia.',
+    p2: 'Quando não estou programando, você provavelmente me acha numa quadra de basquete ou ouvindo música.',
     cta: 'VAMOS CONVERSAR',
   },
 

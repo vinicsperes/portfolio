@@ -6,15 +6,15 @@ export const en = {
     // faixa de selos sob o lockup (estilo carimbo de coleção)
     badge: {
       mono: 'VP',
-      l1: 'VINICIUS PERES — DEV',
-      l2: 'CODE, AUDIO AND 3D, HANDMADE',
+      l1: 'VINICIUS PERES · SOFTWARE DEV',
+      l2: 'SANTA CATARINA · BRAZIL',
     },
     note: {
       l1: "Hey! Curious about how it's built?",
       l2: 'The whole site is open on GitHub →',
     },
     welcome:
-      'HI! WELCOME TO MY SITE. HERE YOU WILL FIND MY LATEST WORK AS A FULLSTACK DEV — WEB AUDIO, 3D ON THE WEB AND, ESPECIALLY, THINGS YOU CAN PLAY WITH. HOPE YOU HAVE FUN!',
+      "HI! I'M VINÍCIUS, A SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES: WEB AUDIO, 3D ON THE WEB AND, ABOVE ALL, THINGS YOU CAN PLAY WITH. MAKE YOURSELF AT HOME!",
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
     langCta: { label: 'chega aí, meu parça', flag: '🇧🇷', to: 'pt' },
   },
@@ -22,11 +22,10 @@ export const en = {
   about: {
     titleTop: 'About',
     titleBottom: 'Me',
-    headTop: 'MUSIC',
-    headBottom: 'CAME FIRST.',
-    // TODO(vinicius): adjust with your real story
-    p1: "The kid in the frame is me, one of the first times I ever got on a stage. Music came before code and never left: it's where my way of building comes from, by ear, detail by detail, repeating until it sounds right.",
-    p2: "These days I'm a fullstack dev living between design and engineering: product and interfaces by day, audio, 3D and terminal experiments after hours. If you can play it, turn it or press it, odds are it came from here.",
+    headTop: 'SOFTWARE',
+    headBottom: 'DEVELOPER.',
+    p1: "Nice to meet you. I'm Vinícius, a software developer based in Santa Catarina, Brazil, and I spend my days building products and interfaces for the web, from design to engineering.",
+    p2: "When I'm not coding, you'll probably find me on a basketball court or listening to music.",
     cta: "LET'S TALK",
   },
 

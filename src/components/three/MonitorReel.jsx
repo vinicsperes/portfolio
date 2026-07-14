@@ -52,7 +52,7 @@ function drawVerveSlide(ctx, W, H, now) {
   ctx.fillText('verve', pad + 38, pad)
   ctx.fillStyle = VERVE.dim
   ctx.font = '500 26px "IBM Plex Mono", monospace'
-  ctx.fillText('a typing test in your terminal — Rust', pad, pad + 76)
+  ctx.fillText('a typing test in your terminal · Rust', pad, pad + 76)
 
   // caixa com digitação fantasma em loop
   const boxY = pad + 140
