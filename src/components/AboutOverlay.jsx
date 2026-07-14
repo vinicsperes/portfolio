@@ -1,5 +1,7 @@
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReveal } from '../hooks/useReveal.js'
+import { links } from '../content/index.js'
+import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
 
 /**
  * View "about" da cena: a câmera aproxima do quadro na parede e o texto
@@ -10,6 +12,12 @@ export function AboutOverlay({ onNavigate, onContact }) {
   const { t } = useLang()
   const a = t.about
   const [ref, visible] = useReveal(0.1)
+
+  const socials = [
+    { label: 'GitHub', href: links.github, Icon: GitHubIcon },
+    { label: 'LinkedIn', href: links.linkedin, Icon: LinkedInIcon },
+    ...(links.instagram ? [{ label: 'Instagram', href: links.instagram, Icon: InstagramIcon }] : []),
+  ]
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col p-6 sm:p-12 pt-24 sm:pt-28">
@@ -42,9 +50,26 @@ export function AboutOverlay({ onNavigate, onContact }) {
           <p className="mt-5 max-w-sm font-mono text-xs sm:text-sm text-paper/85 leading-relaxed">
             {a.p1}
           </p>
-          <p className="mt-4 max-w-sm font-mono text-[11px] sm:text-xs text-paper/55 leading-relaxed">
+          <p className="mt-4 max-w-sm font-mono text-[11px] sm:text-xs text-paper/60 leading-relaxed">
             {a.p2}
           </p>
+
+          {/* redes */}
+          <div className="mt-7 flex items-center gap-6">
+            {socials.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={s.label}
+                className="text-paper/75 hover:text-amber transition-colors"
+              >
+                <s.Icon width={30} height={30} />
+              </a>
+            ))}
+          </div>
+
           <button
             onClick={onContact}
             className="mt-8 border-2 border-amber px-5 py-3 font-mono text-xs font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
