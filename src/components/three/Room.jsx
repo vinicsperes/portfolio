@@ -207,8 +207,8 @@ function useRugTexture() {
   }, [])
 }
 
-/** Vista noturna pela janela panorâmica: céu com estrelas, lua e skyline. */
-function useNightViewTexture() {
+/** Vista golden hour pela janela: céu quente, sol baixo e skyline em silhueta. */
+function useSunsetViewTexture() {
   return useMemo(() => {
     const W = 1024
     const H = 512
@@ -217,45 +217,32 @@ function useNightViewTexture() {
     canvas.height = H
     const ctx = canvas.getContext('2d')
 
-    // céu em gradiente
+    // céu golden hour (violeta no topo → laranja/amarelo no horizonte)
     const sky = ctx.createLinearGradient(0, 0, 0, H)
-    sky.addColorStop(0, '#0a1220')
-    sky.addColorStop(0.7, '#14263e')
-    sky.addColorStop(1, '#1d3450')
+    sky.addColorStop(0, '#39335f')
+    sky.addColorStop(0.42, '#b85d78')
+    sky.addColorStop(0.72, '#ef9257')
+    sky.addColorStop(1, '#ffcb7d')
     ctx.fillStyle = sky
     ctx.fillRect(0, 0, W, H)
 
-    // estrelas
-    for (let i = 0; i < 90; i++) {
-      const x = (i * 137.5) % W
-      const y = ((i * 89.3) % (H * 0.6))
-      const r = i % 11 === 0 ? 1.6 : 0.9
-      ctx.fillStyle = i % 7 === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(200,215,235,0.55)'
-      ctx.beginPath()
-      ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    // lua com halo
-    const mx = W * 0.74
-    const my = H * 0.26
-    const halo = ctx.createRadialGradient(mx, my, 8, mx, my, 90)
-    halo.addColorStop(0, 'rgba(220,230,245,0.5)')
-    halo.addColorStop(1, 'rgba(220,230,245,0)')
-    ctx.fillStyle = halo
-    ctx.fillRect(mx - 90, my - 90, 180, 180)
-    ctx.fillStyle = '#dfe8f4'
+    // brilho difuso do sol baixo
+    const sx = W * 0.72
+    const sy = H * 0.6
+    const glow = ctx.createRadialGradient(sx, sy, 10, sx, sy, 260)
+    glow.addColorStop(0, 'rgba(255,240,200,0.9)')
+    glow.addColorStop(0.3, 'rgba(255,214,150,0.45)')
+    glow.addColorStop(1, 'rgba(255,205,140,0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, W, H)
+    // disco do sol
+    ctx.fillStyle = '#fff2d2'
     ctx.beginPath()
-    ctx.arc(mx, my, 26, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = 'rgba(160,175,195,0.5)'
-    ctx.beginPath()
-    ctx.arc(mx - 8, my - 4, 5, 0, Math.PI * 2)
-    ctx.arc(mx + 7, my + 8, 4, 0, Math.PI * 2)
+    ctx.arc(sx, sy, 44, 0, Math.PI * 2)
     ctx.fill()
 
-    // skyline distante
-    ctx.fillStyle = '#0b1420'
+    // skyline em silhueta quente
+    ctx.fillStyle = '#5a3344'
     const buildings = [
       [0, 90], [55, 130], [125, 70], [195, 150], [270, 100], [335, 170],
       [410, 90], [480, 140], [555, 110], [625, 165], [700, 95], [770, 135],
@@ -265,14 +252,21 @@ function useNightViewTexture() {
       const w = 42 + (i % 3) * 14
       ctx.fillRect(x, H - h, w, h)
     })
-    // janelinhas acesas
-    ctx.fillStyle = 'rgba(245,166,35,0.55)'
+    // janelinhas acesas quentes
+    ctx.fillStyle = 'rgba(255,190,90,0.6)'
     for (let i = 0; i < 26; i++) {
       const b = buildings[i % buildings.length]
       const x = b[0] + 6 + ((i * 13) % 34)
       const y = H - ((i * 29) % (b[1] - 14)) - 8
       ctx.fillRect(x, y, 3, 4)
     }
+
+    // haze quente na base do horizonte
+    const haze = ctx.createLinearGradient(0, H * 0.72, 0, H)
+    haze.addColorStop(0, 'rgba(255,190,120,0)')
+    haze.addColorStop(1, 'rgba(255,178,110,0.32)')
+    ctx.fillStyle = haze
+    ctx.fillRect(0, H * 0.72, W, H * 0.28)
 
     return new THREE.CanvasTexture(canvas)
   }, [])
@@ -296,45 +290,6 @@ function DeskGlow({ position }) {
   )
 }
 
-
-function Books({ position, rotation = [0, 0, 0] }) {
-  const books = [
-    { w: 0.2, h: 0.9, d: 0.65, color: '#2a4a3a', x: 0 },
-    { w: 0.18, h: 0.85, d: 0.6, color: '#4a2020', x: 0.22 },
-    { w: 0.22, h: 0.95, d: 0.68, color: '#1a2a4a', x: 0.45 },
-    { w: 0.16, h: 0.8, d: 0.58, color: '#4a3a1a', x: 0.64 },
-  ]
-
-  return (
-    <group position={position} rotation={rotation}>
-      {books.map((b, i) => (
-        <RoundedBox key={i} args={[b.w, b.h, b.d]} radius={0.01} position={[b.x, b.h / 2, 0]} castShadow>
-          <meshStandardMaterial color={b.color} roughness={0.85} />
-        </RoundedBox>
-      ))}
-    </group>
-  )
-}
-
-/** Caneca de café na mesa. */
-function Mug({ position }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, 0.14, 0]} castShadow>
-        <cylinderGeometry args={[0.11, 0.1, 0.28, 20]} />
-        <meshStandardMaterial color="#274a3d" roughness={0.35} />
-      </mesh>
-      <mesh position={[0, 0.27, 0]}>
-        <cylinderGeometry args={[0.095, 0.095, 0.02, 20]} />
-        <meshStandardMaterial color="#241408" roughness={0.6} />
-      </mesh>
-      <mesh position={[0.15, 0.15, 0]} rotation-y={Math.PI / 2}>
-        <torusGeometry args={[0.07, 0.018, 10, 20]} />
-        <meshStandardMaterial color="#274a3d" roughness={0.35} />
-      </mesh>
-    </group>
-  )
-}
 
 /** Bloco de notas com caneta. */
 function Notepad({ position, rotation = [0, 0, 0] }) {
@@ -448,7 +403,7 @@ function WallShelves() {
 export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   const woodTex = useWoodFloorTexture()
   const rugTex = useRugTexture()
-  const nightTex = useNightViewTexture()
+  const skyTex = useSunsetViewTexture()
   const collageTex = useTexture('/img/ghost-collage-tex.jpg')
   const kidTex = useTexture('/img/vini-kid.jpg')
 
@@ -502,8 +457,6 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
 
       {/* ─── Desk props ─── */}
       <DeskGlow position={[5.8, 1.2, -3.9]} />
-      <Books position={[-0.5, 0.1, -4.4]} rotation={[0, 0.25, 0]} />
-      <Mug position={[0.55, 0.09, -2.85]} />
       <Notepad position={[5.2, 0.1, -3.1]} rotation={[0, 0.35, 0]} />
 
       {/* ─── Cozy: velas no parapeito da janela ─── */}
@@ -529,16 +482,16 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         <RoundedBox args={[8.8, 4.5, 0.2]} radius={0.05} castShadow>
           <meshStandardMaterial color="#2d3340" roughness={0.5} />
         </RoundedBox>
-        {/* Night view */}
+        {/* Golden hour view */}
         <mesh position={[0, 0, 0.11]}>
           <planeGeometry args={[8.2, 3.9]} />
-          <meshBasicMaterial map={nightTex} toneMapped={false} />
+          <meshBasicMaterial map={skyTex} toneMapped={false} />
         </mesh>
         {/* leve reflexo de vidro */}
         <mesh position={[0, 0, 0.12]}>
           <planeGeometry args={[8.2, 3.9]} />
           <meshStandardMaterial
-            color="#88aacc"
+            color="#e0b88a"
             roughness={0.08}
             metalness={0.3}
             transparent
