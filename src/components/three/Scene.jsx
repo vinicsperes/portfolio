@@ -56,13 +56,7 @@ function CameraController({ view, reducedMotion }) {
     _pos.set(...cam.position)
     _look.set(...cam.lookAt)
 
-    // parallax sutil de mouse no estado home
-    if (view === 'home' && introDone.current && !reducedMotion) {
-      _pos.x += state.pointer.x * 0.35
-      _pos.y += state.pointer.y * 0.18
-      _look.x += state.pointer.x * 0.22
-      _look.y += state.pointer.y * 0.1
-    }
+    // (sem parallax de mouse: a câmera se mexer com o ponteiro enjoava o dono)
 
     state.camera.position.lerp(_pos, lerpFactor)
     _m.lookAt(state.camera.position, _look, state.camera.up)
@@ -90,7 +84,7 @@ function SceneReady({ onReady }) {
   return null
 }
 
-export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText, reducedMotion, markers, active = true, dimRef, onReady }) {
+export function Scene({ view, statsRef, onNavigate, labels, idleText, reducedMotion, markers, active = true, dimRef, onReady }) {
   const [dpr, setDpr] = useState(1)
   const showMarkers = view === 'home' && !reducedMotion
 
@@ -189,10 +183,17 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
           />
         </Hotspot>
 
-        {/* Canto musical: pedal no chão (easter egg: clique = pulso abre-fecha) + amp + vinis */}
-        <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
-          <GhostPedal scrollRef={scrollRef} active={view === 'ghost'} />
-        </group>
+        {/* Canto musical: pedal no chão (clicável, leva à seção Ghost) + amp + vinis */}
+        <Hotspot
+          position={[-2.35, -1.93, -3.3]}
+          rotation-y={0.45}
+          scale={0.3}
+          label={labels?.pedal}
+          labelPosition={[0, 5, 0]}
+          onActivate={() => onNavigate?.('ghost')}
+        >
+          <GhostPedal />
+        </Hotspot>
         <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
         <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />
         <ContactShadows

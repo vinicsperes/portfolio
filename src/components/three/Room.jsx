@@ -314,20 +314,20 @@ function Notepad({ position, rotation = [0, 0, 0] }) {
   )
 }
 
-/** Prateleiras suspensas na parede — hotspot do blog. */
+/** Prateleiras suspensas na parede (parte do hotspot do "sobre"). */
 function WallShelves() {
   const shelfBooks = [
-    // prateleira de cima: só um par no canto — o porta-retrato é o protagonista
+    // prateleira de cima: só um par no canto (o porta-retrato é o protagonista)
     [
-      { w: 0.16, h: 0.5, color: '#2a3a4a', lean: 0 },
-      { w: 0.2, h: 0.55, color: '#4a2a20', lean: -0.2 },
+      { w: 0.16, h: 0.5, color: '#2a3a4a', band: '#c9b083', lean: 0 },
+      { w: 0.2, h: 0.55, color: '#4a2a20', band: '#d9c39a', lean: -0.16 },
     ],
     // prateleira de baixo concentra os livros
     [
-      { w: 0.2, h: 0.52, color: '#4a3a1a', lean: 0 },
-      { w: 0.16, h: 0.46, color: '#1a3a3a', lean: 0 },
-      { w: 0.14, h: 0.48, color: '#2a4a30', lean: 0 },
-      { w: 0.18, h: 0.55, color: '#4a1a2a', lean: 0.2 },
+      { w: 0.2, h: 0.52, color: '#4a3a1a', band: '#e2d2a2', lean: 0 },
+      { w: 0.16, h: 0.46, color: '#1a3a3a', band: '#a9c0b4', lean: 0 },
+      { w: 0.14, h: 0.5, color: '#2a4a30', band: '#cbb27a', lean: 0 },
+      { w: 0.18, h: 0.56, color: '#4a1a2a', band: '#d3a6a6', lean: 0.16 },
     ],
   ]
 
@@ -348,23 +348,33 @@ function WallShelves() {
               <meshStandardMaterial color="#141414" roughness={0.4} metalness={0.6} />
             </mesh>
           ))}
-          {/* livros */}
+          {/* livros: corpo + faixas no lombo (não são mais só retângulos) e
+              assentados na tábua (sem flutuar) */}
           {(() => {
             let bx = -1.0
             return shelfBooks[si].map((b, bi) => {
               const x = bx + b.w / 2
-              bx += b.w + 0.045
+              bx += b.w + 0.05
+              const depth = 0.24 + (bi % 2) * 0.05
               return (
-                <RoundedBox
+                <group
                   key={bi}
-                  args={[b.w, b.h, 0.26]}
-                  radius={0.008}
-                  position={[x + (b.lean ? 0.05 : 0), 0.035 + b.h / 2 - Math.abs(b.lean) * 0.04, 0]}
+                  position={[x + (b.lean ? 0.05 : 0), 0.03 + b.h / 2 - Math.abs(b.lean) * 0.05, 0]}
                   rotation-z={b.lean}
-                  castShadow
                 >
-                  <meshStandardMaterial color={b.color} roughness={0.85} />
-                </RoundedBox>
+                  <RoundedBox args={[b.w, b.h, depth]} radius={0.006} castShadow>
+                    <meshStandardMaterial color={b.color} roughness={0.88} />
+                  </RoundedBox>
+                  {/* faixas do lombo (título) */}
+                  <mesh position={[0, b.h * 0.22, depth / 2 + 0.002]}>
+                    <planeGeometry args={[b.w * 0.62, b.h * 0.05]} />
+                    <meshStandardMaterial color={b.band} roughness={0.5} />
+                  </mesh>
+                  <mesh position={[0, b.h * 0.09, depth / 2 + 0.002]}>
+                    <planeGeometry args={[b.w * 0.44, b.h * 0.022]} />
+                    <meshStandardMaterial color={b.band} roughness={0.5} />
+                  </mesh>
+                </group>
               )
             })
           })()}
@@ -387,11 +397,6 @@ function WallShelves() {
           </mesh>
         ))}
       </group>
-      {/* cubo-troféu na de baixo */}
-      <mesh position={[0.85, 0.14, 0]} rotation-y={0.5} castShadow>
-        <boxGeometry args={[0.16, 0.16, 0.16]} />
-        <meshStandardMaterial color="#f5a623" emissive="#f5a623" emissiveIntensity={0.35} roughness={0.3} metalness={0.5} />
-      </mesh>
     </group>
   )
 }
@@ -462,19 +467,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Cozy: velas no parapeito da janela ─── */}
       <CandleCluster position={[-2.55, 1.21, -5.68]} />
 
-      {/* ─── Wall shelves (clicável → blog), à esquerda entre a janela e o PC ─── */}
-      <Hotspot
-        position={[0.55, 2.62, -5.78]}
-        label={labels.shelf}
-        labelPosition={[0, -0.85, 0.25]}
-        onActivate={() => onNavigate?.('blog')}
-        disabled={activeView === 'blog'}
-        marker={markers.blog}
-      >
-        <WallShelves />
-        {/* luz de leitura discreta — dá vida ao close do blog */}
-        <pointLight position={[0, 0.4, 1.2]} color="#ffd090" intensity={1.6} distance={4} decay={2} />
-      </Hotspot>
+      {/* (estante + porta-retrato vivem juntos no hotspot do "sobre", mais abaixo) */}
 
       {/* ─── Window (panorâmica, maior, atrás do lockup do título) ─── */}
       <group position={[-5.2, 3.4, -5.9]}>
@@ -533,33 +526,37 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         ))}
       </group>
 
-      {/* ─── Porta-retrato (clicável → about): em pé, apoiado na prateleira
-          de cima, levemente reclinado contra a parede ─── */}
+      {/* ─── Estante + porta-retrato = hotspot do "sobre". A estante INTEIRA
+          (prateleiras, livros, cubo mágico, foto) é clicável e faz hover, pra
+          ser bem fácil de perceber ─── */}
       <Hotspot
-        position={[0.85, 3.74, -5.72]}
-        rotation-x={-0.07}
         label={labels.painting}
-        labelPosition={[0, 0.62, 0.2]}
+        labelPosition={[0.75, 4.55, -5.55]}
         onActivate={() => onNavigate?.('about')}
         disabled={activeView === 'about'}
         marker={markers.about}
       >
         {(hovered) => (
           <>
-            {/* Frame pequeno, de porta-retrato */}
-            <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
-              <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
-            </RoundedBox>
-            {/* passe-partout */}
-            <mesh position={[0, 0, 0.08]}>
-              <planeGeometry args={[0.94, 0.66]} />
-              <meshStandardMaterial color="#e8e2d2" roughness={1} />
-            </mesh>
-            {/* foto: primeira apresentação — a origem do canto musical */}
-            <mesh position={[0, 0, 0.09]}>
-              <planeGeometry args={[0.86, 0.57]} />
-              <meshStandardMaterial map={kidTex} roughness={0.9} />
-            </mesh>
+            {/* prateleiras + luz de leitura */}
+            <group position={[0.55, 2.62, -5.78]}>
+              <WallShelves />
+              <pointLight position={[0, 0.4, 1.2]} color="#ffd090" intensity={1.6} distance={4} decay={2} />
+            </group>
+            {/* porta-retrato em pé na prateleira de cima, reclinado */}
+            <group position={[0.85, 3.74, -5.72]} rotation-x={-0.07}>
+              <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
+                <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
+              </RoundedBox>
+              <mesh position={[0, 0, 0.08]}>
+                <planeGeometry args={[0.94, 0.66]} />
+                <meshStandardMaterial color="#e8e2d2" roughness={1} />
+              </mesh>
+              <mesh position={[0, 0, 0.09]}>
+                <planeGeometry args={[0.86, 0.57]} />
+                <meshStandardMaterial map={kidTex} roughness={0.9} />
+              </mesh>
+            </group>
           </>
         )}
       </Hotspot>

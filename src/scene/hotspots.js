@@ -16,8 +16,8 @@ export const VIEWS = {
   // Zoom no porta-retrato apoiado na prateleira — o "sobre mim" mora na cena.
   // Leve 3/4 (vindo da esquerda): retrato + prateleira à direita, texto à esquerda
   about: {
-    camera: { position: [-0.1, 3.28, -3.4], lookAt: [0.83, 3.62, -5.74] },
-    cameraPortrait: { position: [0.45, 3.3, -3.25], lookAt: [0.87, 3.65, -5.74], fov: 52 },
+    camera: { position: [0, 3.15, -2.5], lookAt: [0.85, 3.15, -5.75], fov: 42 },
+    cameraPortrait: { position: [0.5, 3.2, -2.3], lookAt: [0.9, 3.2, -5.75], fov: 54 },
   },
   // Zoom no monitor CRT — o terminal Verve assume a tela (HUD respira à esquerda)
   verve: {
