@@ -37,8 +37,8 @@ function AutoOpenPedal({ open, reducedMotion }) {
       last.current = p
     }
     if (group.current) {
-      // sem giro contínuo: só alguns graus (~20°) acompanhando a abertura
-      group.current.rotation.y = p * 0.35
+      // vira de ladinho (~60°) pra mostrar a lateral do chassi
+      group.current.rotation.y = p * 1.05
     }
   })
 
@@ -68,13 +68,13 @@ export function SectionPedal({ open = false, active = true }) {
   return (
     <Canvas
       // mais de cima (como no ghostfx): com o chassi aberto dá pra VER o circuito
-      camera={{ position: [-1.35, 7.1, 3.6], fov: 38, near: 0.1, far: 60 }}
+      camera={{ position: [-0.6, 4.6, 5.6], fov: 40, near: 0.1, far: 60 }}
       gl={{ antialias: true, alpha: true }}
       dpr={[1, 1.5]}
       frameloop={active ? 'always' : 'never'}
       onCreated={({ gl, camera }) => {
         gl.localClippingEnabled = true
-        camera.lookAt(0, 0.45, 0)
+        camera.lookAt(0, 0.2, 0)
       }}
     >
       <ambientLight intensity={0.55} />
