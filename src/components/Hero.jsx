@@ -74,16 +74,16 @@ export function Hero() {
     setView(v)
   }
 
-  // Os objetos da cena voltam a navegar: o quadro na parede abre a view "about"
-  // na própria cena; o CRT e a prateleira rolam para as seções Verve e Blog.
+  // Os objetos da cena navegam: o quadro na parede abre a view "about"; o CRT
+  // rola para a seção Verve e o pedal do chão para a seção Ghost.
   const sceneNavigate = (target) => {
     if (target === 'about') return navigate('about')
-    const id = target === 'verve' || target === 'blog' ? target : null
+    const id = target === 'verve' || target === 'ghost' ? target : null
     if (id) document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
   }
 
   // rótulos curtos (bilíngues) que surgem ao passar o mouse nos hotspots da cena
-  const sceneLabels = { pc: t.verve.title, painting: t.sections.about, shelf: t.blog.title }
+  const sceneLabels = { pc: t.verve.title, painting: t.sections.about, pedal: t.ghost.title }
 
   // Navegação do menu do topo. As views da cena (ex.: about) travam o scroll do
   // body; ao ir para uma seção rolável é preciso sair da view ANTES de rolar,
@@ -145,13 +145,7 @@ export function Hero() {
 
   if (!webgl) return <StaticFallback />
 
-  const socials = [
-    { label: 'GH', href: links.github },
-    { label: 'IN', href: links.linkedin },
-    ...(links.cv ? [{ label: 'CV', href: links.cv }] : []),
-  ]
-
-  // delayCls deve ser classe literal (ex.: 'delay-150') — Tailwind não vê interpolação
+  // delayCls deve ser classe literal (ex.: 'delay-150'), Tailwind não vê interpolação
   const reveal = (active, delayCls = '') =>
     `transition-all duration-700 ease-out ${
       active ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
@@ -216,9 +210,9 @@ export function Hero() {
                 'delay-150'
               )}`}
             >
-              Vinícius
+              <span className="text-stroke-paper">Vinicius</span>
               <br />
-              <span className="text-stroke-paper">Peres</span>
+              Peres
             </h1>
             <p
               className={`mt-5 font-mono text-[11px] sm:text-sm tracking-[0.3em] sm:tracking-[0.42em] text-paper/85 ${reveal(
@@ -292,7 +286,7 @@ export function Hero() {
           />
         )}
 
-        {/* rodapé do hero: socials à direita, cue de scroll no centro */}
+        {/* rodapé do hero: cue de scroll centralizada */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-5 sm:px-12">
           <div className="w-16" aria-hidden="true" />
           <div className={`flex flex-col items-center gap-1 ${reveal(view === 'home', 'delay-500')}`}>
@@ -306,23 +300,7 @@ export function Hero() {
               ↓
             </span>
           </div>
-          <div
-            className={`flex items-center gap-6 ${
-              view === 'home' ? 'pointer-events-auto' : ''
-            } ${reveal(view === 'home', 'delay-300')}`}
-          >
-            {socials.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                className="font-mono text-xs tracking-widest text-paper hover:text-amber transition-colors"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {s.label}
-              </a>
-            ))}
-          </div>
+          <div className="w-16" aria-hidden="true" />
         </div>
       </section>
 
@@ -529,7 +507,6 @@ export function Hero() {
         <footer className="border-t border-paper/10 px-6 sm:px-12 py-8">
           <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] tracking-widest text-paper/40">
             <span>© {new Date().getFullYear()} VINICIUS PERES</span>
-            <span>{t.ui.footer}</span>
           </div>
         </footer>
       </main>
