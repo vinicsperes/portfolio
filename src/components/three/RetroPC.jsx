@@ -201,11 +201,9 @@ export function RetroPC({ view, statsRef, idleText, dimRef, ...props }) {
 
       <Keyboard position={[0, 0.06, 2.15]} />
 
-      {/* fogo saindo dos respiros do monitor */}
-      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.5} seed={0} levelRef={fireLevelRef} dimRef={dimRef} />
-      <Flame position={[-0.62, monitorTop - 0.08, -0.15]} scale={0.95} intensity={0.85} seed={1} levelRef={fireLevelRef} dimRef={dimRef} />
-      <Flame position={[0.58, monitorTop - 0.08, -0.3]} scale={1.1} intensity={0.8} seed={2} levelRef={fireLevelRef} dimRef={dimRef} />
-      <Flame position={[0.95, monitorTop - 0.5, 0.12]} scale={0.55} intensity={0.65} seed={3} levelRef={fireLevelRef} dimRef={dimRef} />
+      {/* fogo enxuto: 2 chamas (metade dos billboards — mais leve) */}
+      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.7} seed={0} levelRef={fireLevelRef} dimRef={dimRef} />
+      <Flame position={[0.5, monitorTop - 0.08, -0.25]} scale={1.05} intensity={0.85} seed={2} levelRef={fireLevelRef} dimRef={dimRef} />
 
       <Scorch position={[0, monitorTop + 0.006, -0.2]} scale={2.4} />
       <Smoke position={[0, monitorTop + 0.5, -0.2]} levelRef={fireLevelRef} dimRef={dimRef} />

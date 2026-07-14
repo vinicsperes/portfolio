@@ -1,6 +1,6 @@
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { ContactShadows, Environment, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
+import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
@@ -9,7 +9,6 @@ import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { Hotspot } from './Hotspot.jsx'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
-import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -83,15 +82,23 @@ function CameraController({ view, reducedMotion }) {
   return null
 }
 
-export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText, reducedMotion, markers, active = true, dimRef }) {
-  const [dpr, setDpr] = useState(1.1)
+/** Dispara quando o conteúdo do Suspense montou (assets carregados de verdade). */
+function SceneReady({ onReady }) {
+  useEffect(() => {
+    onReady?.()
+  }, [onReady])
+  return null
+}
+
+export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText, reducedMotion, markers, active = true, dimRef, onReady }) {
+  const [dpr, setDpr] = useState(1)
   const showMarkers = view === 'home' && !reducedMotion
 
   return (
     <Canvas
       camera={{ position: INTRO_START.position, fov: 40 }}
       frameloop={active ? 'always' : 'never'}
-      gl={{ antialias: true, alpha: true, toneMappingExposure: 1.1, localClippingEnabled: true }}
+      gl={{ antialias: true, alpha: true, toneMappingExposure: 1.4, localClippingEnabled: true }}
       onCreated={({ gl }) => {
         // os clipping planes do chassi do pedal dependem disso
         gl.localClippingEnabled = true
@@ -102,27 +109,24 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
       {/* flipflops limita a 2 oscilações — evita "ticks" visíveis de resolução */}
       <PerformanceMonitor
         flipflops={2}
-        onIncline={() => setDpr(1.5)}
+        onIncline={() => setDpr(1.25)}
         onDecline={() => setDpr(1)}
         onFallback={() => setDpr(1)}
       />
       <CameraController view={view} reducedMotion={reducedMotion} />
 
       <Suspense fallback={null}>
-        {/* gentle fog — fades distant floor edges */}
-        <fog attach="fog" args={['#0a0a0f', 22, 55]} />
+        {/* névoa quente — funde as bordas do chão na golden hour */}
+        <fog attach="fog" args={['#1a1512', 26, 60]} />
 
-        {/* IBL environment for realistic reflections */}
-        <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.15} />
+        {/* fill ambiente morno e generoso — o quarto não é mais noturno */}
+        <ambientLight intensity={0.95} color="#c9b79a" />
 
-        {/* cool fill light */}
-        <ambientLight intensity={0.3} color="#8890b0" />
-
-        {/* main directional (moonlight feel) */}
+        {/* sol baixo entrando pela janela (golden hour): quente e direcional */}
         <directionalLight
-          position={[-6, 6, 3]}
-          intensity={0.8}
-          color="#aab4cc"
+          position={[-7, 4.5, 2]}
+          intensity={1.7}
+          color="#ffb266"
           castShadow
           shadow-mapSize-width={512}
           shadow-mapSize-height={512}
@@ -134,19 +138,23 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
           shadow-bias={-0.001}
         />
 
-        {/* warm light from window */}
+        {/* feixe quente do pôr do sol pela janela panorâmica */}
         <spotLight
           position={[-4.5, 4, -4]}
-          intensity={3}
-          color="#6b8caa"
-          distance={16}
+          intensity={4}
+          color="#ffab54"
+          distance={18}
           decay={2}
-          angle={0.8}
+          angle={0.85}
           penumbra={0.6}
-          castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
         />
+
+        {/* céu frio de contraponto — impede que fique tudo laranja chapado */}
+        <hemisphereLight args={['#9db0d8', '#4a3a2e', 0.35]} />
+
+        {/* wash quente na parede do fundo — tira o preto chapado */}
+        <pointLight position={[-0.5, 4.2, -6.6]} color="#e8c79a" intensity={4} distance={26} decay={1.5} />
+        <pointLight position={[4.5, 4.2, -6.8]} color="#e8c79a" intensity={3.5} distance={26} decay={1.5} />
 
         {/* The room: floor, walls, desk, window, painting, shelves, furniture */}
         <Room
@@ -205,21 +213,10 @@ export function Scene({ view, scrollRef, statsRef, onNavigate, labels, idleText,
           decay={2}
         />
 
-        {/* Post-processing for cinematic realism */}
-        <EffectComposer multisampling={2}>
-          <Bloom
-            luminanceThreshold={0.6}
-            luminanceSmoothing={0.4}
-            intensity={0.6}
-            mipmapBlur
-          />
-          <Noise opacity={0.025} />
-          <Vignette eskil={false} offset={0.15} darkness={0.7} />
-        </EffectComposer>
-
         {/* compila shaders/texturas ANTES do primeiro frame — o loader só
             libera com a cena pronta de verdade */}
         <Preload all />
+        <SceneReady onReady={onReady} />
       </Suspense>
     </Canvas>
   )
