@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { ContactShadows, Environment, Preload } from '@react-three/drei'
+import { ContactShadows, Environment, Float, Preload } from '@react-three/drei'
 import { Knob3D } from './three/pedal/knobs'
 import { getPresetThumbs, PRESET_OPACITY } from './three/pedal/presetShaders.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
@@ -83,35 +83,41 @@ export function GhostSectionBg() {
 }
 
 /** Três knobs do pedal, decorativos (a animação de boot ainda roda). */
+const KNOB_VALS = [0.72, 0.45, 0.85]
+
 function KnobsCanvas({ boot }) {
-  const [vals, setVals] = useState([0.72, 0.45, 0.85])
   return (
     <Canvas
       camera={{ position: [0, 1.05, 1.5], fov: 30, near: 0.1, far: 20 }}
       gl={{ antialias: true, alpha: true }}
-      dpr={[1, 1.5]}
+      dpr={[1, 1.25]}
       frameloop={boot ? 'always' : 'never'}
       onCreated={({ camera }) => camera.lookAt(0, 0.1, 0)}
     >
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[-3, 4, 2]} intensity={2.2} color="#e8dfc8" />
+      <ambientLight intensity={0.5} color="#f0e8d8" />
+      <directionalLight position={[-3, 4, 2]} intensity={2} color="#e8dfc8" />
       <directionalLight position={[3, 3, -2]} intensity={1.2} color="#c8d8f0" />
       <Suspense fallback={null}>
         <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.6} />
-        {KNOBS.map((k, i) => (
-          <Knob3D
-            key={k.label}
-            position={[k.x, 0, 0]}
-            value={vals[i]}
-            onChange={(v) => setVals((a) => a.map((old, j) => (j === i ? v : old)))}
-            ink="#e0e0ec"
-            accent={LED}
-            label={k.label}
-            setControlsEnabled={noop}
-            bootTrigger={boot ? 1 : 0}
-            delay={i * 0.12}
-          />
-        ))}
+        {/* knobs vitrine: assentam nos valores no boot e depois só flutuam;
+            sem interação (nada de tooltip/arrasto) */}
+        <Float speed={1.5} rotationIntensity={0.15} floatIntensity={0.6}>
+          {KNOBS.map((k, i) => (
+            <Knob3D
+              key={k.label}
+              position={[k.x, 0, 0]}
+              value={KNOB_VALS[i]}
+              onChange={noop}
+              ink="#e0e0ec"
+              accent={LED}
+              label={k.label}
+              setControlsEnabled={noop}
+              bootTrigger={boot ? 1 : 0}
+              delay={i * 0.12}
+              interactive={false}
+            />
+          ))}
+        </Float>
         <ContactShadows position={[0, -0.001, 0]} opacity={0.5} scale={4} blur={2.4} far={0.8} resolution={256} />
         <Preload all />
       </Suspense>

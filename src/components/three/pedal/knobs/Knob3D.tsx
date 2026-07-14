@@ -17,6 +17,7 @@ export function Knob3D({
   knobTheme = "dark",
   knobStyle = "default",
   showArc = false,
+  interactive = true,
 }: {
   position: [number, number, number];
   value: number;
@@ -30,6 +31,7 @@ export function Knob3D({
   bootTrigger?: number;
   delay?: number;
   showArc?: boolean;
+  interactive?: boolean;
 }) {
   const dragRef = useRef<{ startY: number; startValue: number } | null>(null);
   const isHoveredRef = useRef(false);
@@ -133,11 +135,13 @@ export function Knob3D({
     <group
       position={position}
       onPointerEnter={() => {
+        if (!interactive) return;
         isHoveredRef.current = true;
         setControlsEnabled(false);
         document.body.style.cursor = "grab";
       }}
       onPointerLeave={() => {
+        if (!interactive) return;
         isHoveredRef.current = false;
         if (!dragRef.current) {
           setControlsEnabled(true);
@@ -145,12 +149,14 @@ export function Knob3D({
         }
       }}
       onWheel={(e: ThreeEvent<WheelEvent>) => {
+        if (!interactive) return;
         e.stopPropagation();
         if (animRef.current.seenTrigger === 0) animRef.current.seenTrigger = 1;
         const step = e.deltaY < 0 ? 0.04 : -0.04;
         onChange(Math.max(0, Math.min(1, value + step)));
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        if (!interactive) return;
         e.stopPropagation();
         if (animRef.current.seenTrigger === 0) animRef.current.seenTrigger = 1;
         const now = performance.now();
@@ -166,7 +172,7 @@ export function Knob3D({
         setControlsEnabled(false);
       }}
     >
-      {isDragging && <KnobTooltip label={label} value={value} accent={accent} />}
+      {interactive && isDragging && <KnobTooltip label={label} value={value} accent={accent} />}
       <group ref={knobGroupRef}>
         {knobStyle === "bigmuff" ? (
           <>
