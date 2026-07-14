@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Scene } from './three/Scene.jsx'
 import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
@@ -47,11 +47,13 @@ function RevealBlock({ children, className = '' }) {
 }
 
 export function Hero() {
-  const { lang, setLang, t } = useLang()
+  const { setLang, t } = useLang()
   const reducedMotion = useReducedMotion()
   const webgl = useMemo(supportsWebGL, [])
   const [view, setView] = useState(initialView) // home | about
   const [copied, setCopied] = useState(false)
+  const [sceneReady, setSceneReady] = useState(false)
+  const handleReady = useCallback(() => setSceneReady(true), [])
 
   // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
@@ -82,6 +84,23 @@ export function Hero() {
 
   // rótulos curtos (bilíngues) que surgem ao passar o mouse nos hotspots da cena
   const sceneLabels = { pc: t.verve.title, painting: t.sections.about, shelf: t.blog.title }
+
+  // Navegação do menu do topo. As views da cena (ex.: about) travam o scroll do
+  // body; ao ir para uma seção rolável é preciso sair da view ANTES de rolar,
+  // senão a página fica presa (não scrolla). Também libera o overflow na hora.
+  const onNav = (id) => {
+    const behavior = reducedMotion ? 'auto' : 'smooth'
+    if (id === 'about') return navigate('about')
+    returnScrollRef.current = null
+    if (view !== 'home') {
+      setView('home')
+      document.body.style.overflow = ''
+    }
+    requestAnimationFrame(() => {
+      if (id === 'top') window.scrollTo({ top: 0, behavior })
+      else document.getElementById(id)?.scrollIntoView({ behavior })
+    })
+  }
 
   const copyEmail = async () => {
     try {
@@ -147,25 +166,9 @@ export function Hero() {
       </p>
 
       {/* Topbar fixa */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-start justify-between gap-4 p-6 sm:px-12 sm:py-8 bg-gradient-to-b from-[#0a0a0f]/70 to-transparent">
-        <button
-          onClick={() => {
-            navigate('home')
-            window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' })
-          }}
-          className="pointer-events-auto flex items-center gap-3 text-left"
-          aria-label={lang === 'pt' ? 'Voltar ao início' : 'Back to start'}
-        >
-          <div className="h-8 w-8 bg-paper mix-blend-difference" />
-          <span className="font-mono text-sm font-bold tracking-[0.2em] text-paper mix-blend-difference">
-            VINICIUS
-            <br />
-            PERES
-          </span>
-        </button>
-
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-start justify-end gap-4 p-6 sm:px-12 sm:py-8 bg-gradient-to-b from-[#0a0a0f]/70 to-transparent">
         <div className="pointer-events-auto flex items-center gap-5">
-          <NavMenu onAbout={() => navigate('about')} />
+          <NavMenu onNav={onNav} />
         </div>
       </div>
 
@@ -180,6 +183,7 @@ export function Hero() {
             active={heroNear}
             onNavigate={sceneNavigate}
             labels={sceneLabels}
+            onReady={handleReady}
           />
         </div>
         {/* degradê à esquerda: garante leitura da tipografia sobre a cena */}
@@ -194,7 +198,7 @@ export function Hero() {
           />
         )}
 
-        <BootLoader />
+        <BootLoader ready={sceneReady} />
 
         {/* Lockup tipográfico (a estrela) — sobreposto à cena */}
         <div
@@ -225,33 +229,21 @@ export function Hero() {
               {t.hero.tag}
             </p>
 
-            {/* faixa de selos: monograma + nota curiosa + ano (vibe carimbo) */}
-            <div className={`mt-7 hidden sm:flex items-stretch gap-5 ${reveal(view === 'home', 'delay-300')}`}>
-              <div className="flex items-stretch border-2 border-paper/60">
-                <div className="flex items-center border-r-2 border-paper/60 px-3 font-poster text-3xl text-paper">
-                  {t.hero.badge.mono}
-                </div>
-                <div className="flex flex-col justify-center px-3 py-1.5 font-mono text-[9px] leading-relaxed tracking-widest text-paper/85">
-                  <span className="font-bold">{t.hero.badge.l1}</span>
-                  <span>{t.hero.badge.l2}</span>
-                </div>
+            {/* selo do autor: monograma + credencial + ano, num carimbo coeso */}
+            <div className={`mt-8 hidden sm:inline-flex items-stretch border border-paper/25 bg-white/[0.02] backdrop-blur-sm ${reveal(view === 'home', 'delay-300')}`}>
+              <div className="flex items-center justify-center border-r border-paper/25 px-4 font-poster text-4xl leading-none text-amber">
+                {t.hero.badge.mono}
               </div>
-              <div className="flex items-center gap-3 text-paper/60" aria-hidden="true">
-                <span className="text-[8px]">●</span>
-                <span className="text-xl">✦</span>
-                <span className="text-[8px]">●</span>
+              <div className="flex flex-col justify-center px-4 py-2.5">
+                <span className="font-mono text-[10px] font-bold tracking-[0.28em] text-paper">
+                  {t.hero.badge.l1}
+                </span>
+                <span className="mt-1 font-mono text-[9px] tracking-[0.22em] text-paper/55">
+                  {t.hero.badge.l2}
+                </span>
               </div>
-              <a
-                href={links.portfolioSource ?? links.github}
-                target="_blank"
-                rel="noreferrer"
-                className="pointer-events-auto flex flex-col justify-center border-l-2 border-paper/60 pl-3 font-mono text-[9px] leading-relaxed tracking-widest text-paper/75 hover:text-amber transition-colors"
-              >
-                <span>{t.hero.note.l1}</span>
-                <span className="font-bold">{t.hero.note.l2}</span>
-              </a>
               <div
-                className="flex items-center font-mono text-xs font-bold tracking-[0.2em] text-paper/70 [writing-mode:vertical-rl]"
+                className="flex items-center border-l border-paper/25 px-2.5 font-mono text-[9px] font-bold tracking-[0.15em] text-paper/45 [writing-mode:vertical-rl]"
                 aria-hidden="true"
               >
                 2026

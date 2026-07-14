@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '../i18n/LanguageContext.jsx'
-import { useReducedMotion } from '../hooks/useReducedMotion.js'
 
 const ITEMS = [
   { id: 'top', pt: 'QUARTO', en: 'ROOM' },
@@ -15,11 +14,9 @@ const ITEMS = [
  * "QUARTO" volta ao topo (a cena 3D); "SOBRE" abre a view do quadro na cena.
  * No mobile os itens não cabem na topbar: viram um painel atrás de "MENU".
  */
-export function NavMenu({ onAbout }) {
+export function NavMenu({ onNav }) {
   const { lang } = useLang()
-  const reducedMotion = useReducedMotion()
   const [open, setOpen] = useState(false)
-  const behavior = reducedMotion ? 'auto' : 'smooth'
 
   // painel mobile fecha sozinho ao rolar a página ou com Escape
   useEffect(() => {
@@ -38,9 +35,7 @@ export function NavMenu({ onAbout }) {
 
   const go = (id) => {
     setOpen(false)
-    if (id === 'top') window.scrollTo({ top: 0, behavior })
-    else if (id === 'about') onAbout?.()
-    else document.getElementById(id)?.scrollIntoView({ behavior })
+    onNav?.(id)
   }
 
   return (
