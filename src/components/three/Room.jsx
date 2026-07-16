@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { RoundedBox, useTexture } from '@react-three/drei'
+import { RoundedBox, Sparkles, useTexture } from '@react-three/drei'
 import { Hotspot } from './Hotspot.jsx'
 import { CandleCluster } from './Candles.jsx'
 
@@ -276,6 +276,57 @@ function useSunsetViewTexture() {
    Sub-components
    ─────────────────────────────────────────────────────────── */
 
+/**
+ * Janelinhas dos prédios acendendo/apagando devagar (vida no skyline).
+ * Barato: uns poucos quads com opacity mutada por ref no useFrame —
+ * zero setState, zero upload de textura. Coordenadas locais do grupo
+ * da janela (plano da vista: 8.2×3.9; prédios na faixa de baixo).
+ */
+function CityLights() {
+  const mats = useRef([])
+  const lights = useMemo(
+    () => [
+      { x: -3.62, y: -1.6, speed: 0.31, phase: 0.5 },
+      { x: -3.05, y: -1.15, speed: 0.22, phase: 2.1 },
+      { x: -2.5, y: -1.66, speed: 0.27, phase: 4.2 },
+      { x: -1.85, y: -0.95, speed: 0.19, phase: 1.3 },
+      { x: -1.38, y: -1.5, speed: 0.33, phase: 3.7 },
+      { x: -0.72, y: -1.72, speed: 0.24, phase: 5.5 },
+      { x: -0.18, y: -1.2, speed: 0.29, phase: 0.9 },
+      { x: 0.4, y: -1.58, speed: 0.21, phase: 2.8 },
+      { x: 0.95, y: -0.9, speed: 0.26, phase: 4.9 },
+      { x: 2.72, y: -1.62, speed: 0.23, phase: 1.8 },
+      { x: 3.28, y: -1.1, speed: 0.3, phase: 3.2 },
+      { x: 3.78, y: -1.68, speed: 0.2, phase: 5.1 },
+    ],
+    []
+  )
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    for (let i = 0; i < lights.length; i++) {
+      const m = mats.current[i]
+      if (!m) continue
+      const l = lights[i]
+      // pulso lento e suave, cada janela no seu ritmo
+      const s = Math.sin(t * l.speed + l.phase)
+      m.opacity = 0.1 + 0.75 * THREE.MathUtils.smoothstep(s, 0.35, 0.8)
+    }
+  })
+  return lights.map((l, i) => (
+    <mesh key={i} position={[l.x, l.y, 0.115]}>
+      <planeGeometry args={[0.055, 0.07]} />
+      <meshBasicMaterial
+        ref={(m) => void (mats.current[i] = m)}
+        color="#ffc576"
+        transparent
+        opacity={0.1}
+        toneMapped={false}
+        depthWrite={false}
+      />
+    </mesh>
+  ))
+}
+
 /** Luz quente da mesa (sem luminária visível — o brilho vem "da bagunça"). */
 function DeskGlow({ position }) {
   const lightRef = useRef()
@@ -317,7 +368,7 @@ function Notepad({ position, rotation = [0, 0, 0] }) {
 /** Prateleiras suspensas na parede (parte do hotspot do "sobre"). */
 function WallShelves() {
   const shelfBooks = [
-    // prateleira de cima: só um par no canto (o porta-retrato é o protagonista)
+    // prateleira de cima: par de livros à DIREITA (o porta-retrato mora à esquerda)
     [
       { w: 0.16, h: 0.5, color: '#2a3a4a', band: '#c9b083', lean: 0 },
       { w: 0.2, h: 0.55, color: '#4a2a20', band: '#d9c39a', lean: -0.16 },
@@ -351,7 +402,8 @@ function WallShelves() {
           {/* livros: corpo + faixas no lombo (não são mais só retângulos) e
               assentados na tábua (sem flutuar) */}
           {(() => {
-            let bx = -1.0
+            // cima: livros começam à direita do retrato; baixo: a partir da esquerda
+            let bx = si === 0 ? 0.3 : -1.0
             return shelfBooks[si].map((b, bi) => {
               const x = bx + b.w / 2
               bx += b.w + 0.05
@@ -467,6 +519,17 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Cozy: velas no parapeito da janela ─── */}
       <CandleCluster position={[-2.55, 1.21, -5.68]} />
 
+      {/* ─── Poeira flutuando no feixe da janela (1 draw call, shader do drei) ─── */}
+      <Sparkles
+        count={35}
+        scale={[5.5, 3.2, 2.6]}
+        position={[-2.8, 1.4, -3.9]}
+        size={1.8}
+        speed={0.22}
+        opacity={0.32}
+        color="#ffd9a0"
+      />
+
       {/* (estante + porta-retrato vivem juntos no hotspot do "sobre", mais abaixo) */}
 
       {/* ─── Window (panorâmica, maior, atrás do lockup do título) ─── */}
@@ -480,6 +543,8 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
           <planeGeometry args={[8.2, 3.9]} />
           <meshBasicMaterial map={skyTex} toneMapped={false} />
         </mesh>
+        {/* janelinhas dos prédios acendendo/apagando */}
+        <CityLights />
         {/* leve reflexo de vidro */}
         <mesh position={[0, 0, 0.12]}>
           <planeGeometry args={[8.2, 3.9]} />
@@ -507,8 +572,9 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       </group>
 
       {/* ─── Pôster colagem GHOSTFX: papel colado direto na parede (sem
-          moldura), levemente torto, com fita adesiva nos cantos ─── */}
-      <group position={[3.6, 3.95, -5.965]} rotation-z={-0.028}>
+          moldura), levemente torto, com fita adesiva nos cantos. Deslocado
+          pra DIREITA das chamas do CRT (o glow do fogo estourava sobre ele) ─── */}
+      <group position={[5.3, 4.15, -5.965]} rotation-z={-0.028}>
         <mesh castShadow>
           <planeGeometry args={[2.5, 1.42]} />
           <meshStandardMaterial map={collageTex} roughness={0.92} />
@@ -531,7 +597,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
           ser bem fácil de perceber ─── */}
       <Hotspot
         label={labels.painting}
-        labelPosition={[0.75, 4.55, -5.55]}
+        labelPosition={[0.0, 4.55, -5.55]}
         onActivate={() => onNavigate?.('about')}
         disabled={activeView === 'about'}
         marker={markers.about}
@@ -543,8 +609,9 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
               <WallShelves />
               <pointLight position={[0, 0.4, 1.2]} color="#ffd090" intensity={1.6} distance={4} decay={2} />
             </group>
-            {/* porta-retrato em pé na prateleira de cima, reclinado */}
-            <group position={[0.85, 3.74, -5.72]} rotation-x={-0.07}>
+            {/* porta-retrato em pé na PONTA ESQUERDA da prateleira de cima:
+                na view about ele fica ao lado do texto (que mora sobre a janela) */}
+            <group position={[0.0, 3.74, -5.72]} rotation-x={-0.07}>
               <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
                 <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
               </RoundedBox>

@@ -413,12 +413,12 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
       ctx.fillRect(pad + 40 + w + 4, boxY + 42, 3, 46)
     }
 
-    // convite
-    ctx.fillStyle = UI.accent
-    ctx.font = '600 30px "IBM Plex Mono", monospace'
-    const cta = idleText?.cta ?? 'click the computer to play_'
-    const blinkOn = Math.floor(now / 600) % 2 === 0
-    ctx.fillText(blinkOn ? cta : cta.replace(/_$/, ' '), pad, boxY + boxH + 48)
+    // rodapé: wpm fake acompanhando a digitação fantasma (o CRT é vitrine,
+    // sem convite de clique — não é mais jogável)
+    drawDot(pad + 9, boxY + boxH + 57, 7)
+    ctx.fillStyle = UI.dim
+    ctx.font = '500 26px "IBM Plex Mono", monospace'
+    ctx.fillText(`${72 + (Math.floor(now / CYCLE) % 21)} wpm`, pad + 34, boxY + boxH + 48)
 
     texture.needsUpdate = true
   }

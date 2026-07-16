@@ -21,8 +21,9 @@ function FireLight({ position, levelRef, dimRef }) {
     const target = (levelRef?.current ?? 1) * (1 - (dimRef?.current ?? 0) * 0.92)
     cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
     const t = clock.elapsedTime
+    // mais contida: o glow estourava branco sobre a parede/pôster
     light.current.intensity =
-      (9 + Math.sin(t * 11.3) * 2 + Math.sin(t * 23.7) * 1.4 + Math.sin(t * 5.1) * 1.8) *
+      (5.5 + Math.sin(t * 11.3) * 1.3 + Math.sin(t * 23.7) * 0.9 + Math.sin(t * 5.1) * 1.1) *
       cur.current
   })
   return <pointLight ref={light} position={position} color="#ff7a2a" distance={9} decay={2} />
@@ -201,9 +202,10 @@ export function RetroPC({ view, statsRef, idleText, dimRef, ...props }) {
 
       <Keyboard position={[0, 0.06, 2.15]} />
 
-      {/* fogo enxuto: 2 chamas (metade dos billboards — mais leve) */}
-      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.7} seed={0} levelRef={fireLevelRef} dimRef={dimRef} />
-      <Flame position={[0.5, monitorTop - 0.08, -0.25]} scale={1.05} intensity={0.85} seed={2} levelRef={fireLevelRef} dimRef={dimRef} />
+      {/* fogo enxuto: 2 chamas (metade dos billboards — mais leve), menores
+          e menos intensas pra não estourar branco na parede */}
+      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.45} intensity={0.8} seed={0} levelRef={fireLevelRef} dimRef={dimRef} />
+      <Flame position={[0.5, monitorTop - 0.08, -0.25]} scale={0.95} intensity={0.68} seed={2} levelRef={fireLevelRef} dimRef={dimRef} />
 
       <Scorch position={[0, monitorTop + 0.006, -0.2]} scale={2.4} />
       <Smoke position={[0, monitorTop + 0.5, -0.2]} levelRef={fireLevelRef} dimRef={dimRef} />

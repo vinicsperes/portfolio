@@ -7,7 +7,6 @@ import { Room } from './Room.jsx'
 import { GhostPedal } from './GhostPedal.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
-import { Hotspot } from './Hotspot.jsx'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
 
 // escratches reutilizados — nada de alocar por frame
@@ -161,44 +160,31 @@ export function Scene({ view, statsRef, onNavigate, labels, idleText, reducedMot
           }}
         />
 
-        {/* RetroPC on the desk — clicável → verve (terminal jogável) */}
-        <Hotspot
-          position={[3.2, 0, -4.2]}
-          rotation-y={-0.22}
-          label={labels?.pc}
-          labelPosition={[0, 4.5, 0]}
-          onActivate={() => onNavigate?.('verve')}
-          disabled={view === 'verve'}
-          marker={showMarkers && markers?.verve}
-        >
+        {/* RetroPC na mesa — decorativo: a tela só passa o reel do verve
+            (não é mais clicável/jogável) */}
+        <group position={[3.2, 0, -4.2]} rotation-y={-0.22}>
           <RetroPC view={view} statsRef={statsRef} idleText={idleText} dimRef={dimRef} />
           <ContactShadows
             position={[0, 0.01, 0]}
-            opacity={0.5}
+            opacity={0.6}
             scale={9}
             blur={2.4}
             far={4}
             color="#000000"
             frames={1}
           />
-        </Hotspot>
+        </group>
 
-        {/* Canto musical: pedal no chão (clicável, leva à seção Ghost) + amp + vinis */}
-        <Hotspot
-          position={[-2.35, -1.93, -3.3]}
-          rotation-y={0.45}
-          scale={0.3}
-          label={labels?.pedal}
-          labelPosition={[0, 5, 0]}
-          onActivate={() => onNavigate?.('ghost')}
-        >
+        {/* Canto musical: pedal no chão + amp + vinis — tudo decorativo
+            (sem hover/clique; a seção Ghost chega pelo scroll) */}
+        <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
           <GhostPedal />
-        </Hotspot>
+        </group>
         <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
         <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />
         <ContactShadows
           position={[-2.9, -2.09, -3.9]}
-          opacity={0.55}
+          opacity={0.7}
           scale={7}
           blur={2.2}
           far={3}

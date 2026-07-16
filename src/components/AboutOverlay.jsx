@@ -21,6 +21,25 @@ export function AboutOverlay({ onNavigate, onContact }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col p-6 sm:p-12 pt-24 sm:pt-28">
+      {/* scrims de legibilidade: degradê à esquerda no desktop (texto mora lá),
+          de baixo pra cima no mobile (texto ancora embaixo, foto respira em cima) */}
+      <div
+        className="absolute inset-0 -z-10 hidden sm:block"
+        style={{
+          background:
+            'linear-gradient(100deg, rgba(10,10,15,0.82) 0%, rgba(10,10,15,0.55) 32%, rgba(10,10,15,0.14) 55%, transparent 70%)',
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-0 -z-10 sm:hidden"
+        style={{
+          background:
+            'linear-gradient(to top, rgba(10,10,15,0.9) 0%, rgba(10,10,15,0.72) 45%, rgba(10,10,15,0.2) 68%, transparent 82%)',
+        }}
+        aria-hidden="true"
+      />
+
       <div className="pointer-events-auto">
         <button
           onClick={() => onNavigate('home')}
@@ -30,8 +49,8 @@ export function AboutOverlay({ onNavigate, onContact }) {
         </button>
       </div>
 
-      {/* texto sobre a parede escura; o quadro respira à direita */}
-      <div className="flex flex-1 items-center">
+      {/* mobile: foto no topo, texto embaixo; desktop: quadro à direita, texto centrado à esquerda */}
+      <div className="flex flex-1 items-end pb-2 sm:items-center sm:pb-0">
         <div
           ref={ref}
           className={`pointer-events-auto max-w-md transition-all duration-700 ease-out ${
@@ -41,13 +60,13 @@ export function AboutOverlay({ onNavigate, onContact }) {
           <span className="font-mono text-[10px] font-semibold tracking-[0.35em] text-amber/90">
             {t.sections.about}
           </span>
-          <h2 className="mt-4 font-poster uppercase leading-[0.85] tracking-tight text-6xl sm:text-7xl drop-shadow-[0_4px_18px_rgba(0,0,0,0.6)]">
+          <h2 className="mt-3 sm:mt-4 font-poster uppercase leading-[0.85] tracking-tight text-5xl sm:text-7xl drop-shadow-[0_4px_18px_rgba(0,0,0,0.6)]">
             <span className="text-paper">{a.headTop}</span>
             <br />
             <span className="text-amber">{a.headBottom}</span>
           </h2>
-          <div className="mt-6 h-px w-12 bg-amber/70" aria-hidden="true" />
-          <p className="mt-5 max-w-sm font-mono text-xs sm:text-sm text-paper/85 leading-relaxed">
+          <div className="mt-4 sm:mt-6 h-px w-12 bg-amber/70" aria-hidden="true" />
+          <p className="mt-4 sm:mt-5 max-w-sm font-mono text-xs sm:text-sm text-paper/85 leading-relaxed">
             {a.p1}
           </p>
           <p className="mt-4 max-w-sm font-mono text-[11px] sm:text-xs text-paper/60 leading-relaxed">
@@ -55,7 +74,7 @@ export function AboutOverlay({ onNavigate, onContact }) {
           </p>
 
           {/* redes */}
-          <div className="mt-7 flex items-center gap-6">
+          <div className="mt-5 sm:mt-7 flex items-center gap-6">
             {socials.map((s) => (
               <a
                 key={s.label}
@@ -72,7 +91,7 @@ export function AboutOverlay({ onNavigate, onContact }) {
 
           <button
             onClick={onContact}
-            className="mt-8 border-2 border-amber px-5 py-3 font-mono text-xs font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
+            className="mt-6 sm:mt-8 border-2 border-amber px-5 py-3 font-mono text-xs font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
           >
             {a.cta}
           </button>
