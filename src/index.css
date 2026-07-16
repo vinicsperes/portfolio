@@ -31,8 +31,10 @@ body,
 }
 
 body {
-  background-color: var(--color-paper);
-  color: var(--color-ink);
+  /* mesmo fundo escuro do app: o body aparece no overscroll (iOS) e em
+     qualquer fresta — claro aqui virava uma barra branca no fim da página */
+  background-color: #0a0a0f;
+  color: var(--color-paper);
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
 }

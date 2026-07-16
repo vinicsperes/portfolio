@@ -597,7 +597,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
           ser bem fácil de perceber ─── */}
       <Hotspot
         label={labels.painting}
-        labelPosition={[0.0, 4.55, -5.55]}
+        labelPosition={[0.0, 4.25, -5.55]}
         onActivate={() => onNavigate?.('about')}
         disabled={activeView === 'about'}
         marker={markers.about}

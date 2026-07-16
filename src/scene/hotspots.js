@@ -11,7 +11,9 @@ export const VIEWS = {
   home: {
     // mais um passo à frente: entra no quarto, mesa/tapete encostados na parede
     camera: { position: [0, 3.05, 7.7], lookAt: [0, 1.15, -1.4] },
-    cameraPortrait: { position: [0, 3.4, 12.5], lookAt: [1.0, 1.1, -1.6], fov: 50 },
+    // tilt mínimo pra baixo: menos parede morta acima da janela (o wash
+    // alto na parede faz o resto — o enquadramento original fica intacto)
+    cameraPortrait: { position: [0, 3.4, 12.5], lookAt: [1.0, 1.0, -1.6], fov: 50 },
   },
   // Zoom no porta-retrato (agora na ponta ESQUERDA da prateleira, x=0). A
   // câmera chega perto e mira à esquerda do quadro: a foto ocupa a metade

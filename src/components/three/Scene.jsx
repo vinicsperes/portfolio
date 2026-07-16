@@ -152,6 +152,9 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         {/* wash quente na parede do fundo — tira o preto chapado */}
         <pointLight position={[-0.5, 4.2, -6.6]} color="#e8c79a" intensity={4} distance={26} decay={1.5} />
         <pointLight position={[4.5, 4.2, -6.8]} color="#e8c79a" intensity={3.5} distance={26} decay={1.5} />
+        {/* wash alto e difuso sobre a janela: no retrato (mobile) a parede
+            acima dela aparecia como faixa preta, parecendo fim de cena */}
+        <pointLight position={[-5, 8, -3.5]} color="#c9a97a" intensity={1.8} distance={20} decay={1.4} />
 
         {/* The room: floor, walls, desk, window, painting, shelves, furniture */}
         <Room
