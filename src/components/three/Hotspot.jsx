@@ -44,7 +44,11 @@ export function Hotspot({
       {...groupProps}
       onClick={(e) => {
         e.stopPropagation()
-        if (!disabled) onActivate?.()
+        if (disabled) return
+        // o overlay da view cobre o canvas e o pointerout nunca dispara:
+        // sem este reset o cursor ficaria preso em "pointer"
+        document.body.style.cursor = 'default'
+        onActivate?.()
       }}
       onPointerOver={(e) => {
         e.stopPropagation()

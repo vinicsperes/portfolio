@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Scene } from './three/Scene.jsx'
 import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
-import { SectionPedal } from './SectionPedal.jsx'
-import { GhostCards, GhostSectionBg } from './GhostCards.jsx'
-import { VerveDemo } from './VerveDemo.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { useReveal } from '../hooks/useReveal.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
 import { links } from '../content/index.js'
+
+// Tudo abaixo da dobra sai do chunk inicial: o hero interage antes de o
+// código do pedal/terminal (drei extra + troika) terminar de baixar
+const SectionPedal = lazy(() => import('./SectionPedal.jsx').then((m) => ({ default: m.SectionPedal })))
+const GhostCards = lazy(() => import('./GhostCards.jsx').then((m) => ({ default: m.GhostCards })))
+const GhostSectionBg = lazy(() => import('./GhostCards.jsx').then((m) => ({ default: m.GhostSectionBg })))
+const VerveDemo = lazy(() => import('./VerveDemo.jsx').then((m) => ({ default: m.VerveDemo })))
 
 // única view com câmera própria além da home: o quadro do about
 const VALID_VIEWS = ['home', 'about']
@@ -56,21 +60,51 @@ export function Hero() {
 
   // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
+  // true quando NÓS empurramos a entrada ?view=about no history (vs deep-load)
+  const pushedViewRef = useRef(false)
+  // 0..1 conforme a página rola pra longe do hero: apaga o fogo/luzes da cena
+  const dimRef = useRef(0)
 
   // pausa o canvas do hero fora da viewport; monta/pausa o canvas do pedal da seção
   const [heroRef, heroNear] = useNearViewport('200px')
-  // margem generosa: o canvas do pedal monta e compila bem antes de aparecer
+  // margem generosa: o canvas do pedal monta e compila bem antes de aparecer.
+  // Depois de montar uma vez, FICA montado (frameloop pausa fora da tela):
+  // desmontar/remontar refazia contexto WebGL + HDRI a cada revisita
   const [ghostNearRef, ghostNear] = useNearViewport('1600px')
+  const [ghostSeen, setGhostSeen] = useState(false)
+  useEffect(() => {
+    if (ghostNear) setGhostSeen(true)
+  }, [ghostNear])
   // roda + abre o pedal quando o palco encosta na viewport (damp lento faz
   // a abertura acontecer com o palco já em cena)
   const [ghostStageRef, ghostStageVisible] = useNearViewport('0px')
 
+  // Entrar numa view trava o scroll do body no mesmo commit: um scroll SUAVE
+  // em voo seria congelado no meio e o overlay (absoluto no hero) ficaria
+  // cortado fora da tela — por isso o pulo pro topo é instantâneo.
   const navigate = (v) => {
     if (v !== 'home') {
       if (returnScrollRef.current == null) returnScrollRef.current = window.scrollY
-      window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' })
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      if (!pushedViewRef.current && initialView() === 'home') {
+        pushedViewRef.current = true
+        window.history.pushState({ view: v }, '', `?view=${v}`)
+      }
     }
     setView(v)
+  }
+
+  // Sair da view pela UI (VOLTAR/Escape/contato): desfaz a entrada do history
+  // que criamos (Back do navegador fecha o about em vez de sair do site);
+  // num deep-load (?view=about) só limpa a URL.
+  const leaveView = () => {
+    if (pushedViewRef.current) {
+      pushedViewRef.current = false
+      window.history.back()
+    } else {
+      window.history.replaceState(null, '', window.location.pathname)
+      setView('home')
+    }
   }
 
   // Único objeto interativo da cena: o quadro abre a view "about"
@@ -105,18 +139,44 @@ export function Hero() {
     }
   }, [view])
 
-  // deep-link para seções (#ghost, #about…): rola após o layout assentar
+  // Back/Forward do navegador abre/fecha a view about
+  useEffect(() => {
+    const onPop = (e) => {
+      pushedViewRef.current = false
+      setView(e.state?.view === 'about' ? 'about' : 'home')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  // dim 0..1 conforme o hero sai de cena (a cena apaga o fogo com isso);
+  // só muta ref: zero re-render por scroll
+  useEffect(() => {
+    const onScroll = () => {
+      dimRef.current = Math.min(1, window.scrollY / window.innerHeight)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // deep-link para seções (#ghost, #contact…): rola após o layout assentar.
+  // #about mapeia pra view da cena; e se a página já ABRIU numa view
+  // (?view=about), o body está travado — rolar seria um estado quebrado.
   useEffect(() => {
     const id = window.location.hash.slice(1)
     if (!id) return
+    if (id === 'about') return navigate('about')
+    if (initialView() !== 'home') return
     const tm = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 500)
     return () => clearTimeout(tm)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Escape volta ao quarto de qualquer view
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape') navigate('home')
+      if (e.key === 'Escape') leaveView()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -134,10 +194,7 @@ export function Hero() {
   return (
     <div className="relative w-full bg-[#0a0a0f] text-paper">
       {/* resumo para leitores de tela — a cena 3D é decorativa */}
-      <p className="sr-only">
-        Vinicius Peres, fullstack creative developer. Ghost FX: guitar pedal in the browser.
-        Verve: terminal typing test. Scroll down to explore the projects.
-      </p>
+      <p className="sr-only">{t.ui.srIntro}</p>
 
       {/* ─────────── HERO: cena full-bleed + lockup tipográfico à esquerda ─────────── */}
       <section ref={heroRef} className="relative min-h-[100dvh] overflow-hidden">
@@ -150,6 +207,8 @@ export function Hero() {
             active={heroNear}
             onNavigate={sceneNavigate}
             labels={sceneLabels}
+            markers={{ about: true }}
+            dimRef={dimRef}
             onReady={handleReady}
           />
         </div>
@@ -167,10 +226,12 @@ export function Hero() {
 
         <BootLoader ready={sceneReady} />
 
-        {/* Lockup tipográfico (a estrela) — sobreposto à cena */}
+        {/* Lockup tipográfico (a estrela) — sobreposto à cena. Fora da home ele
+            precisa de `invisible` (não só opacity-0): senão os botões seguem
+            clicáveis/focáveis por baixo do overlay do about */}
         <div
           className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-center px-6 pt-24 sm:px-12 ${
-            view === 'home' ? '' : 'opacity-0'
+            view === 'home' ? '' : 'opacity-0 invisible'
           } transition-opacity duration-500`}
         >
           <div className="w-full sm:w-3/5">
@@ -244,9 +305,9 @@ export function Hero() {
         {view === 'about' && (
           <AboutOverlay
             key="about"
-            onNavigate={navigate}
+            onNavigate={(v) => (v === 'home' ? leaveView() : navigate(v))}
             onContact={() => {
-              navigate('home')
+              leaveView()
               setTimeout(
                 () =>
                   document
@@ -262,11 +323,11 @@ export function Hero() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-5 sm:px-12">
           <div className="w-16" aria-hidden="true" />
           <div className={`flex flex-col items-center gap-1 ${reveal(view === 'home', 'delay-500')}`}>
-            <span className="font-mono text-[9px] tracking-[0.3em] text-paper/40">
+            <span className="font-mono text-[9px] tracking-[0.3em] text-paper/55">
               {t.ui.scrollHint}
             </span>
             <span
-              className={`text-paper/40 text-xs ${reducedMotion ? '' : 'animate-bounce'}`}
+              className={`text-paper/55 text-xs ${reducedMotion ? '' : 'animate-bounce'}`}
               aria-hidden="true"
             >
               ↓
@@ -297,7 +358,9 @@ export function Hero() {
 
         {/* GHOST FX — tela única: o pedal abre sozinho ao entrar em cena; cards na mesma tela */}
         <section id="ghost" ref={ghostNearRef} className="relative overflow-hidden">
-          <GhostSectionBg />
+          <Suspense fallback={null}>
+            <GhostSectionBg />
+          </Suspense>
           <div className="relative mx-auto flex min-h-[100dvh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12 py-14 sm:py-16">
             {/* grid-cols-1 é obrigatório: sem template, o track auto dimensiona
                 pelo conteúdo (max-w-md = 448px) e estoura o viewport no mobile */}
@@ -348,12 +411,18 @@ export function Hero() {
               {/* palco do pedal: monta cedo (Preload compila parado) e só RODA
                   quando visível — canvas ativo fora da tela = lag no resto */}
               <div ref={ghostStageRef} className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
-                {ghostNear && <SectionPedal open={ghostStageVisible} active={ghostStageVisible} />}
+                {(ghostNear || ghostSeen) && (
+                  <Suspense fallback={null}>
+                    <SectionPedal open={ghostStageVisible} active={ghostStageVisible} />
+                  </Suspense>
+                )}
               </div>
             </div>
 
             {/* knobs interativos + colorways dos presets, na mesma tela */}
-            <GhostCards />
+            <Suspense fallback={null}>
+              <GhostCards />
+            </Suspense>
           </div>
         </section>
 
@@ -365,7 +434,9 @@ export function Hero() {
           />
           <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
             <RevealBlock className="order-2 md:order-1">
-              <VerveDemo />
+              <Suspense fallback={null}>
+                <VerveDemo />
+              </Suspense>
             </RevealBlock>
             <RevealBlock className="order-1 md:order-2">
               <span className="font-mono text-xs font-semibold tracking-[0.25em]" style={{ color: EMBER }}>
@@ -539,7 +610,7 @@ export function Hero() {
                 </nav>
               </div>
             </div>
-            <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-paper/10 pt-6 font-mono text-[10px] tracking-widest text-paper/40">
+            <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-paper/10 pt-6 font-mono text-[10px] tracking-widest text-paper/55">
               <span>© {new Date().getFullYear()} VINICIUS PERES</span>
               <img src="/peres-stamp-globe.svg" alt="" className="h-7 w-auto invert opacity-50" />
             </div>

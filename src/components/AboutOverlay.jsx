@@ -41,9 +41,10 @@ export function AboutOverlay({ onNavigate, onContact }) {
       />
 
       <div className="pointer-events-auto">
+        {/* p-3 -m-3: alvo de toque >=44px sem deslocar o layout */}
         <button
           onClick={() => onNavigate('home')}
-          className="font-mono text-xs sm:text-sm tracking-widest text-paper hover:text-amber transition-colors"
+          className="p-3 -m-3 font-mono text-xs sm:text-sm tracking-widest text-paper hover:text-amber transition-colors"
         >
           {t.ui.backToRoom}
         </button>

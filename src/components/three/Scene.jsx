@@ -1,13 +1,17 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
-import { GhostPedal } from './GhostPedal.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
+
+// O pedal do chão carrega o PedalScene inteiro (parts + troika Text): lazy
+// com Suspense PRÓPRIO tira ~tudo isso do chunk inicial; o pedal pipoca na
+// cena logo depois do primeiro paint, sem segurar o BootLoader
+const GhostPedal = lazy(() => import('./GhostPedal.jsx').then((m) => ({ default: m.GhostPedal })))
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -83,7 +87,7 @@ function SceneReady({ onReady }) {
   return null
 }
 
-export function Scene({ view, statsRef, onNavigate, labels, idleText, reducedMotion, markers, active = true, dimRef, onReady }) {
+export function Scene({ view, onNavigate, labels, reducedMotion, markers, active = true, dimRef, onReady }) {
   const [dpr, setDpr] = useState(1)
   const showMarkers = view === 'home' && !reducedMotion
 
@@ -154,16 +158,13 @@ export function Scene({ view, statsRef, onNavigate, labels, idleText, reducedMot
           onNavigate={onNavigate}
           labels={labels}
           activeView={view}
-          markers={{
-            about: showMarkers && markers?.about,
-            blog: showMarkers && markers?.blog,
-          }}
+          markers={{ about: showMarkers && markers?.about }}
         />
 
         {/* RetroPC na mesa — decorativo: a tela só passa o reel do verve
             (não é mais clicável/jogável) */}
         <group position={[3.2, 0, -4.2]} rotation-y={-0.22}>
-          <RetroPC view={view} statsRef={statsRef} idleText={idleText} dimRef={dimRef} />
+          <RetroPC dimRef={dimRef} />
           <ContactShadows
             position={[0, 0.01, 0]}
             opacity={0.6}
@@ -178,7 +179,9 @@ export function Scene({ view, statsRef, onNavigate, labels, idleText, reducedMot
         {/* Canto musical: pedal no chão + amp + vinis — tudo decorativo
             (sem hover/clique; a seção Ghost chega pelo scroll) */}
         <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
-          <GhostPedal />
+          <Suspense fallback={null}>
+            <GhostPedal />
+          </Suspense>
         </group>
         <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
         <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />

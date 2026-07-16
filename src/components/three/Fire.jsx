@@ -51,11 +51,14 @@ export function Smoke({ position = [0, 0, 0], count = 40, height = 2.2, level = 
   useFrame(({ clock }, delta) => {
     const pos = points.current.geometry.attributes.position
     const t = clock.elapsedTime
+    // aba em background devolve um delta gigante no primeiro frame de volta;
+    // sem clamp o X (que nunca é resetado) espalharia as partículas pra sempre
+    const dt = Math.min(delta, 0.1)
     for (let i = 0; i < count; i++) {
-      let y = pos.getY(i) + delta * (0.35 + seeds[i] * 0.35)
+      let y = pos.getY(i) + dt * (0.35 + seeds[i] * 0.35)
       if (y > height) y = 0
       pos.setY(i, y)
-      pos.setX(i, pos.getX(i) + Math.sin(t * 1.2 + seeds[i] * 20) * delta * 0.08)
+      pos.setX(i, pos.getX(i) + Math.sin(t * 1.2 + seeds[i] * 20) * dt * 0.08)
     }
     pos.needsUpdate = true
     const target = (levelRef?.current ?? level) * (1 - (dimRef?.current ?? 0) * 0.92)

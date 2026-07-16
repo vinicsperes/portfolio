@@ -52,7 +52,7 @@ function Scorch({ position, scale = 1 }) {
   )
 }
 
-function Monitor({ position, view, statsRef, idleText }) {
+function Monitor({ position }) {
   return (
     <group position={position}>
       {/* base giratória */}
@@ -86,11 +86,7 @@ function Monitor({ position, view, statsRef, idleText }) {
           <meshStandardMaterial color={PLASTIC_DARK} roughness={0.5} />
         </mesh>
         <group position={[0, 0.08, 0.378]}>
-          <VerveTerminal
-            mode={view === 'verve' ? 'live' : 'idle'}
-            statsRef={statsRef}
-            idleText={idleText}
-          />
+          <VerveTerminal />
         </group>
 
         {/* respiros no topo, de onde sai o fogo */}
@@ -183,33 +179,28 @@ function Keyboard({ position }) {
 
 /**
  * O PC completo: gabinete deitado, monitor CRT em cima pegando fogo,
- * teclado na frente. Origem no chão, centro do gabinete.
- * Em `view='verve'` o fogo APAGA por completo e só reacende (pequeno)
- * quando a digitação começa — a máquina esquenta com você.
+ * teclado na frente. Origem no chão, centro do gabinete. O CRT é vitrine
+ * (o verve roda em idle na tela); dimRef (0..1, dirigido pelo scroll da
+ * página) apaga o fogo e as luzes conforme o hero sai de cena.
  */
-export function RetroPC({ view, statsRef, idleText, dimRef, ...props }) {
+export function RetroPC({ dimRef, ...props }) {
   const monitorTop = 3.15 // altura do topo do monitor
-  // dimRef (0..1, dirigido pelo scroll da página) "apaga as luzes" ao sair do hero
-  const fireLevelRef = useRef(1)
-  useFrame(() => {
-    fireLevelRef.current = view === 'verve' ? (statsRef?.current?.typing ? 0.34 : 0) : 1
-  })
 
   return (
     <group {...props}>
       <Case />
-      <Monitor position={[0, 0.76, -0.1]} view={view} statsRef={statsRef} idleText={idleText} />
+      <Monitor position={[0, 0.76, -0.1]} />
 
       <Keyboard position={[0, 0.06, 2.15]} />
 
       {/* fogo enxuto: 2 chamas (metade dos billboards — mais leve), menores
           e menos intensas pra não estourar branco na parede */}
-      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.45} intensity={0.8} seed={0} levelRef={fireLevelRef} dimRef={dimRef} />
-      <Flame position={[0.5, monitorTop - 0.08, -0.25]} scale={0.95} intensity={0.68} seed={2} levelRef={fireLevelRef} dimRef={dimRef} />
+      <Flame position={[0, monitorTop - 0.1, -0.2]} scale={1.45} intensity={0.8} seed={0} dimRef={dimRef} />
+      <Flame position={[0.5, monitorTop - 0.08, -0.25]} scale={0.95} intensity={0.68} seed={2} dimRef={dimRef} />
 
       <Scorch position={[0, monitorTop + 0.006, -0.2]} scale={2.4} />
-      <Smoke position={[0, monitorTop + 0.5, -0.2]} levelRef={fireLevelRef} dimRef={dimRef} />
-      <FireLight position={[0, monitorTop + 0.7, 0.4]} levelRef={fireLevelRef} dimRef={dimRef} />
+      <Smoke position={[0, monitorTop + 0.5, -0.2]} dimRef={dimRef} />
+      <FireLight position={[0, monitorTop + 0.7, 0.4]} dimRef={dimRef} />
     </group>
   )
 }

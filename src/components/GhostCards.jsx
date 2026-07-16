@@ -4,6 +4,7 @@ import { ContactShadows, Environment, Float, Preload } from '@react-three/drei'
 import { Knob3D } from './three/pedal/knobs'
 import { getPresetThumbs, PRESET_OPACITY } from './three/pedal/presetShaders.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
+import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { useReveal } from '../hooks/useReveal.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
 
@@ -86,6 +87,7 @@ export function GhostSectionBg() {
 const KNOB_VALS = [0.72, 0.45, 0.85]
 
 function KnobsCanvas({ boot }) {
+  const reducedMotion = useReducedMotion()
   return (
     <Canvas
       camera={{ position: [0, 1.05, 1.5], fov: 30, near: 0.1, far: 20 }}
@@ -101,7 +103,11 @@ function KnobsCanvas({ boot }) {
         <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.6} />
         {/* knobs vitrine: assentam nos valores no boot e depois só flutuam;
             sem interação (nada de tooltip/arrasto) */}
-        <Float speed={1.5} rotationIntensity={0.15} floatIntensity={0.6}>
+        <Float
+          speed={reducedMotion ? 0 : 1.5}
+          rotationIntensity={reducedMotion ? 0 : 0.15}
+          floatIntensity={reducedMotion ? 0 : 0.6}
+        >
           {KNOBS.map((k, i) => (
             <Knob3D
               key={k.label}
@@ -133,8 +139,14 @@ export function GhostCards() {
   const { t } = useLang()
   const k = t.ghost.features.knobs
   const presets = t.ghost.presets
-  // monta cedo (Preload compila com o frameloop parado); roda só quando visível
+  // monta cedo (Preload compila com o frameloop parado); roda só quando
+  // visível. Depois de montar uma vez FICA montado: desmontar/remontar
+  // refazia contexto WebGL + HDRI a cada revisita (card em branco)
   const [knobsRef, knobsNear] = useNearViewport('900px')
+  const [knobsSeen, setKnobsSeen] = useState(false)
+  useEffect(() => {
+    if (knobsNear) setKnobsSeen(true)
+  }, [knobsNear])
   const [knobsRunRef, knobsRun] = useNearViewport('0px')
   const thumbs = usePresetThumbs(knobsNear)
   const [rRow, vRow] = useReveal(0.1)
@@ -155,7 +167,7 @@ export function GhostCards() {
         </div>
         {/* pointer-events-none: os knobs aqui são vitrine, não controle */}
         <div ref={knobsRunRef} className="pointer-events-none relative h-44 flex-1">
-          {knobsNear && <KnobsCanvas boot={knobsRun} />}
+          {(knobsNear || knobsSeen) && <KnobsCanvas boot={knobsRun} />}
           {/* silkscreen em DOM: alinhado por terços com os knobs em x = -0.55/0/0.55 */}
           <div
             className="pointer-events-none absolute inset-x-0 bottom-2 grid grid-cols-3 text-center font-mono text-[8px] font-bold tracking-[0.3em]"
@@ -201,7 +213,7 @@ export function GhostCards() {
                   <span className="font-poster text-lg uppercase" style={{ color: PRESET_META[i].color }}>
                     {p.name}
                   </span>
-                  <span className="font-mono text-[8px] tracking-[0.25em] text-paper/40">
+                  <span className="font-mono text-[8px] tracking-[0.25em] text-paper/55">
                     {PRESET_META[i].word}
                   </span>
                 </div>
