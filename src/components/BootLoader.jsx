@@ -47,11 +47,21 @@ export function BootLoader({ ready = false }) {
       }`}
       aria-hidden="true"
     >
-      <div className="w-48 sm:w-64 h-px bg-paper/15 relative overflow-hidden">
-        <div
-          className="absolute inset-y-0 left-0 bg-amber"
-          style={{ width: `${width}%`, transition: `width ${ready ? 300 : 2200}ms ease-out` }}
+      <div className="flex flex-col items-center gap-7">
+        {/* wordmark do PERES entrando suave sobre a barra */}
+        <img
+          src="/peres-stamp-wordmark.svg"
+          alt=""
+          className={`h-12 sm:h-16 w-auto invert transition-all duration-700 ease-out ${
+            mounted ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-2'
+          }`}
         />
+        <div className="w-48 sm:w-64 h-px bg-paper/15 relative overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 bg-amber"
+            style={{ width: `${width}%`, transition: `width ${ready ? 300 : 2200}ms ease-out` }}
+          />
+        </div>
       </div>
     </div>
   )

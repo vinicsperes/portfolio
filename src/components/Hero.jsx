@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Scene } from './three/Scene.jsx'
 import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
-import { NavMenu } from './NavMenu.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
 import { SectionPedal } from './SectionPedal.jsx'
 import { GhostCards, GhostSectionBg } from './GhostCards.jsx'
@@ -74,33 +73,14 @@ export function Hero() {
     setView(v)
   }
 
-  // Os objetos da cena navegam: o quadro na parede abre a view "about"; o CRT
-  // rola para a seção Verve e o pedal do chão para a seção Ghost.
+  // Único objeto interativo da cena: o quadro abre a view "about"
+  // (CRT e pedal são decoração, sem hover/clique).
   const sceneNavigate = (target) => {
-    if (target === 'about') return navigate('about')
-    const id = target === 'verve' || target === 'ghost' ? target : null
-    if (id) document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
+    if (target === 'about') navigate('about')
   }
 
-  // rótulos curtos (bilíngues) que surgem ao passar o mouse nos hotspots da cena
-  const sceneLabels = { pc: t.verve.title, painting: t.sections.about, pedal: t.ghost.title }
-
-  // Navegação do menu do topo. As views da cena (ex.: about) travam o scroll do
-  // body; ao ir para uma seção rolável é preciso sair da view ANTES de rolar,
-  // senão a página fica presa (não scrolla). Também libera o overflow na hora.
-  const onNav = (id) => {
-    const behavior = reducedMotion ? 'auto' : 'smooth'
-    if (id === 'about') return navigate('about')
-    returnScrollRef.current = null
-    if (view !== 'home') {
-      setView('home')
-      document.body.style.overflow = ''
-    }
-    requestAnimationFrame(() => {
-      if (id === 'top') window.scrollTo({ top: 0, behavior })
-      else document.getElementById(id)?.scrollIntoView({ behavior })
-    })
-  }
+  // rótulo curto (bilíngue) que surge ao passar o mouse no quadro
+  const sceneLabels = { painting: t.sections.about }
 
   const copyEmail = async () => {
     try {
@@ -153,18 +133,11 @@ export function Hero() {
 
   return (
     <div className="relative w-full bg-[#0a0a0f] text-paper">
-      {/* resumo para leitores de tela — a cena 3D é decorativa/navegável por menu */}
+      {/* resumo para leitores de tela — a cena 3D é decorativa */}
       <p className="sr-only">
-        Vinicius Peres — fullstack creative developer. Ghost FX: guitar pedal in the browser.
-        Verve: terminal typing test. Use the navigation menu to explore.
+        Vinicius Peres, fullstack creative developer. Ghost FX: guitar pedal in the browser.
+        Verve: terminal typing test. Scroll down to explore the projects.
       </p>
-
-      {/* Topbar fixa */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-start justify-end gap-4 p-6 sm:px-12 sm:py-8 bg-gradient-to-b from-[#0a0a0f]/70 to-transparent">
-        <div className="pointer-events-auto flex items-center gap-5">
-          <NavMenu onNav={onNav} />
-        </div>
-      </div>
 
       {/* ─────────── HERO: cena full-bleed + lockup tipográfico à esquerda ─────────── */}
       <section ref={heroRef} className="relative min-h-[100dvh] overflow-hidden">
@@ -223,25 +196,18 @@ export function Hero() {
               {t.hero.tag}
             </p>
 
-            {/* selo do autor: monograma + credencial + ano, num carimbo coeso */}
-            <div className={`mt-8 hidden sm:inline-flex items-stretch border border-paper/25 bg-white/[0.02] backdrop-blur-sm ${reveal(view === 'home', 'delay-300')}`}>
-              <div className="flex items-center justify-center border-r border-paper/25 px-4 font-poster text-4xl leading-none text-amber">
-                {t.hero.badge.mono}
-              </div>
-              <div className="flex flex-col justify-center px-4 py-2.5">
-                <span className="font-mono text-[10px] font-bold tracking-[0.28em] text-paper">
-                  {t.hero.badge.l1}
-                </span>
-                <span className="mt-1 font-mono text-[9px] tracking-[0.22em] text-paper/55">
-                  {t.hero.badge.l2}
-                </span>
-              </div>
-              <div
-                className="flex items-center border-l border-paper/25 px-2.5 font-mono text-[9px] font-bold tracking-[0.15em] text-paper/45 [writing-mode:vertical-rl]"
-                aria-hidden="true"
-              >
-                2026
-              </div>
+            {/* faixa de selos sob o lockup (como a Jeleiz): só as três marcas,
+                soltas e nítidas — texto aqui dissoava do conjunto */}
+            <div className={`mt-8 hidden sm:flex items-center gap-4 ${reveal(view === 'home', 'delay-300')}`}>
+              <img src="/peres-logo.svg" alt="" className="h-11 w-11" />
+              <span className="text-paper/35" aria-hidden="true">
+                ·
+              </span>
+              <img src="/peres-stamp-wordmark.svg" alt="" className="h-12 w-auto invert opacity-90" />
+              <span className="text-paper/35" aria-hidden="true">
+                ·
+              </span>
+              <img src="/peres-stamp-globe.svg" alt="" className="h-12 w-auto invert opacity-90" />
             </div>
 
             {/* boas-vindas */}
@@ -254,17 +220,23 @@ export function Hero() {
               {t.hero.welcome}
             </p>
 
-            {/* convite de idioma — no OUTRO idioma, de propósito */}
-            <button
-              onClick={() => setLang(t.hero.langCta.to)}
-              className={`pointer-events-auto mt-8 inline-flex items-center gap-3 font-accent italic text-xl sm:text-2xl text-paper underline decoration-1 underline-offset-8 hover:text-amber transition-colors ${reveal(
-                view === 'home',
-                'delay-500'
-              )}`}
-            >
-              {t.hero.langCta.label}
-              <span aria-hidden="true">{t.hero.langCta.flag}</span>
-            </button>
+            {/* entrada pro "sobre mim" (view do quadro na cena) + convite de
+                idioma, escrito no OUTRO idioma de propósito */}
+            <div className={`mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 ${reveal(view === 'home', 'delay-500')}`}>
+              <button
+                onClick={() => navigate('about')}
+                className="pointer-events-auto border-2 border-amber px-5 py-3 font-mono text-xs font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
+              >
+                {t.sections.about}
+              </button>
+              <button
+                onClick={() => setLang(t.hero.langCta.to)}
+                className="pointer-events-auto inline-flex items-center gap-3 font-accent italic text-xl sm:text-2xl text-paper underline decoration-1 underline-offset-8 hover:text-amber transition-colors"
+              >
+                {t.hero.langCta.label}
+                <span aria-hidden="true">{t.hero.langCta.flag}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -503,10 +475,74 @@ export function Hero() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-paper/10 px-6 sm:px-12 py-8">
-          <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] tracking-widest text-paper/40">
-            <span>© {new Date().getFullYear()} VINICIUS PERES</span>
+        {/* Footer: pillmark como marca d'água texturizando o fundo + navegação */}
+        <footer className="relative border-t border-paper/10 overflow-hidden">
+          <img
+            src="/peres-pillmark.svg"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none select-none absolute left-1/2 top-1/2 w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.045]"
+          />
+          <div className="relative mx-auto max-w-6xl px-6 sm:px-12 pt-14 sm:pt-16 pb-8">
+            <div className="flex flex-wrap items-start justify-between gap-10">
+              <div>
+                <img src="/peres-stamp-wordmark.svg" alt="Vinicius Peres" className="h-12 w-auto invert opacity-90" />
+                <p className="mt-4 font-mono text-[10px] tracking-[0.22em] text-paper/45">
+                  {t.hero.badge.l2}
+                </p>
+              </div>
+              <div className="flex gap-14 sm:gap-24">
+                <nav className="flex flex-col gap-3" aria-label={t.sections.projects}>
+                  <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-amber">
+                    {t.sections.projects}
+                  </span>
+                  <a href="#ghost" className="font-mono text-xs text-paper/60 hover:text-amber transition-colors">
+                    GHOSTFX
+                  </a>
+                  <a href="#verve" className="font-mono text-xs text-paper/60 hover:text-amber transition-colors">
+                    VERVE
+                  </a>
+                  <a href="#blog" className="font-mono text-xs text-paper/60 hover:text-amber transition-colors">
+                    {t.sections.blog}
+                  </a>
+                </nav>
+                <nav className="flex flex-col gap-3" aria-label={t.ui.socials}>
+                  <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-amber">
+                    {t.ui.socials}
+                  </span>
+                  <a
+                    href={links.github}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-xs text-paper/60 hover:text-amber transition-colors"
+                  >
+                    GITHUB
+                  </a>
+                  <a
+                    href={links.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-xs text-paper/60 hover:text-amber transition-colors"
+                  >
+                    LINKEDIN
+                  </a>
+                  {links.instagram && (
+                    <a
+                      href={links.instagram}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-xs text-paper/60 hover:text-amber transition-colors"
+                    >
+                      INSTAGRAM
+                    </a>
+                  )}
+                </nav>
+              </div>
+            </div>
+            <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-paper/10 pt-6 font-mono text-[10px] tracking-widest text-paper/40">
+              <span>© {new Date().getFullYear()} VINICIUS PERES</span>
+              <img src="/peres-stamp-globe.svg" alt="" className="h-7 w-auto invert opacity-50" />
+            </div>
           </div>
         </footer>
       </main>

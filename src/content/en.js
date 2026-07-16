@@ -5,7 +5,6 @@ export const en = {
     titleBottom: 'Vinícius',
     // faixa de selos sob o lockup (estilo carimbo de coleção)
     badge: {
-      mono: 'VP',
       l1: 'VINICIUS PERES · SOFTWARE DEV',
       l2: 'SANTA CATARINA · BRAZIL',
     },
@@ -100,6 +99,7 @@ export const en = {
   },
 
   ui: {
+    socials: 'SOCIALS',
     backToRoom: '← BACK',
     scrollHint: 'SCROLL TO EXPLORE',
     footer: 'built with React, Three.js and an old CRT',

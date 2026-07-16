@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <!-- placeholder até a logo real: ecoa o bloco da topbar (paper + acento âmbar) -->
-  <rect width="48" height="48" rx="9" fill="#0a0a0f"/>
-  <rect x="10" y="10" width="21" height="21" fill="#eae8e3"/>
-  <rect x="25" y="25" width="13" height="13" fill="#f5a623"/>
-</svg>
