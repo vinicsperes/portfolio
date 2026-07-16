@@ -16,17 +16,19 @@ const palette = {
 
 // rotação final do chassi ao abrir (só em Y — clipping planes são horizontais)
 const OPEN_ANGLE = 1.3
-// espera antes de começar a abrir, pra dar tempo do usuário ver o pedal fechado
-const START_DELAY = 1.2
+// espera curta antes de abrir, só pra registrar o pedal fechado
+const START_DELAY = 0.45
 
 function AutoOpenPedal({ open, reducedMotion }) {
   const group = useRef()
-  const [explode, setExplode] = useState(0)
+  // a abertura anima por ref (zero re-render por frame): o PedalBody lê
+  // explodeRef no próprio useFrame; setState aqui só nos latches (1x cada)
+  const explodeRef = useRef(0)
+  const smooth = useRef(0)
+  const [split, setSplit] = useState(false)
   const [led, setLed] = useState(false)
   const opened = useRef(false)
   const startAt = useRef(0)
-  const smooth = useRef(0)
-  const last = useRef(-1)
 
   useFrame((state, delta) => {
     // agenda a abertura com um atraso depois que a seção fica visível
@@ -34,16 +36,12 @@ function AutoOpenPedal({ open, reducedMotion }) {
     if (startAt.current > 0 && state.clock.elapsedTime >= startAt.current) opened.current = true
 
     const target = opened.current ? 1 : 0
-    // damp mais lento (0.7): abertura visível, ~4s; latch aberto
-    smooth.current = reducedMotion ? target : THREE.MathUtils.damp(smooth.current, target, 0.7, delta)
+    smooth.current = reducedMotion ? target : THREE.MathUtils.damp(smooth.current, target, 1.5, delta)
     const p = smooth.current
+    explodeRef.current = p * 1.1
 
-    // throttle leve: menos re-render por frame sem stepping visível
-    if (Math.abs(p - last.current) > 0.008) {
-      setExplode(p * 1.1)
-      setLed(p > 0.4)
-      last.current = p
-    }
+    if (!split && p > 0.02) setSplit(true)
+    if (!led && p > 0.4) setLed(true)
     if (group.current) group.current.rotation.y = p * OPEN_ANGLE
   })
 
@@ -51,8 +49,8 @@ function AutoOpenPedal({ open, reducedMotion }) {
     <group ref={group}>
       <PedalScene
         palette={palette}
-        explode={explode}
-        split={explode > 0.02}
+        explodeRef={explodeRef}
+        split={split}
         spin={0}
         hideTag
         ledColor={GREEN}

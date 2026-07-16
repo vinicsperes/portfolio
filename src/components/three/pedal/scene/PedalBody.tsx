@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox, Svg } from "@react-three/drei";
 import {
@@ -10,6 +10,7 @@ import {
   Shape,
   Vector3,
   type Group,
+  type Mesh,
   type PointLight,
   type Side,
 } from "three";
@@ -92,6 +93,7 @@ export function PedalBody({
   palette,
   xray = false,
   explode = 0,
+  explodeRef = null,
   circuitOnly = false,
   hideTag = false,
   split = false,
@@ -118,6 +120,7 @@ export function PedalBody({
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
   explode?: number;
+  explodeRef?: MutableRefObject<number> | null;
   circuitOnly?: boolean;
   hideTag?: boolean;
   split?: boolean;
@@ -152,22 +155,41 @@ export function PedalBody({
 
   const rootRef = useRef<Group>(null);
   const glowRef = useRef<PointLight>(null);
+  // grupos deslocados pelo explode, atualizados por ref no useFrame (a
+  // animação de abertura via explodeRef não pode re-renderizar a árvore)
+  const circuitGroups = useRef<(Group | null)[]>([]);
+  const topGroups = useRef<(Group | null)[]>([]);
+  const aboveGroups = useRef<(Group | null)[]>([]);
+  const rimBottomRef = useRef<Mesh>(null);
+  const rimTopRef = useRef<Mesh>(null);
   const clipBottom = useMemo(() => new Plane(new Vector3(0, -1, 0), 0), []);
   const clipTop = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
   useFrame((state, delta) => {
+    const ex = explodeRef ? explodeRef.current : explode;
     const g = rootRef.current;
     if (g) {
-      const bob = explode > 0.01 ? Math.sin(state.clock.elapsedTime * 0.8) * 0.06 * explode : 0;
+      const bob = ex > 0.01 ? Math.sin(state.clock.elapsedTime * 0.8) * 0.06 * ex : 0;
       g.position.y = MathUtils.damp(g.position.y, (pressed ? -0.011 : 0) + bob, 9, delta);
       g.rotation.x = MathUtils.damp(g.rotation.x, pressed ? 0.009 : 0, 9, delta);
       if (spin != null) g.rotation.y = spin;
-      else g.rotation.y += delta * 0.22 * explode;
+      else g.rotation.y += delta * 0.22 * ex;
       // clipping planes vivem em espaço de MUNDO: usar a posição/escala
       // global do pedal (ele pode estar transladado/escalado dentro da cena)
       g.getWorldPosition(_worldPos);
       g.getWorldScale(_worldScale);
       clipBottom.constant = _worldPos.y;
-      clipTop.constant = -(_worldPos.y + explode * 0.95 * _worldScale.y);
+      clipTop.constant = -(_worldPos.y + ex * 0.95 * _worldScale.y);
+    }
+    const yCircuit = ex * 0.5;
+    const yTop = ex * 0.95;
+    const yAbove = ex * 1.15;
+    for (const grp of circuitGroups.current) if (grp) grp.position.y = yCircuit;
+    for (const grp of topGroups.current) if (grp) grp.position.y = yTop;
+    for (const grp of aboveGroups.current) if (grp) grp.position.y = yAbove;
+    if (rimBottomRef.current) rimBottomRef.current.scale.z = ex;
+    if (rimTopRef.current) {
+      rimTopRef.current.scale.z = ex;
+      rimTopRef.current.position.y = yTop;
     }
     const gl = glowRef.current;
     if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
@@ -237,7 +259,7 @@ export function PedalBody({
 
   return (
     <group ref={rootRef}>
-      <group position={[0, LY.circuit, 0]}>
+      <group ref={(g) => void (circuitGroups.current[0] = g)} position={[0, LY.circuit, 0]}>
         <Internals width={W} length={L} height={H} />
       </group>
 
@@ -258,7 +280,7 @@ export function PedalBody({
             <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
               {chassisMat(splitOp, [clipBottom], DoubleSide, !xray)}
             </RoundedBox>
-            <group position={[0, LY.top, 0]}>
+            <group ref={(g) => void (topGroups.current[0] = g)} position={[0, LY.top, 0]}>
               <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
                 {chassisMat(splitOp, [clipTop], FrontSide)}
               </RoundedBox>
@@ -280,11 +302,11 @@ export function PedalBody({
 
       {!circuitOnly && split && (
         <>
-          <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
+          <mesh ref={rimBottomRef} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
             <extrudeGeometry args={[rimShape, { depth: 0.05, bevelEnabled: false }]} />
             <meshStandardMaterial color={palette.pedal} roughness={0.95} metalness={0} />
           </mesh>
-          <mesh position={[0, LY.top, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
+          <mesh ref={rimTopRef} position={[0, LY.top, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 1, explode]}>
             <extrudeGeometry args={[rimShape, { depth: 0.05, bevelEnabled: false }]} />
             <meshStandardMaterial color={palette.pedal} roughness={0.95} metalness={0} />
           </mesh>
@@ -292,13 +314,13 @@ export function PedalBody({
       )}
 
       {!circuitOnly && (
-        <group position={[0, LY.top, 0]}>
+        <group ref={(g) => void (topGroups.current[1] = g)} position={[0, LY.top, 0]}>
           <SideJack orient="back" position={[-0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
           <SideJack orient="back" position={[0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
         </group>
       )}
       {!hideTag && !circuitOnly && (
-        <group position={[0, LY.top, 0]}>
+        <group ref={(g) => void (topGroups.current[2] = g)} position={[0, LY.top, 0]}>
           <HangTag />
         </group>
       )}
@@ -319,7 +341,7 @@ export function PedalBody({
         ))}
 
       {!circuitOnly && (
-      <group position={[0, LY.top, 0]}>
+      <group ref={(g) => void (topGroups.current[3] = g)} position={[0, LY.top, 0]}>
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
         <Svg
           src="/ghost-led-solo.svg"
@@ -471,7 +493,7 @@ export function PedalBody({
       )}
 
       {!circuitOnly && (
-      <group position={[0, LY.above, 0]}>
+      <group ref={(g) => void (aboveGroups.current[0] = g)} position={[0, LY.above, 0]}>
       <Knob3D
         position={kp.drive}
         value={knobDrive}
@@ -559,7 +581,7 @@ export function PedalBody({
       )}
 
       {!circuitOnly && (
-        <group position={[0, LY.above, 0]}>
+        <group ref={(g) => void (aboveGroups.current[1] = g)} position={[0, LY.above, 0]}>
           <Footswitch3D
             position={[0, H / 2 + 0.01, FSZ]}
             pressed={pressed}
@@ -581,7 +603,7 @@ export function PedalBody({
         const LED_Y = topY - 0.06;
         const PAD_Y = -0.026;
         return (
-          <group position={[0, LY.circuit, 0]}>
+          <group ref={(g) => void (circuitGroups.current[1] = g)} position={[0, LY.circuit, 0]}>
             <PotBody x={kp.drive[0]} z={kp.drive[2]} topY={topY} />
             <PotBody x={kp.echo[0]} z={kp.echo[2]} topY={topY} />
             <PotBody x={kp.reverb[0]} z={kp.reverb[2]} topY={topY} />

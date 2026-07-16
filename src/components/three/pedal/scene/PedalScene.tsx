@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MutableRefObject } from "react";
 import { PedalBody } from "./PedalBody";
 
 const noop = () => {};
@@ -7,6 +7,7 @@ export function PedalScene({
   palette,
   xray = false,
   explode = 0,
+  explodeRef = null,
   circuitOnly = false,
   split = false,
   spin = null,
@@ -31,6 +32,7 @@ export function PedalScene({
   palette: { pedal: string; ink: string; accent: string; cream: string; metal: string };
   xray?: boolean;
   explode?: number;
+  explodeRef?: MutableRefObject<number> | null;
   circuitOnly?: boolean;
   split?: boolean;
   spin?: number | null;
@@ -62,6 +64,7 @@ export function PedalScene({
       palette={palette}
       xray={xray}
       explode={explode}
+      explodeRef={explodeRef}
       circuitOnly={circuitOnly}
       split={split}
       spin={spin}
