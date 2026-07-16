@@ -2,15 +2,8 @@ export const pt = {
   hero: {
     tag: 'DEV CRIATIVO FULLSTACK',
     titleTop: 'Oi! Eu sou',
-    titleBottom: 'o Vinícius',
-    // faixa de selos sob o lockup (estilo carimbo de coleção)
     badge: {
-      l1: 'VINICIUS PERES · SOFTWARE DEV',
       l2: 'SANTA CATARINA · BRASIL',
-    },
-    note: {
-      l1: 'Ei! Curioso pra ver como foi feito?',
-      l2: 'O site inteiro tá aberto no GitHub →',
     },
     welcome:
       'OI! SOU O VINÍCIUS, DESENVOLVEDOR DE SOFTWARE. AQUI FICAM MEUS TRABALHOS MAIS RECENTES: WEB AUDIO, 3D NA WEB E, PRINCIPALMENTE, COISAS QUE DÁ PRA BRINCAR. FIQUE À VONTADE!',
@@ -43,7 +36,6 @@ export const pt = {
     presets: {
       title: 'Seis presets com voz própria',
       short: 'Cada um é um pedal diferente por dentro, não uma posição de knob salva.',
-      p: 'Cada preset é um pedal diferente por dentro, não uma posição de knob salva. Trocar de rig troca a topologia do drive, a voz do delay, o circuito de modulação, o gabinete e o reverb, e re-tematiza a interface inteira.',
       list: [
         { name: 'GHOST', desc: 'drive com médios empurrados que limpa no volume' },
         { name: 'DOOM', desc: 'muralha de fuzz afinado grave' },
@@ -54,7 +46,6 @@ export const pt = {
       ],
     },
     ready: {
-      title: 'Bora?',
       play: 'TOCAR NO GHOSTFX.APP',
       source: 'CÓDIGO FONTE',
     },
@@ -73,14 +64,12 @@ export const pt = {
     titleTop: 'Diga',
     titleBottom: 'Olá',
     p: 'Tem um projeto, uma vaga, ou só quer trocar ideia? Minha caixa de entrada está aberta.',
-    emailLabel: 'EMAIL',
     copy: 'COPIAR',
     copied: 'COPIADO ✓',
     links: { github: 'GITHUB', linkedin: 'LINKEDIN', cv: 'CURRÍCULO' },
   },
 
   blog: {
-    title: 'Blog',
     soon: 'EM BREVE',
     soonSub:
       'Notas de bastidores sobre como esses projetos são feitos: Web Audio por dentro, 3D na web, Rust no terminal.',
@@ -102,6 +91,7 @@ export const pt = {
     socials: 'REDES',
     backToRoom: '← VOLTAR',
     scrollHint: 'ROLE PARA EXPLORAR',
-    footer: 'feito com React, Three.js e um CRT velho de guerra',
+    srIntro:
+      'Vinicius Peres, desenvolvedor criativo fullstack. Ghost FX: um pedal de guitarra no navegador. Verve: teste de digitação no terminal. Role a página para explorar os projetos.',
   },
 }

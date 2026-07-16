@@ -2,15 +2,8 @@ export const en = {
   hero: {
     tag: 'FULLSTACK CREATIVE DEVELOPER',
     titleTop: "Hi! I'm",
-    titleBottom: 'Vinícius',
-    // faixa de selos sob o lockup (estilo carimbo de coleção)
     badge: {
-      l1: 'VINICIUS PERES · SOFTWARE DEV',
       l2: 'SANTA CATARINA · BRAZIL',
-    },
-    note: {
-      l1: "Hey! Curious about how it's built?",
-      l2: 'The whole site is open on GitHub →',
     },
     welcome:
       "HI! I'M VINÍCIUS, A SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES: WEB AUDIO, 3D ON THE WEB AND, ABOVE ALL, THINGS YOU CAN PLAY WITH. MAKE YOURSELF AT HOME!",
@@ -43,7 +36,6 @@ export const en = {
     presets: {
       title: 'Six voiced presets',
       short: 'Each one is a different pedal inside, not a saved knob position.',
-      p: 'Each preset is a different pedal inside, not a saved knob position. Switching rigs swaps the drive topology, the delay voice, the modulation circuit, the cabinet and the reverb, then re-themes the whole interface.',
       list: [
         { name: 'GHOST', desc: 'mid-pushed drive that cleans up' },
         { name: 'DOOM', desc: 'low-tuned fuzz wall' },
@@ -54,7 +46,6 @@ export const en = {
       ],
     },
     ready: {
-      title: 'Ready?',
       play: 'PLAY ON GHOSTFX.APP',
       source: 'SOURCE CODE',
     },
@@ -73,14 +64,12 @@ export const en = {
     titleTop: 'Say',
     titleBottom: 'Hello',
     p: "Got a project, a job, or just want to talk shop? My inbox is open.",
-    emailLabel: 'EMAIL',
     copy: 'COPY',
     copied: 'COPIED ✓',
     links: { github: 'GITHUB', linkedin: 'LINKEDIN', cv: 'RESUME' },
   },
 
   blog: {
-    title: 'Blog',
     soon: 'COMING SOON',
     soonSub:
       'Field notes on how these projects are built: Web Audio internals, 3D on the web, Rust in the terminal.',
@@ -102,6 +91,7 @@ export const en = {
     socials: 'SOCIALS',
     backToRoom: '← BACK',
     scrollHint: 'SCROLL TO EXPLORE',
-    footer: 'built with React, Three.js and an old CRT',
+    srIntro:
+      'Vinicius Peres, fullstack creative developer. Ghost FX: a guitar pedal in the browser. Verve: a typing test in the terminal. Scroll down to explore the projects.',
   },
 }
