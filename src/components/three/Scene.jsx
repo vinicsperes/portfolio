@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
@@ -75,6 +75,24 @@ function CameraController({ view, reducedMotion }) {
   return null
 }
 
+/**
+ * A cena é estática (nada que projeta sombra se move): o shadow map roda em
+ * modo manual e este componente o re-renderiza por alguns frames quando um
+ * pedaço novo monta (Suspense resolvendo, pedal lazy chegando). Sem isso o
+ * passe de sombra re-desenhava ~20 casters em TODO frame, à toa.
+ */
+function ShadowKick({ frames = 10 }) {
+  const { gl } = useThree()
+  const left = useRef(frames)
+  useFrame(() => {
+    if (left.current > 0) {
+      gl.shadowMap.needsUpdate = true
+      left.current--
+    }
+  })
+  return null
+}
+
 /** Dispara quando o conteúdo do Suspense montou (assets carregados de verdade). */
 function SceneReady({ onReady }) {
   useEffect(() => {
@@ -95,6 +113,8 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
       onCreated={({ gl }) => {
         // os clipping planes do chassi do pedal dependem disso
         gl.localClippingEnabled = true
+        // sombra em modo manual: o ShadowKick atualiza quando algo monta
+        gl.shadowMap.autoUpdate = false
       }}
       dpr={dpr}
       shadows
@@ -182,6 +202,7 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         <group position={[-3.1, -1.93, -3.4]} rotation-y={0.45} scale={0.3}>
           <GhostPedal />
         </group>
+        <ShadowKick />
         <GuitarAmp position={[-4.5, -2.1, -5.0]} rotation={[0, 0.3, 0]} />
         <VinylCrate position={[-6.2, -2.1, -4.4]} rotation={[0, 0.7, 0]} />
         <ContactShadows

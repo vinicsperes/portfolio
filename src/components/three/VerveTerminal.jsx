@@ -39,6 +39,10 @@ function saveBest(v) {
   }
 }
 
+// espaco logico do desenho (o canvas fisico e menor; ctx.setTransform escala)
+const LW = 1024
+const LH = 800
+
 const CONFETTI_COLORS = ['#ff6b2b', '#f5a623', '#4dff7c', '#5ad1ff', '#ff5db1']
 const IDLE_WORDS = ['typing', 'speed', 'terminal', 'rust', 'flow', 'rhythm']
 
@@ -53,9 +57,12 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
   const crt = useRef()
   const { canvas, ctx, texture } = useMemo(() => {
     const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = 800
+    // desenho em espaco LOGICO 1024x800, rasterizado a 640x500: o upload da
+    // textura por frame cai pra ~40% (era o maior custo de banda da cena)
+    canvas.width = 640
+    canvas.height = 500
     const ctx = canvas.getContext('2d')
+    ctx.setTransform(canvas.width / LW, 0, 0, canvas.height / LH, 0, 0)
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
     return { canvas, ctx, texture }
@@ -243,7 +250,7 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
 
     // background (scanlines vêm do crtMaterial)
     ctx.fillStyle = UI.bg
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, LW, LH)
 
     const pad = 56
     ctx.textBaseline = 'top'
@@ -260,7 +267,7 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
     // caixa com borda onde vivem as palavras
     const boxX = pad
     const boxY = pad + 70
-    const boxW = canvas.width - pad * 2
+    const boxW = LW - pad * 2
     const boxH = 440
     ctx.strokeStyle = UI.border
     ctx.lineWidth = 2
@@ -369,7 +376,7 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
           ctx.restore()
         }
       }
-      confettiRef.current = parts.filter((p) => p.life > 0 && p.y < canvas.height + 40)
+      confettiRef.current = parts.filter((p) => p.life > 0 && p.y < LH + 40)
     }
 
     texture.needsUpdate = true
@@ -377,7 +384,7 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
 
   const drawIdle = (now) => {
     ctx.fillStyle = UI.bg
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, LW, LH)
 
     const pad = 64
     ctx.textBaseline = 'top'
@@ -396,7 +403,7 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
     const boxH = 300
     ctx.strokeStyle = UI.border
     ctx.lineWidth = 2
-    ctx.strokeRect(pad, boxY, canvas.width - pad * 2, boxH)
+    ctx.strokeRect(pad, boxY, LW - pad * 2, boxH)
 
     const CYCLE = 2400
     const word = IDLE_WORDS[Math.floor(now / CYCLE) % IDLE_WORDS.length]

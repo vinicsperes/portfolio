@@ -205,7 +205,9 @@ export function Hero() {
       <p className="sr-only">{t.ui.srIntro}</p>
 
       {/* ─────────── HERO: cena full-bleed + lockup tipográfico à esquerda ─────────── */}
-      <section ref={heroRef} className="snap-section relative min-h-[100dvh] overflow-hidden">
+      {/* svh (não dvh): a barra do navegador mobile recolhe no 1º scroll e o
+          dvh mudaria a altura, redimensionando o canvas inteiro (lag visível) */}
+      <section ref={heroRef} className="snap-section relative min-h-[100svh] overflow-hidden">
         {/* A cena 3D é o fundo inteiro; a tela do CRT dentro dela passa o reel
             dos trabalhos (o "vídeo"). O texto vive por cima, à esquerda. */}
         <div className="absolute inset-0 z-0" aria-hidden="true">
@@ -249,7 +251,7 @@ export function Hero() {
             precisa de `invisible` (não só opacity-0): senão os botões seguem
             clicáveis/focáveis por baixo do overlay do about */}
         <div
-          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end pb-[11dvh] px-6 sm:justify-center sm:pb-0 sm:px-12 ${
+          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end pb-[11svh] px-6 sm:justify-center sm:pb-0 sm:px-12 ${
             view === 'home' ? '' : 'opacity-0 invisible'
           } transition-opacity duration-500`}
         >
@@ -386,7 +388,7 @@ export function Hero() {
           <Suspense fallback={null}>
             <GhostSectionBg />
           </Suspense>
-          <div className="relative mx-auto flex min-h-[100dvh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12 py-14 sm:py-16">
+          <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12 py-14 sm:py-16">
             {/* grid-cols-1 é obrigatório: sem template, o track auto dimensiona
                 pelo conteúdo (max-w-md = 448px) e estoura o viewport no mobile */}
             <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">

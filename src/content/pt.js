@@ -63,7 +63,7 @@ export const pt = {
   contact: {
     titleTop: 'Diga',
     titleBottom: 'Olá',
-    p: 'Tem um projeto, uma vaga, ou só quer trocar ideia? Minha caixa de entrada está aberta.',
+    p: 'Tem um projeto, ou só quer trocar ideia? Minha caixa de entrada está aberta.',
     copy: 'COPIAR',
     copied: 'COPIADO ✓',
     links: { github: 'GITHUB', linkedin: 'LINKEDIN', instagram: 'INSTAGRAM', cv: 'CURRÍCULO' },
