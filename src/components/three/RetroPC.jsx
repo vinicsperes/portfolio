@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { Instance, Instances } from '@react-three/drei'
 import * as THREE from 'three'
 import { Flame, Smoke } from './Fire.jsx'
 import { VerveTerminal } from './VerveTerminal.jsx'
@@ -145,12 +146,13 @@ function Case() {
   )
 }
 
+/** 52 teclas idênticas: uma instância só (eram 52 draw calls por frame). */
 function Keyboard({ position }) {
   const keys = useMemo(() => {
     const list = []
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col < 13; col++) {
-        list.push([-1.08 + col * 0.18, 0, -0.27 + row * 0.18])
+        list.push([-1.08 + col * 0.18, 0.08, -0.27 + row * 0.18])
       }
     }
     return list
@@ -162,12 +164,13 @@ function Keyboard({ position }) {
         <boxGeometry args={[2.5, 0.12, 0.95]} />
         <Plastic color={BEIGE_DARK} />
       </mesh>
-      {keys.map(([x, , z], i) => (
-        <mesh key={i} position={[x, 0.08, z]}>
-          <boxGeometry args={[0.14, 0.06, 0.14]} />
-          <Plastic />
-        </mesh>
-      ))}
+      <Instances limit={keys.length} range={keys.length}>
+        <boxGeometry args={[0.14, 0.06, 0.14]} />
+        <Plastic />
+        {keys.map((p, i) => (
+          <Instance key={i} position={p} />
+        ))}
+      </Instances>
       {/* barra de espaço */}
       <mesh position={[0, 0.08, 0.45]}>
         <boxGeometry args={[1.2, 0.06, 0.14]} />

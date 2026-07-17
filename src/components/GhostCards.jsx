@@ -2,7 +2,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, Environment, Float, Preload } from '@react-three/drei'
 import { Knob3D } from './three/pedal/knobs'
-import { getPresetThumbs, PRESET_OPACITY } from './three/pedal/presetShaders.js'
+import { getBlurredGhostThumb, getPresetThumbs, PRESET_OPACITY } from './three/pedal/presetShaders.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { useReveal } from '../hooks/useReveal.js'
@@ -59,17 +59,24 @@ function usePresetThumbs(enabled) {
 export function GhostSectionBg() {
   const [ref, near] = useNearViewport('400px')
   const thumbs = usePresetThumbs(near)
+  const [bg, setBg] = useState(null)
+  useEffect(() => {
+    if (!thumbs?.[0] || bg) return
+    let alive = true
+    Promise.resolve(getBlurredGhostThumb()).then((url) => alive && url && setBg(url))
+    return () => {
+      alive = false
+    }
+  }, [thumbs, bg])
   return (
     <div ref={ref} className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {thumbs?.[0] && (
+      {bg && (
+        // o blur vem PRÉ-APLICADO na imagem: `filter: blur()` aqui era um
+        // passe de composição por frame numa div de tela cheia, brigando
+        // com os dois canvases da seção
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${thumbs[0]})`,
-            opacity: 0.14,
-            filter: 'blur(16px)',
-            transform: 'scale(1.15)',
-          }}
+          style={{ backgroundImage: `url(${bg})`, opacity: 0.14, transform: 'scale(1.06)' }}
         />
       )}
       <div
@@ -124,7 +131,17 @@ function KnobsCanvas({ boot }) {
             />
           ))}
         </Float>
-        <ContactShadows position={[0, -0.001, 0]} opacity={0.5} scale={4} blur={2.4} far={0.8} resolution={256} />
+        {/* frames={1}: sem isso a sombra re-renderiza a cena TODA a cada frame
+            (os knobs mal flutuam — ninguém percebe a sombra parada) */}
+        <ContactShadows
+          position={[0, -0.001, 0]}
+          opacity={0.5}
+          scale={4}
+          blur={2.4}
+          far={0.8}
+          resolution={256}
+          frames={1}
+        />
         <Preload all />
       </Suspense>
     </Canvas>

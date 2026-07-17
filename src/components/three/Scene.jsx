@@ -1,17 +1,13 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
+import { GhostPedal } from './GhostPedal.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
-
-// O pedal do chão carrega o PedalScene inteiro (parts + troika Text): lazy
-// com Suspense PRÓPRIO tira ~tudo isso do chunk inicial; o pedal pipoca na
-// cena logo depois do primeiro paint, sem segurar o BootLoader
-const GhostPedal = lazy(() => import('./GhostPedal.jsx').then((m) => ({ default: m.GhostPedal })))
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -182,9 +178,7 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         {/* Canto musical: pedal no chão + amp + vinis — tudo decorativo
             (sem hover/clique; a seção Ghost chega pelo scroll) */}
         <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
-          <Suspense fallback={null}>
-            <GhostPedal />
-          </Suspense>
+          <GhostPedal />
         </group>
         <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
         <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />

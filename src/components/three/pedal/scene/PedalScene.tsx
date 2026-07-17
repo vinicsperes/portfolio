@@ -9,6 +9,8 @@ export function PedalScene({
   explode = 0,
   explodeRef = null,
   circuitOnly = false,
+  showCircuit = true,
+  simple = false,
   split = false,
   spin = null,
   hideTag = false,
@@ -34,6 +36,8 @@ export function PedalScene({
   explode?: number;
   explodeRef?: MutableRefObject<number> | null;
   circuitOnly?: boolean;
+  showCircuit?: boolean;
+  simple?: boolean;
   split?: boolean;
   spin?: number | null;
   hideTag?: boolean;
@@ -66,6 +70,8 @@ export function PedalScene({
       explode={explode}
       explodeRef={explodeRef}
       circuitOnly={circuitOnly}
+      showCircuit={showCircuit}
+      simple={simple}
       split={split}
       spin={spin}
       hideTag={hideTag}

@@ -192,6 +192,33 @@ export function getPresetThumbs() {
   return _thumbs
 }
 
+let _blurred = null
+
+/**
+ * Frame do preset GHOST já borrado (fundo da seção). Borrar aqui, uma vez,
+ * evita um `filter: blur()` de tela cheia no compositor a cada frame.
+ */
+export function getBlurredGhostThumb() {
+  if (_blurred !== null) return _blurred
+  const src = getPresetThumbs()?.[0]
+  if (!src) return null
+  const canvas = document.createElement('canvas')
+  canvas.width = 210
+  canvas.height = 120
+  const ctx = canvas.getContext('2d')
+  const img = new Image()
+  _blurred = new Promise((resolve) => {
+    img.onload = () => {
+      ctx.filter = 'blur(9px)'
+      ctx.drawImage(img, -12, -12, canvas.width + 24, canvas.height + 24)
+      resolve(canvas.toDataURL('image/jpeg', 0.72))
+    }
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
+  return _blurred
+}
+
 export function renderPresetThumbs(w = 420, h = 240) {
   const canvas = document.createElement('canvas')
   canvas.width = w

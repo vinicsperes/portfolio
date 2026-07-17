@@ -10,8 +10,9 @@ const palette = {
 }
 
 /**
- * O pedal Ghost como objeto físico do quarto: estático e fechado. O clique
- * que leva à seção Ghost é tratado pelo Hotspot que o embrulha na Scene.
+ * O pedal Ghost como objeto físico do quarto: estático, fechado e decorativo
+ * (scale 0.3 no chão). `showCircuit={false}`: o interior nunca é visto aqui e
+ * custava ~500 draw calls por frame no hero.
  */
 export function GhostPedal() {
   return (
@@ -19,6 +20,8 @@ export function GhostPedal() {
       palette={palette}
       explode={0}
       split={false}
+      showCircuit={false}
+      simple
       hideTag
       ledColor={GREEN}
       ledActive={false}

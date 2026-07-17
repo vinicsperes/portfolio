@@ -95,6 +95,8 @@ export function PedalBody({
   explode = 0,
   explodeRef = null,
   circuitOnly = false,
+  showCircuit = true,
+  simple = false,
   hideTag = false,
   split = false,
   spin = null,
@@ -122,6 +124,12 @@ export function PedalBody({
   explode?: number;
   explodeRef?: MutableRefObject<number> | null;
   circuitOnly?: boolean;
+  /** false = pedal fechado que nunca abre: pula o interior (invisível dentro
+   *  do chassi opaco, mas custava ~500 draw calls por frame). */
+  showCircuit?: boolean;
+  /** LOD do pedal decorativo (quarto, ~40px na tela): sem jacks, silkscreen,
+   *  furos nem pés — detalhes que nem chegam a um pixel ali. */
+  simple?: boolean;
   hideTag?: boolean;
   split?: boolean;
   spin?: number | null;
@@ -259,9 +267,11 @@ export function PedalBody({
 
   return (
     <group ref={rootRef}>
-      <group ref={(g) => void (circuitGroups.current[0] = g)} position={[0, LY.circuit, 0]}>
-        <Internals width={W} length={L} height={H} />
-      </group>
+      {showCircuit && (
+        <group ref={(g) => void (circuitGroups.current[0] = g)} position={[0, LY.circuit, 0]}>
+          <Internals width={W} length={L} height={H} />
+        </group>
+      )}
 
       <pointLight
         ref={glowRef}
@@ -313,7 +323,7 @@ export function PedalBody({
         </>
       )}
 
-      {!circuitOnly && (
+      {!circuitOnly && !simple && (
         <group ref={(g) => void (topGroups.current[1] = g)} position={[0, LY.top, 0]}>
           <SideJack orient="back" position={[-0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
           <SideJack orient="back" position={[0.5, 0.1, -L / 2 - 0.02]} metal={palette.metal} />
@@ -325,7 +335,7 @@ export function PedalBody({
         </group>
       )}
 
-      {!circuitOnly &&
+      {!circuitOnly && !simple &&
         (
           [
             [-0.8, -1.25],
@@ -340,7 +350,7 @@ export function PedalBody({
           </mesh>
         ))}
 
-      {!circuitOnly && (
+      {!circuitOnly && !simple && (
       <group ref={(g) => void (topGroups.current[3] = g)} position={[0, LY.top, 0]}>
       <group position={[0, H / 2 + 0.02, 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
         <Svg
@@ -595,7 +605,8 @@ export function PedalBody({
         </group>
       )}
 
-      {(() => {
+      {showCircuit &&
+        (() => {
         const topY = H / 2;
         const POT_LUG_Y = topY - 0.21;
         const POT_LUG_Z = -0.1;
