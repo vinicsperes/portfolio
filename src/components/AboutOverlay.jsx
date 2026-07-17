@@ -1,7 +1,7 @@
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReveal } from '../hooks/useReveal.js'
 import { links } from '../content/index.js'
-import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
+import { GitHubIcon, LinkedInIcon } from './SocialIcons.jsx'
 
 /**
  * View "about" da cena: a câmera aproxima do quadro na parede e o texto
@@ -13,10 +13,10 @@ export function AboutOverlay({ onNavigate, onContact }) {
   const a = t.about
   const [ref, visible] = useReveal(0.1)
 
+  // Instagram fica só no footer (pedido do dono)
   const socials = [
     { label: 'GitHub', href: links.github, Icon: GitHubIcon },
     { label: 'LinkedIn', href: links.linkedin, Icon: LinkedInIcon },
-    ...(links.instagram ? [{ label: 'Instagram', href: links.instagram, Icon: InstagramIcon }] : []),
   ]
 
   return (

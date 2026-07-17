@@ -567,8 +567,9 @@ export function Hero() {
               {/* redes: ícone + rótulo, com o âmbar preenchendo de baixo pra
                   cima no hover. No mobile viram grade de 2 colunas alinhada
                   (soltos, cada botão tinha uma largura e a fileira quebrava torto) */}
+              {/* Instagram fica SÓ no footer: aqui é contato profissional */}
               <div className="mt-10 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-                {SOCIALS.filter((s) => links[s.key]).map((s) => (
+                {SOCIALS.filter((s) => links[s.key] && s.key !== 'instagram').map((s) => (
                   <a
                     key={s.key}
                     href={links[s.key]}
