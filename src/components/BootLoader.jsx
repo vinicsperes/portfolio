@@ -47,18 +47,16 @@ export function BootLoader({ ready = false }) {
       }`}
       aria-hidden="true"
     >
-      <div className="flex flex-col items-center gap-7">
-        {/* wordmark do PERES entrando suave sobre a barra */}
-        <img
-          src="/peres-stamp-wordmark.svg"
-          alt=""
-          className={`h-12 sm:h-16 w-auto invert transition-all duration-700 ease-out ${
-            mounted ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-2'
-          }`}
-        />
-        <div className="w-48 sm:w-64 h-px bg-paper/15 relative overflow-hidden">
+      {/* logo + barra na MESMA largura (a barra é o rodapé do lockup) */}
+      <div
+        className={`flex w-52 sm:w-72 flex-col items-stretch gap-5 transition-all duration-700 ease-out ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+        }`}
+      >
+        <img src="/peres-globe.svg" alt="" className="w-full invert" />
+        <div className="h-px w-full bg-paper/20 relative overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 bg-amber"
+            className="absolute inset-y-0 left-0 bg-paper"
             style={{ width: `${width}%`, transition: `width ${ready ? 300 : 2200}ms ease-out` }}
           />
         </div>

@@ -6,7 +6,7 @@ export const pt = {
       l2: 'SANTA CATARINA · BRASIL',
     },
     welcome:
-      'OI! SOU O VINÍCIUS, DESENVOLVEDOR DE SOFTWARE. AQUI FICAM MEUS TRABALHOS MAIS RECENTES: WEB AUDIO, 3D NA WEB E, PRINCIPALMENTE, COISAS QUE DÁ PRA BRINCAR. FIQUE À VONTADE!',
+      'OI! SOU O VINÍCIUS, DESENVOLVEDOR DE SOFTWARE. AQUI FICAM MEUS TRABALHOS MAIS RECENTES. FIQUE À VONTADE!',
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
     langCta: { label: 'oh no! I got lost!', flag: '🇺🇸', to: 'en' },
   },
@@ -26,7 +26,7 @@ export const pt = {
     title: 'GHOST',
     subtitle: 'UM PEDAL DE GUITARRA NO SEU NAVEGADOR',
     intro:
-      'Plugue, pise para armar e esculpa seu timbre com drive, echo, modulação e reverb num pedal 3D em tempo real cujos knobs você realmente gira. Sem instalação, sem plugins, sem app nativo: toda a cadeia de sinal é construída à mão na Web Audio API.',
+      'Conecte a guitarra, pise no footswitch e monte seu timbre com drive, echo, modulação e reverb. É um pedal 3D em tempo real, com knobs que você gira de verdade. Sem instalação, sem plugins, sem app nativo: a cadeia de sinal inteira é feita à mão na Web Audio API.',
     features: {
       knobs: {
         title: 'Knobs de verdade',
@@ -66,18 +66,17 @@ export const pt = {
     p: 'Tem um projeto, uma vaga, ou só quer trocar ideia? Minha caixa de entrada está aberta.',
     copy: 'COPIAR',
     copied: 'COPIADO ✓',
-    links: { github: 'GITHUB', linkedin: 'LINKEDIN', cv: 'CURRÍCULO' },
+    links: { github: 'GITHUB', linkedin: 'LINKEDIN', instagram: 'INSTAGRAM', cv: 'CURRÍCULO' },
   },
 
   blog: {
     soon: 'EM BREVE',
-    soonSub:
-      'Notas de bastidores sobre como esses projetos são feitos: Web Audio por dentro, 3D na web, Rust no terminal.',
+    soonSub: 'Notas de bastidores sobre como esses projetos são feitos.',
   },
 
   projects: {
     title: 'O que eu construo',
-    sub: 'Daqui pra baixo, os projetos. Cada um tem demo ao vivo, direto na página.',
+    sub: 'Daqui pra baixo, os projetos que andei construindo.',
   },
 
   sections: {

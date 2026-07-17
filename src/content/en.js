@@ -6,9 +6,9 @@ export const en = {
       l2: 'SANTA CATARINA · BRAZIL',
     },
     welcome:
-      "HI! I'M VINÍCIUS, A SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES: WEB AUDIO, 3D ON THE WEB AND, ABOVE ALL, THINGS YOU CAN PLAY WITH. MAKE YOURSELF AT HOME!",
+      "HI! I'M VINÍCIUS, A SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES. MAKE YOURSELF AT HOME!",
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
-    langCta: { label: 'chega aí, meu parça', flag: '🇧🇷', to: 'pt' },
+    langCta: { label: 'fala português?', flag: '🇧🇷', to: 'pt' },
   },
 
   about: {
@@ -66,18 +66,17 @@ export const en = {
     p: "Got a project, a job, or just want to talk shop? My inbox is open.",
     copy: 'COPY',
     copied: 'COPIED ✓',
-    links: { github: 'GITHUB', linkedin: 'LINKEDIN', cv: 'RESUME' },
+    links: { github: 'GITHUB', linkedin: 'LINKEDIN', instagram: 'INSTAGRAM', cv: 'RESUME' },
   },
 
   blog: {
     soon: 'COMING SOON',
-    soonSub:
-      'Field notes on how these projects are built: Web Audio internals, 3D on the web, Rust in the terminal.',
+    soonSub: 'Field notes on how these projects are built.',
   },
 
   projects: {
     title: 'What I build',
-    sub: 'From here down, the projects. Each one has a live demo, right on the page.',
+    sub: "From here down, the projects I've been building.",
   },
 
   sections: {
