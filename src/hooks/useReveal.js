@@ -32,14 +32,13 @@ export function useReveal(threshold = 0.25) {
     // (deep-link /#contact), o observer criado antes do salto não dispara e a
     // seção ficava em branco. Uma checagem de rect depois do layout assentar
     // revela o que já está na tela.
-    // (o alvo pode estar em pleno scroll suave: checa algumas vezes até
-    // assentar, em vez de uma única foto num instante ruim)
-    let tries = 0
+    // Roda até revelar: scrolls programáticos (deep-link, âncora, snap) podem
+    // não acordar o observer. Um getBoundingClientRect a cada 700ms por
+    // elemento ainda não revelado é desprezível, e para no primeiro show().
     const tm = setInterval(() => {
       const r = el.getBoundingClientRect()
       if (r.top < window.innerHeight && r.bottom > 0) show()
-      else if (++tries > 8) clearInterval(tm)
-    }, 400)
+    }, 700)
     return () => {
       io.disconnect()
       clearInterval(tm)

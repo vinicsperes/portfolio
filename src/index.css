@@ -51,6 +51,47 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* CTA do Ghost: fantasminha sobe assombrando o botão no hover e fica
+   flutuando; o rótulo rola pra cima (roll-up) via utilitários no JSX */
+@keyframes ghost-rise {
+  0% {
+    transform: translateY(130%) rotate(-10deg);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-6%) rotate(7deg);
+    opacity: 1;
+  }
+}
+@keyframes ghost-float {
+  0%,
+  100% {
+    transform: translateY(-6%) rotate(7deg);
+  }
+  50% {
+    transform: translateY(-22%) rotate(-5deg);
+  }
+}
+.cta-ghost {
+  opacity: 0;
+  transform: translateY(130%) rotate(-10deg);
+}
+.group:hover .cta-ghost,
+.group:focus-visible .cta-ghost {
+  animation: ghost-rise 0.45s ease-out forwards, ghost-float 1.6s ease-in-out 0.45s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .group:hover .cta-ghost,
+  .group:focus-visible .cta-ghost {
+    animation: none;
+    opacity: 1;
+    transform: translateY(-6%);
+  }
+}
+
 /* scroll sem barra visível (overlays da cena têm scroll próprio) */
 .no-scrollbar {
   scrollbar-width: none;

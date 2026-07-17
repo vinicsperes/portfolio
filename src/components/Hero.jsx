@@ -220,16 +220,27 @@ export function Hero() {
             onReady={handleReady}
           />
         </div>
-        {/* degradê à esquerda: garante leitura da tipografia sobre a cena */}
+        {/* scrims de leitura: lateral no desktop; de baixo pra cima no mobile
+            (o texto ancora embaixo, sobre tapete/mesa) */}
         {view === 'home' && (
-          <div
-            className="pointer-events-none absolute inset-0 z-[1]"
-            style={{
-              background:
-                'linear-gradient(100deg, rgba(10,10,15,0.78) 0%, rgba(10,10,15,0.46) 30%, rgba(10,10,15,0.12) 54%, transparent 70%)',
-            }}
-            aria-hidden="true"
-          />
+          <>
+            <div
+              className="pointer-events-none absolute inset-0 z-[1] hidden sm:block"
+              style={{
+                background:
+                  'linear-gradient(100deg, rgba(10,10,15,0.78) 0%, rgba(10,10,15,0.46) 30%, rgba(10,10,15,0.12) 54%, transparent 70%)',
+              }}
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute inset-0 z-[1] sm:hidden"
+              style={{
+                background:
+                  'linear-gradient(to top, rgba(10,10,15,0.88) 0%, rgba(10,10,15,0.62) 42%, rgba(10,10,15,0.15) 68%, transparent 82%)',
+              }}
+              aria-hidden="true"
+            />
+          </>
         )}
 
         <BootLoader ready={sceneReady} />
@@ -238,7 +249,7 @@ export function Hero() {
             precisa de `invisible` (não só opacity-0): senão os botões seguem
             clicáveis/focáveis por baixo do overlay do about */}
         <div
-          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-start px-6 pt-[22dvh] sm:justify-center sm:pt-0 sm:px-12 ${
+          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end pb-[11dvh] px-6 sm:justify-center sm:pb-0 sm:px-12 ${
             view === 'home' ? '' : 'opacity-0 invisible'
           } transition-opacity duration-500`}
         >
@@ -265,18 +276,18 @@ export function Hero() {
               {t.hero.tag}
             </p>
 
-            {/* faixa de selos sob o lockup (como a Jeleiz): só as três marcas,
-                soltas e nítidas — texto aqui dissoava do conjunto */}
-            <div className={`mt-8 hidden sm:flex items-center gap-5 ${reveal(view === 'home', 'delay-300')}`}>
-              <img src="/peres-logo.svg" alt="" className="h-16 w-16" />
-              <span className="text-paper/35" aria-hidden="true">
+            {/* faixa de selos sob o lockup (como a Jeleiz): marcas soltas e
+                nítidas — no mobile encolhem e perdem os pontos, mas FICAM */}
+            <div className={`mt-5 sm:mt-8 flex items-center gap-3 sm:gap-5 ${reveal(view === 'home', 'delay-300')}`}>
+              <img src="/peres-logo.svg" alt="" className="h-9 w-9 sm:h-16 sm:w-16" />
+              <span className="hidden sm:inline text-paper/35" aria-hidden="true">
                 ·
               </span>
-              <img src="/peres-stamp-wordmark.svg" alt="" className="h-[68px] w-auto invert opacity-90" />
-              <span className="text-paper/35" aria-hidden="true">
+              <img src="/peres-stamp-wordmark.svg" alt="" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
+              <span className="hidden sm:inline text-paper/35" aria-hidden="true">
                 ·
               </span>
-              <img src="/peres-stamp-globe.svg" alt="" className="h-[68px] w-auto invert opacity-90" />
+              <img src="/peres-stamp-globe.svg" alt="" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
             </div>
 
             {/* boas-vindas */}
@@ -402,14 +413,39 @@ export function Hero() {
                   {t.ghost.intro}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
+                  {/* hover assombrado: o rótulo rola pra cima e o fantasminha
+                      sobe do botão e fica flutuando (keyframes no index.css) */}
                   <a
                     href={links.ghostApp}
                     target="_blank"
                     rel="noreferrer"
-                    className="border-2 px-5 py-3 font-mono text-xs font-bold transition-colors"
+                    className="group relative overflow-hidden border-2 px-5 py-3 font-mono text-xs font-bold"
                     style={{ borderColor: GREEN, background: GREEN, color: '#0a0a0f' }}
                   >
-                    {t.ghost.ready.play}
+                    <span className="relative block overflow-hidden">
+                      <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-[110%]">
+                        {t.ghost.ready.play}
+                      </span>
+                      <span
+                        className="absolute inset-0 block translate-y-[110%] transition-transform duration-300 ease-out group-hover:translate-y-0"
+                        aria-hidden="true"
+                      >
+                        {t.ghost.ready.play}
+                      </span>
+                    </span>
+                    <svg
+                      viewBox="13 6 38 52"
+                      className="cta-ghost pointer-events-none absolute bottom-0.5 right-2 h-5 w-auto"
+                      aria-hidden="true"
+                    >
+                      {/* o ghost REAL tem um olho só: o LED (ghost-led.svg do app) */}
+                      <path
+                        d="M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z"
+                        fill="#0a0a0f"
+                      />
+                      <circle cx="36" cy="27" r="9" fill="#41ff77" opacity="0.26" />
+                      <circle cx="36" cy="27" r="5.5" fill="#41ff77" />
+                    </svg>
                   </a>
                   <a
                     href={links.ghostSource}
@@ -528,9 +564,10 @@ export function Hero() {
                   {copied ? t.contact.copied : t.contact.copy}
                 </button>
               </div>
-              {/* redes: ícone + rótulo, com o âmbar preenchendo de baixo
-                  pra cima no hover (o ícone acompanha via currentColor) */}
-              <div className="mt-10 flex flex-wrap gap-3">
+              {/* redes: ícone + rótulo, com o âmbar preenchendo de baixo pra
+                  cima no hover. No mobile viram grade de 2 colunas alinhada
+                  (soltos, cada botão tinha uma largura e a fileira quebrava torto) */}
+              <div className="mt-10 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
                 {SOCIALS.filter((s) => links[s.key]).map((s) => (
                   <a
                     key={s.key}
@@ -543,7 +580,7 @@ export function Hero() {
                       className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-amber transition-transform duration-300 ease-out group-hover:scale-y-100 group-focus-visible:scale-y-100"
                       aria-hidden="true"
                     />
-                    <span className="flex items-center gap-2.5">
+                    <span className="flex items-center justify-center gap-2.5 sm:justify-start">
                       <s.Icon width={16} height={16} />
                       <span className="font-mono text-xs font-bold">{t.contact.links[s.key]}</span>
                     </span>
@@ -554,7 +591,7 @@ export function Hero() {
                     href={links.cv}
                     target="_blank"
                     rel="noreferrer"
-                    className="border border-amber bg-amber/10 text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
+                    className="flex items-center justify-center border border-amber bg-amber/10 text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors sm:justify-start"
                   >
                     {t.contact.links.cv}
                   </a>
@@ -566,14 +603,19 @@ export function Hero() {
 
         {/* Footer: pillmark como marca d'água texturizando o fundo + navegação */}
         <footer className="relative border-t border-paper/10 overflow-hidden">
-          {/* marca d'água: no mobile as letras viravam blocos gigantes atrás
-              dos links (ilegível) — só entra quando há largura pra ela ler
-              como textura */}
+          {/* marca d'água: pillmark no desktop; no mobile o pillmark virava
+              blocos ilegíveis, então entra o monograma PE/RES gigante */}
           <img
             src="/peres-pillmark.svg"
             alt=""
             aria-hidden="true"
             className="pointer-events-none select-none absolute left-1/2 top-1/2 hidden w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.045] sm:block"
+          />
+          <img
+            src="/peres-logo.svg"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none select-none absolute left-1/2 top-1/2 w-[210%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.05] sm:hidden"
           />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-12 pt-14 sm:pt-16 pb-8">
             <div className="flex flex-wrap items-start justify-between gap-10">
