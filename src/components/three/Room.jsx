@@ -207,6 +207,63 @@ function useRugTexture() {
   }, [])
 }
 
+/**
+ * Parede: reboco pintado com grão, manchas amplas e sujeirinha nos cantos.
+ * Sem isso ela lia como fundo preto chapado ao lado do chão texturizado.
+ */
+function useWallTexture() {
+  return useMemo(() => {
+    const S = 1024
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = S
+    const ctx = canvas.getContext('2d')
+
+    ctx.fillStyle = WALL
+    ctx.fillRect(0, 0, S, S)
+
+    // manchas largas de tinta/umidade: quebram o chapado em áreas grandes
+    for (let i = 0; i < 26; i++) {
+      const x = (i * 271 + 61) % S
+      const y = (i * 397 + 137) % S
+      const r = 90 + ((i * 53) % 150)
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+      const light = i % 3 === 0
+      g.addColorStop(0, light ? 'rgba(58,52,64,0.16)' : 'rgba(6,6,10,0.2)')
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // grão fino do reboco
+    const img = ctx.getImageData(0, 0, S, S)
+    const d = img.data
+    for (let i = 0; i < d.length; i += 4) {
+      const n = (Math.random() - 0.5) * 18
+      d[i] += n
+      d[i + 1] += n
+      d[i + 2] += n * 1.1
+    }
+    ctx.putImageData(img, 0, 0)
+
+    // riscos verticais discretos (marca de rolo de pintura)
+    ctx.globalAlpha = 0.06
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 149 + 23) % S
+      ctx.fillStyle = i % 2 ? '#3c3646' : '#08080c'
+      ctx.fillRect(x, 0, 1 + (i % 3), S)
+    }
+    ctx.globalAlpha = 1
+
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.wrapS = THREE.RepeatWrapping
+    tex.wrapT = THREE.RepeatWrapping
+    tex.repeat.set(5, 2)
+    return tex
+  }, [])
+}
+
 /** Vista golden hour pela janela: céu quente, sol baixo e skyline em silhueta. */
 function useSunsetViewTexture() {
   return useMemo(() => {
@@ -460,6 +517,7 @@ function WallShelves() {
 export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   const woodTex = useWoodFloorTexture()
   const rugTex = useRugTexture()
+  const wallTex = useWallTexture()
   const skyTex = useSunsetViewTexture()
   const collageTex = useTexture('/img/ghost-collage-tex.jpg')
   const kidTex = useTexture('/img/vini-kid.jpg')
@@ -481,7 +539,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Back Wall ─── */}
       <mesh position={[0, 4, -6]} receiveShadow>
         <planeGeometry args={[60, 20]} />
-        <meshStandardMaterial color={WALL} roughness={0.95} />
+        <meshStandardMaterial map={wallTex} color="#4a4658" roughness={0.95} />
       </mesh>
 
       {/* ─── Baseboard ─── */}

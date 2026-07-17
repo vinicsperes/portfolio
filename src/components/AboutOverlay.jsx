@@ -54,23 +54,23 @@ export function AboutOverlay({ onNavigate, onContact }) {
       <div className="flex flex-1 items-end pb-2 sm:items-center sm:pb-0">
         <div
           ref={ref}
-          className={`pointer-events-auto max-w-md transition-all duration-700 ease-out ${
+          className={`pointer-events-auto max-w-md lg:max-w-lg transition-all duration-700 ease-out ${
             visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <span className="font-mono text-[10px] font-semibold tracking-[0.35em] text-amber/90">
+          <span className="font-mono text-[10px] sm:text-xs font-semibold tracking-[0.35em] text-amber/90">
             {t.sections.about}
           </span>
-          <h2 className="mt-3 sm:mt-4 font-poster uppercase leading-[0.85] tracking-tight text-5xl sm:text-7xl drop-shadow-[0_4px_18px_rgba(0,0,0,0.6)]">
+          <h2 className="mt-3 sm:mt-4 font-poster uppercase leading-[0.85] tracking-tight text-5xl sm:text-7xl lg:text-8xl drop-shadow-[0_4px_18px_rgba(0,0,0,0.6)]">
             <span className="text-paper">{a.headTop}</span>
             <br />
             <span className="text-amber">{a.headBottom}</span>
           </h2>
           <div className="mt-4 sm:mt-6 h-px w-12 bg-amber/70" aria-hidden="true" />
-          <p className="mt-4 sm:mt-5 max-w-sm font-mono text-xs sm:text-sm text-paper/85 leading-relaxed">
+          <p className="mt-4 sm:mt-5 max-w-sm lg:max-w-md font-mono text-sm sm:text-base text-paper/90 leading-relaxed">
             {a.p1}
           </p>
-          <p className="mt-4 max-w-sm font-mono text-[11px] sm:text-xs text-paper/60 leading-relaxed">
+          <p className="mt-4 max-w-sm lg:max-w-md font-mono text-xs sm:text-sm text-paper/65 leading-relaxed">
             {a.p2}
           </p>
 
@@ -92,7 +92,7 @@ export function AboutOverlay({ onNavigate, onContact }) {
 
           <button
             onClick={onContact}
-            className="mt-6 sm:mt-8 border-2 border-amber px-5 py-3 font-mono text-xs font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
+            className="mt-6 sm:mt-8 border-2 border-amber px-5 py-3 font-mono text-xs sm:text-sm font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
           >
             {a.cta}
           </button>

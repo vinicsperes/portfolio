@@ -30,6 +30,18 @@ body,
   }
 }
 
+/* Snap por seção: um scroll curto assenta na próxima seção em vez de parar
+   no meio. `proximity` (não `mandatory`): seções mais altas que a tela
+   (ghost/verve no mobile) continuam roláveis livremente por dentro. */
+@media (prefers-reduced-motion: no-preference) and (pointer: fine) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+  .snap-section {
+    scroll-snap-align: start;
+  }
+}
+
 body {
   /* mesmo fundo escuro do app: o body aparece no overscroll (iOS) e em
      qualquer fresta — claro aqui virava uma barra branca no fim da página */

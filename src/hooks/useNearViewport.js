@@ -16,7 +16,17 @@ export function useNearViewport(rootMargin = '400px') {
       { rootMargin }
     )
     io.observe(el)
-    return () => io.disconnect()
+    // mesma rede de segurança do useReveal: um salto programático pode não
+    // acordar o observer, e aí o canvas da seção nunca montaria
+    const margin = parseInt(rootMargin, 10) || 0
+    const tm = setTimeout(() => {
+      const r = el.getBoundingClientRect()
+      if (r.top < window.innerHeight + margin && r.bottom > -margin) setNear(true)
+    }, 900)
+    return () => {
+      io.disconnect()
+      clearTimeout(tm)
+    }
   }, [rootMargin])
 
   return [ref, near]

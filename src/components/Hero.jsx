@@ -3,6 +3,7 @@ import { Scene } from './three/Scene.jsx'
 import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
+import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { useReveal } from '../hooks/useReveal.js'
@@ -15,6 +16,13 @@ const SectionPedal = lazy(() => import('./SectionPedal.jsx').then((m) => ({ defa
 const GhostCards = lazy(() => import('./GhostCards.jsx').then((m) => ({ default: m.GhostCards })))
 const GhostSectionBg = lazy(() => import('./GhostCards.jsx').then((m) => ({ default: m.GhostSectionBg })))
 const VerveDemo = lazy(() => import('./VerveDemo.jsx').then((m) => ({ default: m.VerveDemo })))
+
+// redes do contato/footer, na ordem de exibição (rótulos vêm do dicionário)
+const SOCIALS = [
+  { key: 'github', Icon: GitHubIcon },
+  { key: 'linkedin', Icon: LinkedInIcon },
+  { key: 'instagram', Icon: InstagramIcon },
+]
 
 // única view com câmera própria além da home: o quadro do about
 const VALID_VIEWS = ['home', 'about']
@@ -197,7 +205,7 @@ export function Hero() {
       <p className="sr-only">{t.ui.srIntro}</p>
 
       {/* ─────────── HERO: cena full-bleed + lockup tipográfico à esquerda ─────────── */}
-      <section ref={heroRef} className="relative min-h-[100dvh] overflow-hidden">
+      <section ref={heroRef} className="snap-section relative min-h-[100dvh] overflow-hidden">
         {/* A cena 3D é o fundo inteiro; a tela do CRT dentro dela passa o reel
             dos trabalhos (o "vídeo"). O texto vive por cima, à esquerda. */}
         <div className="absolute inset-0 z-0" aria-hidden="true">
@@ -230,7 +238,7 @@ export function Hero() {
             precisa de `invisible` (não só opacity-0): senão os botões seguem
             clicáveis/focáveis por baixo do overlay do about */}
         <div
-          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-center px-6 pt-24 sm:px-12 ${
+          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-start px-6 pt-[22dvh] sm:justify-center sm:pt-0 sm:px-12 ${
             view === 'home' ? '' : 'opacity-0 invisible'
           } transition-opacity duration-500`}
         >
@@ -259,16 +267,16 @@ export function Hero() {
 
             {/* faixa de selos sob o lockup (como a Jeleiz): só as três marcas,
                 soltas e nítidas — texto aqui dissoava do conjunto */}
-            <div className={`mt-8 hidden sm:flex items-center gap-4 ${reveal(view === 'home', 'delay-300')}`}>
-              <img src="/peres-logo.svg" alt="" className="h-11 w-11" />
+            <div className={`mt-8 hidden sm:flex items-center gap-5 ${reveal(view === 'home', 'delay-300')}`}>
+              <img src="/peres-logo.svg" alt="" className="h-16 w-16" />
               <span className="text-paper/35" aria-hidden="true">
                 ·
               </span>
-              <img src="/peres-stamp-wordmark.svg" alt="" className="h-12 w-auto invert opacity-90" />
+              <img src="/peres-stamp-wordmark.svg" alt="" className="h-[68px] w-auto invert opacity-90" />
               <span className="text-paper/35" aria-hidden="true">
                 ·
               </span>
-              <img src="/peres-stamp-globe.svg" alt="" className="h-12 w-auto invert opacity-90" />
+              <img src="/peres-stamp-globe.svg" alt="" className="h-[68px] w-auto invert opacity-90" />
             </div>
 
             {/* boas-vindas */}
@@ -319,20 +327,26 @@ export function Hero() {
           />
         )}
 
-        {/* rodapé do hero: cue de scroll centralizada */}
+        {/* rodapé do hero: cue de scroll centralizada — clicável, leva à
+            primeira seção (quem pede pra rolar tem que rolar no clique) */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-5 sm:px-12">
           <div className="w-16" aria-hidden="true" />
-          <div className={`flex flex-col items-center gap-1 ${reveal(view === 'home', 'delay-500')}`}>
-            <span className="font-mono text-[9px] tracking-[0.3em] text-paper/55">
-              {t.ui.scrollHint}
-            </span>
-            <span
-              className={`text-paper/55 text-xs ${reducedMotion ? '' : 'animate-bounce'}`}
-              aria-hidden="true"
-            >
+          <button
+            onClick={() =>
+              document
+                .getElementById('projects')
+                ?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
+            }
+            className={`pointer-events-auto flex flex-col items-center gap-1 p-3 text-paper/55 hover:text-amber transition-colors ${reveal(
+              view === 'home',
+              'delay-500'
+            )} ${view === 'home' ? '' : 'invisible'}`}
+          >
+            <span className="font-mono text-[9px] tracking-[0.3em]">{t.ui.scrollHint}</span>
+            <span className={`text-xs ${reducedMotion ? '' : 'animate-bounce'}`} aria-hidden="true">
               ↓
             </span>
-          </div>
+          </button>
           <div className="w-16" aria-hidden="true" />
         </div>
       </section>
@@ -340,7 +354,7 @@ export function Hero() {
       {/* ─────────── PÁGINA: seções roláveis ─────────── */}
       <main className="relative z-10 border-t border-paper/10">
         {/* Sobre mim mora na CENA (view do quadro); daqui pra baixo: projetos */}
-        <div id="projects" className="border-b border-paper/10">
+        <div id="projects" className="snap-section border-b border-paper/10">
           <div className="mx-auto max-w-6xl px-6 sm:px-12 py-12 sm:py-14">
             <RevealBlock>
               <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
@@ -357,7 +371,7 @@ export function Hero() {
         </div>
 
         {/* GHOST FX — tela única: o pedal abre sozinho ao entrar em cena; cards na mesma tela */}
-        <section id="ghost" ref={ghostNearRef} className="relative overflow-hidden">
+        <section id="ghost" ref={ghostNearRef} className="snap-section relative overflow-hidden">
           <Suspense fallback={null}>
             <GhostSectionBg />
           </Suspense>
@@ -427,7 +441,7 @@ export function Hero() {
         </section>
 
         {/* VERVE — terminal vivo */}
-        <section id="verve" className="relative border-t border-paper/10 overflow-hidden">
+        <section id="verve" className="snap-section relative border-t border-paper/10 overflow-hidden">
           <div
             className="absolute inset-0"
             style={{ background: 'radial-gradient(55% 55% at 30% 50%, rgba(255,107,43,0.07), transparent 70%)' }}
@@ -471,7 +485,7 @@ export function Hero() {
         </section>
 
         {/* Blog */}
-        <section id="blog" className="border-t border-paper/10">
+        <section id="blog" className="snap-section border-t border-paper/10">
           <div className="mx-auto max-w-6xl px-6 sm:px-12 py-24 sm:py-32">
             <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
               {t.sections.blog}
@@ -488,7 +502,7 @@ export function Hero() {
         </section>
 
         {/* Contato */}
-        <section id="contact" className="border-t border-paper/10">
+        <section id="contact" className="snap-section border-t border-paper/10">
           <div className="mx-auto max-w-6xl px-6 sm:px-12 py-24 sm:py-32">
             <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
               {t.sections.contact}
@@ -514,29 +528,33 @@ export function Hero() {
                   {copied ? t.contact.copied : t.contact.copy}
                 </button>
               </div>
+              {/* redes: ícone + rótulo, com o âmbar preenchendo de baixo
+                  pra cima no hover (o ícone acompanha via currentColor) */}
               <div className="mt-10 flex flex-wrap gap-3">
-                <a
-                  href={links.github}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="border border-paper/25 text-paper/80 px-5 py-3 font-mono text-xs font-bold hover:border-amber hover:text-amber transition-colors"
-                >
-                  {t.contact.links.github}
-                </a>
-                <a
-                  href={links.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="border border-paper/25 text-paper/80 px-5 py-3 font-mono text-xs font-bold hover:border-amber hover:text-amber transition-colors"
-                >
-                  {t.contact.links.linkedin}
-                </a>
+                {SOCIALS.filter((s) => links[s.key]).map((s) => (
+                  <a
+                    key={s.key}
+                    href={links[s.key]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group relative isolate overflow-hidden border border-paper/25 px-5 py-3 text-paper/80 hover:border-amber hover:text-ink focus-visible:border-amber transition-colors"
+                  >
+                    <span
+                      className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-amber transition-transform duration-300 ease-out group-hover:scale-y-100 group-focus-visible:scale-y-100"
+                      aria-hidden="true"
+                    />
+                    <span className="flex items-center gap-2.5">
+                      <s.Icon width={16} height={16} />
+                      <span className="font-mono text-xs font-bold">{t.contact.links[s.key]}</span>
+                    </span>
+                  </a>
+                ))}
                 {links.cv && (
                   <a
                     href={links.cv}
                     target="_blank"
                     rel="noreferrer"
-                    className="border border-amber text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
+                    className="border border-amber bg-amber/10 text-amber px-5 py-3 font-mono text-xs font-bold hover:bg-amber hover:text-ink transition-colors"
                   >
                     {t.contact.links.cv}
                   </a>
@@ -548,11 +566,14 @@ export function Hero() {
 
         {/* Footer: pillmark como marca d'água texturizando o fundo + navegação */}
         <footer className="relative border-t border-paper/10 overflow-hidden">
+          {/* marca d'água: no mobile as letras viravam blocos gigantes atrás
+              dos links (ilegível) — só entra quando há largura pra ela ler
+              como textura */}
           <img
             src="/peres-pillmark.svg"
             alt=""
             aria-hidden="true"
-            className="pointer-events-none select-none absolute left-1/2 top-1/2 w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.045]"
+            className="pointer-events-none select-none absolute left-1/2 top-1/2 hidden w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.045] sm:block"
           />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-12 pt-14 sm:pt-16 pb-8">
             <div className="flex flex-wrap items-start justify-between gap-10">
@@ -581,32 +602,18 @@ export function Hero() {
                   <span className="font-mono text-[10px] font-semibold tracking-[0.3em] text-amber">
                     {t.ui.socials}
                   </span>
-                  <a
-                    href={links.github}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-xs text-paper/60 hover:text-amber transition-colors"
-                  >
-                    GITHUB
-                  </a>
-                  <a
-                    href={links.linkedin}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-xs text-paper/60 hover:text-amber transition-colors"
-                  >
-                    LINKEDIN
-                  </a>
-                  {links.instagram && (
+                  {SOCIALS.filter((s) => links[s.key]).map((s) => (
                     <a
-                      href={links.instagram}
+                      key={s.key}
+                      href={links[s.key]}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-xs text-paper/60 hover:text-amber transition-colors"
+                      className="flex items-center gap-2 font-mono text-xs text-paper/60 hover:text-amber transition-colors"
                     >
-                      INSTAGRAM
+                      <s.Icon width={13} height={13} />
+                      {t.contact.links[s.key]}
                     </a>
-                  )}
+                  ))}
                 </nav>
               </div>
             </div>
