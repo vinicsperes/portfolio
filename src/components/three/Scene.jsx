@@ -145,9 +145,11 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         {/* céu frio de contraponto — impede que fique tudo laranja chapado */}
         <hemisphereLight args={['#9db0d8', '#4a3a2e', 0.35]} />
 
-        {/* wash quente na parede do fundo — tira o preto chapado */}
-        <pointLight position={[-0.5, 4.2, -6.6]} color="#e8c79a" intensity={4} distance={26} decay={1.5} />
-        <pointLight position={[4.5, 4.2, -6.8]} color="#e8c79a" intensity={3.5} distance={26} decay={1.5} />
+        {/* wash quente na parede do fundo — tira o preto chapado. ATENÇÃO:
+            precisa ficar na FRENTE do plano da parede (z=-6); atrás dele a
+            luz não bate na face e a parede fica preta (bug antigo: -6.6/-6.8) */}
+        <pointLight position={[-0.5, 4.2, -4.6]} color="#e8c79a" intensity={2.6} distance={22} decay={1.6} />
+        <pointLight position={[4.5, 4.2, -4.6]} color="#e8c79a" intensity={2.3} distance={22} decay={1.6} />
         {/* wash alto e difuso sobre a janela: no retrato (mobile) a parede
             acima dela aparecia como faixa preta, parecendo fim de cena */}
         <pointLight position={[-5, 8, -3.5]} color="#c9a97a" intensity={1.8} distance={20} decay={1.4} />
@@ -177,13 +179,13 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
 
         {/* Canto musical: pedal no chão + amp + vinis — tudo decorativo
             (sem hover/clique; a seção Ghost chega pelo scroll) */}
-        <group position={[-2.35, -1.93, -3.3]} rotation-y={0.45} scale={0.3}>
+        <group position={[-3.1, -1.93, -3.4]} rotation-y={0.45} scale={0.3}>
           <GhostPedal />
         </group>
-        <GuitarAmp position={[-3.4, -2.1, -4.9]} rotation={[0, 0.35, 0]} />
-        <VinylCrate position={[-5.15, -2.1, -3.5]} rotation={[0, 0.75, 0]} />
+        <GuitarAmp position={[-4.5, -2.1, -5.0]} rotation={[0, 0.3, 0]} />
+        <VinylCrate position={[-6.2, -2.1, -4.4]} rotation={[0, 0.7, 0]} />
         <ContactShadows
-          position={[-2.9, -2.09, -3.9]}
+          position={[-3.6, -2.09, -4.2]}
           opacity={0.7}
           scale={7}
           blur={2.2}

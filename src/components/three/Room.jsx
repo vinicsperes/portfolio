@@ -7,7 +7,6 @@ import { CandleCluster } from './Candles.jsx'
 
 const WOOD = '#5c3a24'
 const WOOD_DARK = '#3a2414'
-const WALL = '#18181f'
 
 /* ───────────────────────────────────────────────────────────
    Procedural Textures
@@ -218,17 +217,19 @@ function useWallTexture() {
     canvas.width = canvas.height = S
     const ctx = canvas.getContext('2d')
 
-    ctx.fillStyle = WALL
+    // cor FINAL assada na textura (material fica branco: map já escurecido
+    // multiplicado por outra cor foi o que deixou a parede preta)
+    ctx.fillStyle = '#39343f'
     ctx.fillRect(0, 0, S, S)
 
-    // manchas largas de tinta/umidade: quebram o chapado em áreas grandes
-    for (let i = 0; i < 26; i++) {
+    // manchas largas de tinta/gesso: quebram o chapado em áreas grandes
+    for (let i = 0; i < 30; i++) {
       const x = (i * 271 + 61) % S
       const y = (i * 397 + 137) % S
-      const r = 90 + ((i * 53) % 150)
+      const r = 110 + ((i * 53) % 170)
       const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-      const light = i % 3 === 0
-      g.addColorStop(0, light ? 'rgba(58,52,64,0.16)' : 'rgba(6,6,10,0.2)')
+      const light = i % 3 !== 0
+      g.addColorStop(0, light ? 'rgba(120,108,126,0.15)' : 'rgba(24,22,32,0.2)')
       g.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = g
       ctx.beginPath()
@@ -240,7 +241,7 @@ function useWallTexture() {
     const img = ctx.getImageData(0, 0, S, S)
     const d = img.data
     for (let i = 0; i < d.length; i += 4) {
-      const n = (Math.random() - 0.5) * 18
+      const n = (Math.random() - 0.5) * 16
       d[i] += n
       d[i + 1] += n
       d[i + 2] += n * 1.1
@@ -248,10 +249,10 @@ function useWallTexture() {
     ctx.putImageData(img, 0, 0)
 
     // riscos verticais discretos (marca de rolo de pintura)
-    ctx.globalAlpha = 0.06
+    ctx.globalAlpha = 0.05
     for (let i = 0; i < 40; i++) {
       const x = (i * 149 + 23) % S
-      ctx.fillStyle = i % 2 ? '#3c3646' : '#08080c'
+      ctx.fillStyle = i % 2 ? '#5a5266' : '#1a1822'
       ctx.fillRect(x, 0, 1 + (i % 3), S)
     }
     ctx.globalAlpha = 1
@@ -539,7 +540,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Back Wall ─── */}
       <mesh position={[0, 4, -6]} receiveShadow>
         <planeGeometry args={[60, 20]} />
-        <meshStandardMaterial map={wallTex} color="#4a4658" roughness={0.95} />
+        <meshStandardMaterial map={wallTex} roughness={0.9} />
       </mesh>
 
       {/* ─── Baseboard ─── */}
@@ -632,7 +633,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Pôster colagem GHOSTFX: papel colado direto na parede (sem
           moldura), levemente torto, com fita adesiva nos cantos. Deslocado
           pra DIREITA das chamas do CRT (o glow do fogo estourava sobre ele) ─── */}
-      <group position={[5.3, 4.15, -5.965]} rotation-z={-0.028}>
+      <group position={[5.75, 3.5, -5.965]} rotation-z={-0.028}>
         <mesh castShadow>
           <planeGeometry args={[2.5, 1.42]} />
           <meshStandardMaterial map={collageTex} roughness={0.92} />

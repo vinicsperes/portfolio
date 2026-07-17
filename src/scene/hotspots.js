@@ -9,11 +9,12 @@ export const INTRO_START = { position: [0, 3.05, 7.7], lookAt: [0, 1.15, -1.4] }
 
 export const VIEWS = {
   home: {
-    // mais um passo à frente: entra no quarto, mesa/tapete encostados na parede
-    camera: { position: [0, 3.05, 7.7], lookAt: [0, 1.15, -1.4] },
-    // tilt mínimo pra baixo: menos parede morta acima da janela (o wash
-    // alto na parede faz o resto — o enquadramento original fica intacto)
-    cameraPortrait: { position: [0, 3.4, 12.5], lookAt: [1.0, 1.0, -1.6], fov: 50 },
+    // câmera mais alta e olhando mais pra baixo: o chão/tapete ganham peso
+    // na composição e a faixa de parede acima da janela quase some
+    camera: { position: [0, 3.5, 8.0], lookAt: [0, 0.8, -1.4] },
+    // topo do enquadramento COMEÇA no topo da janela (nada de parede acima);
+    // o resto da tela fica com mesa/tapete/chão
+    cameraPortrait: { position: [0, 3.9, 12.5], lookAt: [1.0, -0.9, -1.6], fov: 50 },
   },
   // Zoom no porta-retrato (agora na ponta ESQUERDA da prateleira, x=0). A
   // câmera chega perto e mira à esquerda do quadro: a foto ocupa a metade
