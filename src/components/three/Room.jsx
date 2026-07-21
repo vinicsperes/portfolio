@@ -4,6 +4,11 @@ import * as THREE from 'three'
 import { RoundedBox, Sparkles, useTexture } from '@react-three/drei'
 import { Hotspot } from './Hotspot.jsx'
 import { CandleCluster } from './Candles.jsx'
+import { getLightPreset } from '../../scene/lighting.js'
+
+// mesmo preset resolvido no load que a Scene lê (?light=) — escolhe a vista
+// da janela e a cor da poeira do feixe
+const L = getLightPreset()
 
 const WOOD = '#5c3a24'
 const WOOD_DARK = '#3a2414'
@@ -265,8 +270,131 @@ function useWallTexture() {
   }, [])
 }
 
-/** Vista golden hour pela janela: céu quente, sol baixo e skyline em silhueta. */
-function useSunsetViewTexture() {
+// skyline compartilhado entre as vistas (mesma cidade, hora diferente)
+const SKY_BUILDINGS = [
+  [0, 90], [55, 130], [125, 70], [195, 150], [270, 100], [335, 170],
+  [410, 90], [480, 140], [555, 110], [625, 165], [700, 95], [770, 135],
+  [845, 75], [910, 120], [975, 85],
+]
+
+/** Vista noturna pela janela: céu fundo azul, lua alta, estrelas e skyline. */
+function drawNightView(ctx, W, H) {
+  // céu noturno (quase preto no topo → azul profundo no horizonte)
+  const sky = ctx.createLinearGradient(0, 0, 0, H)
+  sky.addColorStop(0, '#070b1d')
+  sky.addColorStop(0.5, '#101a38')
+  sky.addColorStop(0.85, '#1b2a50')
+  sky.addColorStop(1, '#28395e')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, W, H)
+
+  // estrelas (determinísticas: nada de Math.random pra não piscar entre mounts)
+  for (let i = 0; i < 110; i++) {
+    const x = ((i * 137.51) % 1) * W + ((i * 61) % 17)
+    const y = (((i * 89.37) % 1) * 0.72) * H
+    const big = i % 19 === 0
+    ctx.fillStyle = `rgba(214, 226, 255, ${big ? 0.85 : 0.25 + ((i * 37) % 45) / 100})`
+    ctx.fillRect(x % W, y, big ? 2.5 : 1.5, big ? 2.5 : 1.5)
+  }
+
+  // lua alta à direita: glow difuso + disco + crateras discretas
+  const mx = W * 0.7
+  const my = H * 0.26
+  const glow = ctx.createRadialGradient(mx, my, 8, mx, my, 190)
+  glow.addColorStop(0, 'rgba(215, 228, 255, 0.55)')
+  glow.addColorStop(0.35, 'rgba(190, 208, 250, 0.18)')
+  glow.addColorStop(1, 'rgba(180, 200, 250, 0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(0, 0, W, H)
+  ctx.fillStyle = '#e9effc'
+  ctx.beginPath()
+  ctx.arc(mx, my, 38, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(196, 208, 235, 0.55)'
+  ;[[-12, -6, 7], [10, 4, 5], [-2, 14, 4], [14, -14, 3.5]].forEach(([dx, dy, r]) => {
+    ctx.beginPath()
+    ctx.arc(mx + dx, my + dy, r, 0, Math.PI * 2)
+    ctx.fill()
+  })
+
+  // skyline em silhueta azul-noite
+  ctx.fillStyle = '#0b1122'
+  SKY_BUILDINGS.forEach(([x, h], i) => {
+    const w = 42 + (i % 3) * 14
+    ctx.fillRect(x, H - h, w, h)
+  })
+  // janelinhas acesas (maioria quente, umas poucas frias de TV ligada)
+  for (let i = 0; i < 26; i++) {
+    const b = SKY_BUILDINGS[i % SKY_BUILDINGS.length]
+    const x = b[0] + 6 + ((i * 13) % 34)
+    const y = H - ((i * 29) % (b[1] - 14)) - 8
+    ctx.fillStyle = i % 5 === 0 ? 'rgba(150, 185, 255, 0.4)' : 'rgba(255, 200, 110, 0.45)'
+    ctx.fillRect(x, y, 3, 4)
+  }
+
+  // brilho urbano rente ao horizonte (sódio, bem sutil)
+  const haze = ctx.createLinearGradient(0, H * 0.78, 0, H)
+  haze.addColorStop(0, 'rgba(235, 160, 90, 0)')
+  haze.addColorStop(1, 'rgba(235, 160, 90, 0.16)')
+  ctx.fillStyle = haze
+  ctx.fillRect(0, H * 0.78, W, H * 0.22)
+}
+
+/** Vista golden hour: céu quente, sol baixo e skyline em silhueta. */
+function drawSunsetView(ctx, W, H) {
+  // céu golden hour (violeta no topo → laranja/amarelo no horizonte)
+  const sky = ctx.createLinearGradient(0, 0, 0, H)
+  sky.addColorStop(0, '#39335f')
+  sky.addColorStop(0.42, '#b85d78')
+  sky.addColorStop(0.72, '#ef9257')
+  sky.addColorStop(1, '#ffcb7d')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, W, H)
+
+  // brilho difuso do sol baixo
+  const sx = W * 0.72
+  const sy = H * 0.6
+  const glow = ctx.createRadialGradient(sx, sy, 10, sx, sy, 260)
+  glow.addColorStop(0, 'rgba(255,240,200,0.9)')
+  glow.addColorStop(0.3, 'rgba(255,214,150,0.45)')
+  glow.addColorStop(1, 'rgba(255,205,140,0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(0, 0, W, H)
+  // disco do sol
+  ctx.fillStyle = '#fff2d2'
+  ctx.beginPath()
+  ctx.arc(sx, sy, 44, 0, Math.PI * 2)
+  ctx.fill()
+
+  // skyline em silhueta quente
+  ctx.fillStyle = '#5a3344'
+  SKY_BUILDINGS.forEach(([x, h], i) => {
+    const w = 42 + (i % 3) * 14
+    ctx.fillRect(x, H - h, w, h)
+  })
+  // janelinhas acesas quentes
+  ctx.fillStyle = 'rgba(255,190,90,0.6)'
+  for (let i = 0; i < 26; i++) {
+    const b = SKY_BUILDINGS[i % SKY_BUILDINGS.length]
+    const x = b[0] + 6 + ((i * 13) % 34)
+    const y = H - ((i * 29) % (b[1] - 14)) - 8
+    ctx.fillRect(x, y, 3, 4)
+  }
+
+  // haze quente na base do horizonte
+  const haze = ctx.createLinearGradient(0, H * 0.72, 0, H)
+  haze.addColorStop(0, 'rgba(255,190,120,0)')
+  haze.addColorStop(1, 'rgba(255,178,110,0.32)')
+  ctx.fillStyle = haze
+  ctx.fillRect(0, H * 0.72, W, H * 0.28)
+}
+
+/**
+ * Textura da vista da janela, escolhida pelo preset de luz (`sky`): 'night'
+ * = céu noturno com lua; qualquer outro = golden hour. Fica em hook porque
+ * memoiza a CanvasTexture (assar 2x por mount seria desperdício).
+ */
+function useWindowViewTexture(sky) {
   return useMemo(() => {
     const W = 1024
     const H = 512
@@ -274,60 +402,10 @@ function useSunsetViewTexture() {
     canvas.width = W
     canvas.height = H
     const ctx = canvas.getContext('2d')
-
-    // céu golden hour (violeta no topo → laranja/amarelo no horizonte)
-    const sky = ctx.createLinearGradient(0, 0, 0, H)
-    sky.addColorStop(0, '#39335f')
-    sky.addColorStop(0.42, '#b85d78')
-    sky.addColorStop(0.72, '#ef9257')
-    sky.addColorStop(1, '#ffcb7d')
-    ctx.fillStyle = sky
-    ctx.fillRect(0, 0, W, H)
-
-    // brilho difuso do sol baixo
-    const sx = W * 0.72
-    const sy = H * 0.6
-    const glow = ctx.createRadialGradient(sx, sy, 10, sx, sy, 260)
-    glow.addColorStop(0, 'rgba(255,240,200,0.9)')
-    glow.addColorStop(0.3, 'rgba(255,214,150,0.45)')
-    glow.addColorStop(1, 'rgba(255,205,140,0)')
-    ctx.fillStyle = glow
-    ctx.fillRect(0, 0, W, H)
-    // disco do sol
-    ctx.fillStyle = '#fff2d2'
-    ctx.beginPath()
-    ctx.arc(sx, sy, 44, 0, Math.PI * 2)
-    ctx.fill()
-
-    // skyline em silhueta quente
-    ctx.fillStyle = '#5a3344'
-    const buildings = [
-      [0, 90], [55, 130], [125, 70], [195, 150], [270, 100], [335, 170],
-      [410, 90], [480, 140], [555, 110], [625, 165], [700, 95], [770, 135],
-      [845, 75], [910, 120], [975, 85],
-    ]
-    buildings.forEach(([x, h], i) => {
-      const w = 42 + (i % 3) * 14
-      ctx.fillRect(x, H - h, w, h)
-    })
-    // janelinhas acesas quentes
-    ctx.fillStyle = 'rgba(255,190,90,0.6)'
-    for (let i = 0; i < 26; i++) {
-      const b = buildings[i % buildings.length]
-      const x = b[0] + 6 + ((i * 13) % 34)
-      const y = H - ((i * 29) % (b[1] - 14)) - 8
-      ctx.fillRect(x, y, 3, 4)
-    }
-
-    // haze quente na base do horizonte
-    const haze = ctx.createLinearGradient(0, H * 0.72, 0, H)
-    haze.addColorStop(0, 'rgba(255,190,120,0)')
-    haze.addColorStop(1, 'rgba(255,178,110,0.32)')
-    ctx.fillStyle = haze
-    ctx.fillRect(0, H * 0.72, W, H * 0.28)
-
+    if (sky === 'night') drawNightView(ctx, W, H)
+    else drawSunsetView(ctx, W, H)
     return new THREE.CanvasTexture(canvas)
-  }, [])
+  }, [sky])
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -386,18 +464,6 @@ function CityLights() {
 }
 
 /** Luz quente da mesa (sem luminária visível — o brilho vem "da bagunça"). */
-function DeskGlow({ position }) {
-  const lightRef = useRef()
-  useFrame(({ clock }) => {
-    if (lightRef.current) {
-      // very subtle flicker
-      lightRef.current.intensity = 3.2 + Math.sin(clock.elapsedTime * 3) * 0.12
-    }
-  })
-  return (
-    <pointLight ref={lightRef} position={position} color="#ffd090" intensity={3.2} distance={8} decay={2} />
-  )
-}
 
 
 /** Bloco de notas com caneta. */
@@ -519,7 +585,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   const woodTex = useWoodFloorTexture()
   const rugTex = useRugTexture()
   const wallTex = useWallTexture()
-  const skyTex = useSunsetViewTexture()
+  const skyTex = useWindowViewTexture(L.sky)
   const collageTex = useTexture('/img/ghost-collage-tex.jpg')
   const kidTex = useTexture('/img/vini-kid.jpg')
 
@@ -538,9 +604,18 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       </mesh>
 
       {/* ─── Back Wall ─── */}
+      {/* auto-brilho leve (emissive) no lugar dos antigos 3 point lights de
+          wash: garante um piso de luminosidade na parede inteira (inclusive
+          acima da janela no retrato) sem pesar no loop de luzes por pixel */}
       <mesh position={[0, 4, -6]} receiveShadow>
         <planeGeometry args={[60, 20]} />
-        <meshStandardMaterial map={wallTex} roughness={0.9} />
+        <meshStandardMaterial
+          map={wallTex}
+          emissiveMap={wallTex}
+          emissive={L.wallEmissive.color}
+          emissiveIntensity={L.wallEmissive.intensity}
+          roughness={0.9}
+        />
       </mesh>
 
       {/* ─── Baseboard ─── */}
@@ -572,7 +647,8 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       </group>
 
       {/* ─── Desk props ─── */}
-      <DeskGlow position={[5.8, 1.2, -3.9]} />
+      {/* (DeskGlow removido: o fogo do CRT já joga luz quente na mesa; era mais
+          uma point light custando por pixel na cena toda) */}
       <Notepad position={[5.2, 0.1, -3.1]} rotation={[0, 0.35, 0]} />
 
       {/* ─── Cozy: velas no parapeito da janela ─── */}
@@ -586,7 +662,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         size={1.8}
         speed={0.22}
         opacity={0.32}
-        color="#ffd9a0"
+        color={L.dust}
       />
 
       {/* (estante + porta-retrato vivem juntos no hotspot do "sobre", mais abaixo) */}

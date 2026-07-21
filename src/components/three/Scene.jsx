@@ -4,10 +4,13 @@ import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
-import { GhostPedal } from './GhostPedal.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
+import { getLightPreset } from '../../scene/lighting.js'
+
+// resolvido uma vez no load: trocar de preset (?light=) implica reload mesmo
+const L = getLightPreset()
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -109,7 +112,7 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
     <Canvas
       camera={{ position: INTRO_START.position, fov: 40 }}
       frameloop={active ? 'always' : 'never'}
-      gl={{ antialias: true, alpha: true, toneMappingExposure: 1.4, localClippingEnabled: true }}
+      gl={{ antialias: true, alpha: true, toneMappingExposure: L.exposure, localClippingEnabled: true }}
       onCreated={({ gl }) => {
         // os clipping planes do chassi do pedal dependem disso
         gl.localClippingEnabled = true
@@ -130,16 +133,16 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
 
       <Suspense fallback={null}>
         {/* névoa quente — funde as bordas do chão na golden hour */}
-        <fog attach="fog" args={['#1a1512', 26, 60]} />
+        <fog attach="fog" args={[L.fog, 26, 60]} />
 
         {/* fill ambiente morno e generoso — o quarto não é mais noturno */}
-        <ambientLight intensity={0.95} color="#c9b79a" />
+        <ambientLight intensity={L.ambient.intensity} color={L.ambient.color} />
 
         {/* sol baixo entrando pela janela (golden hour): quente e direcional */}
         <directionalLight
           position={[-7, 4.5, 2]}
-          intensity={1.7}
-          color="#ffb266"
+          intensity={L.sun.intensity}
+          color={L.sun.color}
           castShadow
           shadow-mapSize-width={512}
           shadow-mapSize-height={512}
@@ -151,28 +154,13 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           shadow-bias={-0.001}
         />
 
-        {/* feixe quente do pôr do sol pela janela panorâmica */}
-        <spotLight
-          position={[-4.5, 4, -4]}
-          intensity={4}
-          color="#ffab54"
-          distance={18}
-          decay={2}
-          angle={0.85}
-          penumbra={0.6}
-        />
-
         {/* céu frio de contraponto — impede que fique tudo laranja chapado */}
-        <hemisphereLight args={['#9db0d8', '#4a3a2e', 0.35]} />
+        <hemisphereLight args={[L.hemi.sky, L.hemi.ground, L.hemi.intensity]} />
 
-        {/* wash quente na parede do fundo — tira o preto chapado. ATENÇÃO:
-            precisa ficar na FRENTE do plano da parede (z=-6); atrás dele a
-            luz não bate na face e a parede fica preta (bug antigo: -6.6/-6.8) */}
-        <pointLight position={[-0.5, 4.2, -4.6]} color="#e8c79a" intensity={2.6} distance={22} decay={1.6} />
-        <pointLight position={[4.5, 4.2, -4.6]} color="#e8c79a" intensity={2.3} distance={22} decay={1.6} />
-        {/* wash alto e difuso sobre a janela: no retrato (mobile) a parede
-            acima dela aparecia como faixa preta, parecendo fim de cena */}
-        <pointLight position={[-5, 8, -3.5]} color="#c9a97a" intensity={1.8} distance={20} decay={1.4} />
+        {/* NOTA DE PERF: o feixe (spot) e os 3 point lights de "wash" da parede
+            foram removidos. Cada luz custava por PIXEL em toda a cena; a parede
+            agora se ilumina sozinha via emissive (L.wallEmissive em Room.jsx) —
+            custo zero e resolve inclusive a parede acima da janela no retrato. */}
 
         {/* The room: floor, walls, desk, window, painting, shelves, furniture */}
         <Room
@@ -197,11 +185,9 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           />
         </group>
 
-        {/* Canto musical: pedal no chão + amp + vinis — tudo decorativo
-            (sem hover/clique; a seção Ghost chega pelo scroll) */}
-        <group position={[-3.1, -1.93, -3.4]} rotation-y={0.45} scale={0.3}>
-          <GhostPedal />
-        </group>
+        {/* Canto musical: amp + vinis decorativos (o pedal do chão foi removido
+            — perf: um pedal completo em scale 0.3 custava ~116 draw calls/frame
+            + uma point light interna, só de enfeite). */}
         <ShadowKick />
         <GuitarAmp position={[-4.5, -2.1, -5.0]} rotation={[0, 0.3, 0]} />
         <VinylCrate position={[-6.2, -2.1, -4.4]} rotation={[0, 0.7, 0]} />
@@ -214,11 +200,11 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           color="#000000"
           frames={1}
         />
-        {/* luz de canto âmbar — dá leitura ao clearcoat do pedal no escuro */}
+        {/* luz de canto âmbar */}
         <pointLight
           position={[-1.4, -0.5, -2.2]}
-          color="#f5a623"
-          intensity={2.4}
+          color={L.corner.color}
+          intensity={L.corner.intensity}
           distance={7}
           decay={2}
         />

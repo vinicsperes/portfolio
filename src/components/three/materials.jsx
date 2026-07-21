@@ -1,8 +1,7 @@
-import * as THREE from 'three'
 import { shaderMaterial } from '@react-three/drei'
 import { extend } from '@react-three/fiber'
 
-const noiseGLSL = /* glsl */ `
+export const noiseGLSL = /* glsl */ `
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
   }
@@ -30,52 +29,6 @@ const noiseGLSL = /* glsl */ `
     return v;
   }
 `
-
-/**
- * Fogo procedural: FBM rolando pra cima, recortado num formato de chama.
- * Usado em planos cruzados com blending aditivo.
- */
-export const FireMaterial = shaderMaterial(
-  { uTime: 0, uIntensity: 1 },
-  /* glsl */ `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  /* glsl */ `
-    uniform float uTime;
-    uniform float uIntensity;
-    varying vec2 vUv;
-
-    ${noiseGLSL}
-
-    void main() {
-      vec2 uv = vUv;
-
-      float turbulence = fbm(vec2(uv.x * 4.0, uv.y * 5.0 - uTime * 2.4));
-      turbulence += 0.5 * fbm(vec2(uv.x * 9.0 + 13.7, uv.y * 11.0 - uTime * 4.1));
-
-      float centre = 1.0 - abs(uv.x - 0.5) * 2.0;
-      float body = centre * (1.0 - uv.y);
-      float flame = smoothstep(0.12, 0.62, body * 0.9 + turbulence * 0.45 - uv.y * 0.35);
-      flame *= uIntensity;
-
-      vec3 col = mix(vec3(0.55, 0.03, 0.0), vec3(1.0, 0.33, 0.02), flame);
-      col = mix(col, vec3(1.0, 0.85, 0.4), pow(flame, 3.0));
-
-      if (flame < 0.02) discard;
-      gl_FragColor = vec4(col * 1.5, flame);
-    }
-  `,
-  (mat) => {
-    mat.transparent = true
-    mat.depthWrite = false
-    mat.blending = THREE.AdditiveBlending
-    mat.side = THREE.DoubleSide
-  }
-)
 
 /**
  * Tela CRT: tubo escuro quente, linhas de "código" fake, scanlines,
@@ -151,4 +104,4 @@ export const CRTMaterial = shaderMaterial(
   `
 )
 
-extend({ FireMaterial, CrtMaterial: CRTMaterial })
+extend({ CrtMaterial: CRTMaterial })

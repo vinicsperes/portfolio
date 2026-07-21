@@ -6,7 +6,7 @@ export const pt = {
       l2: 'SANTA CATARINA · BRASIL',
     },
     welcome:
-      'OI! SOU O VINÍCIUS, DESENVOLVEDOR DE SOFTWARE. AQUI FICAM MEUS TRABALHOS MAIS RECENTES. FIQUE À VONTADE!',
+      'DESENVOLVEDOR DE SOFTWARE. AQUI FICAM MEUS TRABALHOS MAIS RECENTES. FIQUE À VONTADE!',
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
     langCta: { label: 'oh no! I got lost!', flag: '🇺🇸', to: 'en' },
   },

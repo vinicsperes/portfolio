@@ -307,9 +307,22 @@ export function Hero() {
             <div className={`mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 ${reveal(view === 'home', 'delay-500')}`}>
               <button
                 onClick={() => navigate('about')}
-                className="pointer-events-auto border-2 border-amber px-5 py-3 font-mono text-xs font-bold text-amber hover:bg-amber hover:text-ink transition-colors"
+                className="group pointer-events-auto relative overflow-hidden border-2 border-amber px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.22em] text-amber transition-colors duration-300 hover:text-ink focus-visible:text-ink"
               >
-                {t.sections.about}
+                {/* preenchimento âmbar desliza de baixo; conteúdo por cima */}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 translate-y-full bg-amber transition-transform duration-300 ease-out group-hover:translate-y-0 group-focus-visible:translate-y-0"
+                />
+                <span className="relative z-10 inline-flex items-center gap-3">
+                  {t.sections.about}
+                  <span
+                    aria-hidden="true"
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    →
+                  </span>
+                </span>
               </button>
               <button
                 onClick={() => setLang(t.hero.langCta.to)}

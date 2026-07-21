@@ -6,7 +6,7 @@ export const en = {
       l2: 'SANTA CATARINA · BRAZIL',
     },
     welcome:
-      "HI! I'M VINÍCIUS, A SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES. MAKE YOURSELF AT HOME!",
+      "SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES. MAKE YOURSELF AT HOME!",
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
     langCta: { label: 'fala português?', flag: '🇧🇷', to: 'pt' },
   },
