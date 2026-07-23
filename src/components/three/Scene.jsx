@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
@@ -96,11 +96,24 @@ function ShadowKick({ frames = 10 }) {
   return null
 }
 
-/** Dispara quando o conteúdo do Suspense montou (assets carregados de verdade). */
+/**
+ * Dispara `onReady` só depois que a cena RENDERIZOU alguns frames de verdade,
+ * não no mount do Suspense. Mount = assets carregados, mas a compilação de
+ * shader (~3.6s no boot) e o 1º paint vêm DEPOIS — atrelar o loader ao mount
+ * fazia ele sumir no meio do congelamento (o pop-in). Esperar uns frames garante
+ * que o compile já passou e o loader cobre o freeze inteiro.
+ */
 function SceneReady({ onReady }) {
-  useEffect(() => {
-    onReady?.()
-  }, [onReady])
+  const fired = useRef(false)
+  const frames = useRef(0)
+  useFrame(() => {
+    if (fired.current) return
+    frames.current += 1
+    if (frames.current >= 3) {
+      fired.current = true
+      onReady?.()
+    }
+  })
   return null
 }
 
