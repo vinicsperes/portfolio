@@ -83,9 +83,6 @@ export function Hero() {
   useEffect(() => {
     if (ghostNear) setGhostSeen(true)
   }, [ghostNear])
-  // roda + abre o pedal quando o palco encosta na viewport (damp lento faz
-  // a abertura acontecer com o palco já em cena)
-  const [ghostStageRef, ghostStageVisible] = useNearViewport('0px')
 
   // Entrar numa view trava o scroll do body no mesmo commit: um scroll SUAVE
   // em voo seria congelado no meio e o overlay (absoluto no hero) ficaria
@@ -473,12 +470,13 @@ export function Hero() {
                 </div>
               </RevealBlock>
 
-              {/* palco do pedal: monta cedo (Preload compila parado) e só RODA
-                  quando visível — canvas ativo fora da tela = lag no resto */}
-              <div ref={ghostStageRef} className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
+              {/* palco do pedal: monta cedo (Preload compila parado). O canvas
+                  roda em frameloop="demand" e o pedal abre sozinho pouco depois
+                  da seção entrar — parado (aberto) não custa nada */}
+              <div className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
                 {(ghostNear || ghostSeen) && (
                   <Suspense fallback={null}>
-                    <SectionPedal open={ghostStageVisible} active={ghostStageVisible} />
+                    <SectionPedal />
                   </Suspense>
                 )}
               </div>
