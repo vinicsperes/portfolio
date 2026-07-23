@@ -62,15 +62,17 @@ export function BootLoader({ ready = false }) {
           {/* globo extrudado FINO (~5px), menor, deixando a órbita do anel em
               volta. filter inline SUBSTITUI o da classe, então invert vai junto */}
           <div className="loader-spin absolute" style={{ inset: '18%' }}>
-            {Array.from({ length: 10 }).map((_, i) => (
+            {Array.from({ length: 6 }).map((_, i) => (
               <img
                 key={i}
-                src="/peres-globe.svg"
+                src="/peres-globe-white.svg"
                 alt=""
                 className="absolute inset-0 h-full w-full"
+                // SVG já branco: ZERO filtro (invert por camada torrava a GPU no
+                // mobile). Profundidade fake via opacity, que é compositor-only
                 style={{
-                  transform: `translateZ(${(i - 4.5) * 0.55}px)`,
-                  filter: `invert(1) brightness(${0.72 + 0.28 * (i / 9)})`,
+                  transform: `translateZ(${(i - 2.5) * 1}px)`,
+                  opacity: 0.55 + 0.45 * (i / 5),
                 }}
               />
             ))}
@@ -82,13 +84,13 @@ export function BootLoader({ ready = false }) {
             style={{ inset: '14%' }}
             aria-hidden="true"
           >
-            {Array.from({ length: 10 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
                 className="absolute inset-0 rounded-[50%] border-2"
                 style={{
-                  transform: `translateZ(${(i - 4.5) * 0.55}px)`,
-                  borderColor: `rgba(244,240,230,${0.45 + 0.5 * (i / 9)})`,
+                  transform: `translateZ(${(i - 2) * 1.1}px)`,
+                  borderColor: `rgba(244,240,230,${0.45 + 0.5 * (i / 4)})`,
                 }}
               />
             ))}
