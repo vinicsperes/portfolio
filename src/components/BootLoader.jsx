@@ -47,30 +47,52 @@ export function BootLoader({ ready = false }) {
       }`}
       aria-hidden="true"
     >
-      {/* logo (globo) girando no eixo Y com ESPESSURA real: N cópias do SVG
-          empilhadas em translateZ (extrusão) dentro de um pai preserve-3d.
-          perspective dá a profundidade + barra como rodapé do lockup */}
+      {/* palco 3D: globo girando num sentido (extrusão FINA) + elipse externa
+          contra-rotativa com gap (efeito giroscópio). perspective no container
+          dá a profundidade + barra como rodapé do lockup */}
       <div
         className={`flex w-52 sm:w-72 flex-col items-stretch gap-6 transition-all duration-700 ease-out ${
           mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         }`}
-        style={{ perspective: '1000px' }}
       >
-        <div className="loader-spin relative w-full" style={{ aspectRatio: '1904 / 906' }}>
-          {Array.from({ length: 16 }).map((_, i) => (
-            <img
-              key={i}
-              src="/peres-globe.svg"
-              alt=""
-              className="absolute inset-0 h-full w-full"
-              // invert (preto->branco) + brilho decrescente pro fundo (AO fake).
-              // filter inline SUBSTITUI o da classe, então invert vai junto aqui
-              style={{
-                transform: `translateZ(${(i - 7.5) * 1.7}px)`,
-                filter: `invert(1) brightness(${0.72 + 0.28 * (i / 15)})`,
-              }}
-            />
-          ))}
+        {/* perspective no palco (e SEM preserve-3d aqui): assim o globo e o anel
+            NÃO se intercalam em Z; cada um é 3D por dentro, mas o anel (depois no
+            DOM) compõe sempre POR CIMA do globo na hora que se cruzam ao girar */}
+        <div className="relative w-full" style={{ aspectRatio: '1904 / 906', perspective: '1000px' }}>
+          {/* globo extrudado FINO (~5px), menor, deixando a órbita do anel em
+              volta. filter inline SUBSTITUI o da classe, então invert vai junto */}
+          <div className="loader-spin absolute" style={{ inset: '18%' }}>
+            {Array.from({ length: 10 }).map((_, i) => (
+              <img
+                key={i}
+                src="/peres-globe.svg"
+                alt=""
+                className="absolute inset-0 h-full w-full"
+                style={{
+                  transform: `translateZ(${(i - 4.5) * 0.55}px)`,
+                  filter: `invert(1) brightness(${0.72 + 0.28 * (i / 9)})`,
+                }}
+              />
+            ))}
+          </div>
+          {/* anel EXTERNO (elipse por fora do globo) extrudado na MESMA espessura,
+              girando ao contrário. só um pouco maior que o globo (gap pequeno) */}
+          <div
+            className="loader-spin-rev absolute"
+            style={{ inset: '14%' }}
+            aria-hidden="true"
+          >
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute inset-0 rounded-[50%] border-2"
+                style={{
+                  transform: `translateZ(${(i - 4.5) * 0.55}px)`,
+                  borderColor: `rgba(244,240,230,${0.45 + 0.5 * (i / 9)})`,
+                }}
+              />
+            ))}
+          </div>
         </div>
         <div className="h-px w-full bg-paper/20 relative overflow-hidden">
           <div
