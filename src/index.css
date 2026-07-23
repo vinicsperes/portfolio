@@ -92,6 +92,29 @@ body {
   }
 }
 
+/* logo do loader girando no eixo Y (efeito 3D, como um globo/placa virando). O
+   container dá a perspective; backface visível mostra o verso na volta.
+   will-change promove a layer própria: a rotação roda no compositor e continua
+   LISA mesmo enquanto a thread principal trava compilando a cena 3D no boot (é
+   lá que o loader mais precisa de vida) */
+@keyframes loader-spin {
+  to {
+    transform: rotateY(360deg);
+  }
+}
+.loader-spin {
+  animation: loader-spin 3s linear infinite;
+  transform-origin: center;
+  transform-style: preserve-3d; /* as camadas em translateZ viram volume real */
+  backface-visibility: visible;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loader-spin {
+    animation: none;
+  }
+}
+
 /* scroll sem barra visível (overlays da cena têm scroll próprio) */
 .no-scrollbar {
   scrollbar-width: none;
