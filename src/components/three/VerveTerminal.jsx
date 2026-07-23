@@ -71,8 +71,8 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
   const stateRef = useRef(null)
   const confettiRef = useRef([])
   const lastTime = useRef(0)
-  const lastIdleDraw = useRef(0)
   const lastLiveDraw = useRef(0)
+  const idleFrozen = useRef(false)
 
   const reset = () => {
     const words = pickWords(25)
@@ -439,18 +439,20 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
       crt.current.uHeat = THREE.MathUtils.damp(crt.current.uHeat, heat, 2.5, delta)
     }
     if (mode === 'live') {
+      idleFrozen.current = false // ao voltar pro idle, redesenha o frame parado
       // ~30fps: o upload da textura 1024×800 por frame é o gargalo
       const now = performance.now()
       if (now - lastLiveDraw.current > 33) {
         lastLiveDraw.current = now
         drawLive()
       }
-    } else {
-      const now = performance.now()
-      if (now - lastIdleDraw.current > 100) {
-        lastIdleDraw.current = now
-        drawIdle(now)
-      }
+    } else if (!idleFrozen.current) {
+      // no preview (Hero) o CRT fica ESTÁTICO: um frame de descanso desenhado
+      // uma vez, sem mais upload. O reel redesenhava+subia a textura 10x/s e
+      // custava ~metade do stutter do Hero a 1080p (o desenho 2D de texto + o
+      // upload, não o mipmap). A vida do CRT vem do crtMaterial (uTime), grátis.
+      idleFrozen.current = true
+      drawIdle(1800) // now fixo: palavra completa, cursor apagado, 72 wpm
     }
   })
 

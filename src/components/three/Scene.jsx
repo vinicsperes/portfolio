@@ -122,12 +122,15 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
       dpr={dpr}
       shadows
     >
-      {/* flipflops limita a 2 oscilações — evita "ticks" visíveis de resolução */}
+      {/* flipflops limita a 2 oscilações — evita "ticks" visíveis de resolução.
+          Teto em 1.0: supersample a 1.25 rendia 3.2M px a 1080p e estourava o
+          fill-rate em GPU integrada (perdia ~28 frames/8s). Piso 0.85 dá alívio
+          pra GPU fraca segurar 60fps. Medido na Iris Xe: dpr 1.0 = 0 drops. */}
       <PerformanceMonitor
         flipflops={2}
-        onIncline={() => setDpr(1.25)}
-        onDecline={() => setDpr(1)}
-        onFallback={() => setDpr(1)}
+        onIncline={() => setDpr(1)}
+        onDecline={() => setDpr(0.85)}
+        onFallback={() => setDpr(0.85)}
       />
       <CameraController view={view} reducedMotion={reducedMotion} />
 
