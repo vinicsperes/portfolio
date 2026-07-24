@@ -117,8 +117,14 @@ function SceneReady({ onReady }) {
   return null
 }
 
+// teto de dpr por device: min(2, devicePixelRatio). No desktop 1080p (dpr 1) dá
+// 1 (o 1.25 estourava fill-rate — era SUPERSAMPLE acima da tela). No mobile
+// (dpr 2-4) dá 2, o mínimo pra cena 3D não sair borrada (render em 1/3 da
+// resolução deixava tudo embaçado, só o texto/DOM saía nítido).
+const MAX_DPR = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)
+
 export function Scene({ view, onNavigate, labels, reducedMotion, markers, active = true, dimRef, onReady }) {
-  const [dpr, setDpr] = useState(1)
+  const [dpr, setDpr] = useState(MAX_DPR)
   const showMarkers = view === 'home' && !reducedMotion
 
   return (
@@ -136,14 +142,13 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
       shadows
     >
       {/* flipflops limita a 2 oscilações — evita "ticks" visíveis de resolução.
-          Teto em 1.0: supersample a 1.25 rendia 3.2M px a 1080p e estourava o
-          fill-rate em GPU integrada (perdia ~28 frames/8s). Piso 0.85 dá alívio
-          pra GPU fraca segurar 60fps. Medido na Iris Xe: dpr 1.0 = 0 drops. */}
+          Teto = MAX_DPR (min(2, devicePixelRatio)): nunca supersample. Se a GPU
+          sofrer, cai proporcional pra segurar 60fps sem ficar preto/borrado. */}
       <PerformanceMonitor
         flipflops={2}
-        onIncline={() => setDpr(1)}
-        onDecline={() => setDpr(0.85)}
-        onFallback={() => setDpr(0.85)}
+        onIncline={() => setDpr(MAX_DPR)}
+        onDecline={() => setDpr(Math.max(1, MAX_DPR * 0.7))}
+        onFallback={() => setDpr(Math.max(1, MAX_DPR * 0.6))}
       />
       <CameraController view={view} reducedMotion={reducedMotion} />
 
