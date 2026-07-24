@@ -18,7 +18,7 @@ const MAX_MS = 6000
  * o mínimo, a moeda "cai" (desacelera até de frente) e no instante que para dá uma
  * piscadinha com brilho, revelando o site. Barra fina e discreta embaixo.
  */
-export function BootLoader({ ready = false }) {
+export function BootLoader({ ready = false, onReveal }) {
   const reducedMotion = useReducedMotion()
   const [mounted, setMounted] = useState(false) // dispara a animação de entrada
   const [landing, setLanding] = useState(false) // desacelera até parar de frente
@@ -51,6 +51,11 @@ export function BootLoader({ ready = false }) {
     const t = setTimeout(() => setEnding(true), LAND_MS)
     return () => clearTimeout(t)
   }, [landing])
+
+  // a cena volta a renderizar agora (por trás do fade), pra revelar já pintada
+  useEffect(() => {
+    if (ending) onReveal?.()
+  }, [ending, onReveal])
 
   useEffect(() => {
     if (!ending) return

@@ -65,6 +65,11 @@ export function Hero() {
   const [copied, setCopied] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
   const handleReady = useCallback(() => setSceneReady(true), [])
+  // a cena do hero NÃO renderiza enquanto o loader opaco cobre a tela (era GPU
+  // gasta à toa num quarto invisível — travava a moeda do loader a ~10fps no
+  // mobile). Só liga na revelação do loader; até lá o CompileGate já compilou.
+  const [sceneRevealed, setSceneRevealed] = useState(false)
+  const revealScene = useCallback(() => setSceneRevealed(true), [])
 
   // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
@@ -211,7 +216,7 @@ export function Hero() {
           <Scene
             view={view}
             reducedMotion={reducedMotion}
-            active={heroNear}
+            active={heroNear && sceneRevealed}
             onNavigate={sceneNavigate}
             labels={sceneLabels}
             markers={{ about: true }}
@@ -242,7 +247,7 @@ export function Hero() {
           </>
         )}
 
-        <BootLoader ready={sceneReady} />
+        <BootLoader ready={sceneReady} onReveal={revealScene} />
 
         {/* Lockup tipográfico (a estrela) — sobreposto à cena. Fora da home ele
             precisa de `invisible` (não só opacity-0): senão os botões seguem

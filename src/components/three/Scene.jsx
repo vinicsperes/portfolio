@@ -1,6 +1,6 @@
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, PerformanceMonitor, Preload, useProgress } from '@react-three/drei'
+import { ContactShadows, PerformanceMonitor, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
@@ -24,7 +24,12 @@ function CameraController({ view, reducedMotion }) {
   const introDone = useRef(false)
   const portrait = useRef(false)
 
-  useFrame((state, delta) => {
+  useFrame((state, rawDelta) => {
+    // o frameloop fica pausado atrás do loader: o 1º frame (aquecimento e
+    // revelação) chega com delta de segundos — sem teto, o lerp teleporta a
+    // câmera e come o sweep de intro
+    const delta = Math.min(rawDelta, 1 / 30)
+
     // retrato/paisagem com histerese — nada de user-agent
     const aspect = state.size.width / state.size.height
     if (aspect < 0.9) portrait.current = true
@@ -97,23 +102,43 @@ function ShadowKick({ frames = 10 }) {
 }
 
 /**
- * Dispara `onReady` só depois que a cena RENDERIZOU alguns frames de verdade,
- * não no mount do Suspense. Mount = assets carregados, mas a compilação de
- * shader (~3.6s no boot) e o 1º paint vêm DEPOIS — atrelar o loader ao mount
- * fazia ele sumir no meio do congelamento (o pop-in). Esperar uns frames garante
- * que o compile já passou e o loader cobre o freeze inteiro.
+ * Prepara a cena SEM ligar o frameloop (que fica 'never' até a revelação, pra
+ * não gastar GPU num quarto invisível atrás do loader — mobile agradece):
+ * 1. `compileAsync` compila os shaders em paralelo (KHR_parallel_shader_compile)
+ *    sem travar a thread, então a moeda do loader segue lisa;
+ * 2. WARM_FRAMES frames reais via advance(), ainda atrás do loader opaco: sobem
+ *    texturas/buffers pra GPU, desenham o shadow map e deixam o canvas já
+ *    pintado. Sem eles, tudo isso caía no 1º frame DA REVELAÇÃO — centenas de
+ *    ms de freeze (loader preso) com o canvas ainda vazio (o flash preto).
+ * Só então dispara `onReady`.
  */
-function SceneReady({ onReady }) {
-  const fired = useRef(false)
-  const frames = useRef(0)
-  useFrame(() => {
-    if (fired.current) return
-    frames.current += 1
-    if (frames.current >= 3) {
-      fired.current = true
-      onReady?.()
+const WARM_FRAMES = 3
+
+function CompileGate({ onReady }) {
+  const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+  const camera = useThree((s) => s.camera)
+  const advance = useThree((s) => s.advance)
+  useEffect(() => {
+    let alive = true
+    let raf = 0
+    const warm = (left) => {
+      if (!alive) return
+      if (left === 0) return onReady?.()
+      advance(performance.now())
+      raf = requestAnimationFrame(() => warm(left - 1))
     }
-  })
+    const done = () => warm(WARM_FRAMES)
+    if (gl.compileAsync) gl.compileAsync(scene, camera).then(done)
+    else {
+      gl.compile(scene, camera)
+      done()
+    }
+    return () => {
+      alive = false
+      cancelAnimationFrame(raf)
+    }
+  }, [gl, scene, camera, advance, onReady])
   return null
 }
 
@@ -230,10 +255,9 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           decay={2}
         />
 
-        {/* compila shaders/texturas ANTES do primeiro frame — o loader só
-            libera com a cena pronta de verdade */}
-        <Preload all />
-        <SceneReady onReady={onReady} />
+        {/* compila os shaders (async, sem travar/renderizar) e libera o loader
+            quando pronto; a cena só começa a renderizar na revelação */}
+        <CompileGate onReady={onReady} />
       </Suspense>
     </Canvas>
   )
