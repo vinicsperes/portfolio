@@ -3,10 +3,8 @@
  * da câmera, o ponto de lookAt e (opcional) fov. `cameraPortrait`
  * reenquadra em telas retrato (aspect < ~0.9).
  */
-// A câmera nasce já no enquadramento do hero — sem voo de longe (o dono não
-// gostou da animação de entrada). Espelha VIEWS.home.
-export const INTRO_START = { position: [0, 3.05, 7.7], lookAt: [0, 1.15, -1.4] }
-
+// SEM animação de entrada: a câmera nasce cravada no enquadramento da view
+// (o dono não gosta de voo/deriva de câmera no load — já foi removido 2x)
 export const VIEWS = {
   home: {
     // câmera mais alta e olhando mais pra baixo: o chão/tapete ganham peso

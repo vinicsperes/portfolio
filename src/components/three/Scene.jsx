@@ -1,12 +1,12 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, PerformanceMonitor, useProgress } from '@react-three/drei'
+import { ContactShadows, PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
 import { Room } from './Room.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
-import { VIEWS, INTRO_START } from '../../scene/hotspots.js'
+import { VIEWS } from '../../scene/hotspots.js'
 import { getLightPreset } from '../../scene/lighting.js'
 
 // resolvido uma vez no load: trocar de preset (?light=) implica reload mesmo
@@ -18,16 +18,13 @@ const _look = new THREE.Vector3()
 const _m = new THREE.Matrix4()
 const _q = new THREE.Quaternion()
 
-function CameraController({ view, reducedMotion }) {
-  const { progress } = useProgress()
-  const started = useRef(false)
-  const introDone = useRef(false)
+function CameraController({ view }) {
+  const snapped = useRef(false)
   const portrait = useRef(false)
 
   useFrame((state, rawDelta) => {
-    // o frameloop fica pausado atrás do loader: o 1º frame (aquecimento e
-    // revelação) chega com delta de segundos — sem teto, o lerp teleporta a
-    // câmera e come o sweep de intro
+    // o frameloop pausa atrás do loader e fora da viewport: o frame seguinte
+    // chega com delta de segundos — sem teto, o lerp de transição vira pulo
     const delta = Math.min(rawDelta, 1 / 30)
 
     // retrato/paisagem com histerese — nada de user-agent
@@ -38,30 +35,22 @@ function CameraController({ view, reducedMotion }) {
     const def = VIEWS[view] ?? VIEWS.home
     const cam = (portrait.current && def.cameraPortrait) || def.camera
 
-    // segura a câmera no waypoint do sweep enquanto os assets carregam
-    if (!started.current) {
-      if (reducedMotion) {
-        state.camera.position.set(...cam.position)
-        _look.set(...cam.lookAt)
-        state.camera.lookAt(_look)
-        started.current = true
-        introDone.current = true
-      } else if (progress < 100) {
-        state.camera.position.set(...INTRO_START.position)
-        _look.set(...INTRO_START.lookAt)
-        state.camera.lookAt(_look)
-        return
-      } else {
-        started.current = true
-      }
+    _pos.set(...cam.position)
+    _look.set(...cam.lookAt)
+
+    // sem animação de entrada: o 1º frame nasce cravado no enquadramento da
+    // view (o dono não gosta de voo/deriva de câmera no load)
+    if (!snapped.current) {
+      snapped.current = true
+      state.camera.position.copy(_pos)
+      state.camera.lookAt(_look)
+      state.camera.fov = cam.fov ?? 40
+      state.camera.updateProjectionMatrix()
+      return
     }
 
     // 1 - Math.exp(-lambda * delta) is the framerate-independent way to lerp
-    const lambda = introDone.current ? 4 : 1.4
-    const lerpFactor = 1 - Math.exp(-lambda * delta)
-
-    _pos.set(...cam.position)
-    _look.set(...cam.lookAt)
+    const lerpFactor = 1 - Math.exp(-4 * delta)
 
     // (sem parallax de mouse: a câmera se mexer com o ponteiro enjoava o dono)
 
@@ -69,10 +58,6 @@ function CameraController({ view, reducedMotion }) {
     _m.lookAt(state.camera.position, _look, state.camera.up)
     _q.setFromRotationMatrix(_m)
     state.camera.quaternion.slerp(_q, lerpFactor)
-
-    if (!introDone.current && state.camera.position.distanceTo(_pos) < 0.12) {
-      introDone.current = true
-    }
 
     const targetFov = cam.fov ?? 40
     if (Math.abs(state.camera.fov - targetFov) > 0.05) {
@@ -154,7 +139,7 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
 
   return (
     <Canvas
-      camera={{ position: INTRO_START.position, fov: 40 }}
+      camera={{ position: VIEWS.home.camera.position, fov: 40 }}
       frameloop={active ? 'always' : 'never'}
       gl={{ antialias: true, alpha: true, toneMappingExposure: L.exposure, localClippingEnabled: true }}
       onCreated={({ gl }) => {
@@ -175,7 +160,7 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         onDecline={() => setDpr(Math.max(1, MAX_DPR * 0.7))}
         onFallback={() => setDpr(Math.max(1, MAX_DPR * 0.6))}
       />
-      <CameraController view={view} reducedMotion={reducedMotion} />
+      <CameraController view={view} />
 
       <Suspense fallback={null}>
         {/* névoa quente — funde as bordas do chão na golden hour */}
