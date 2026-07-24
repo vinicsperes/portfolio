@@ -92,43 +92,56 @@ body {
   }
 }
 
-/* logo do loader girando no eixo Y (efeito 3D, como um globo/placa virando). O
-   container dá a perspective; backface visível mostra o verso na volta.
-   will-change promove a layer própria: a rotação roda no compositor e continua
-   LISA mesmo enquanto a thread principal trava compilando a cena 3D no boot (é
-   lá que o loader mais precisa de vida) */
-@keyframes loader-spin {
+/* logo girando como uma MOEDA no loader: rotateY rápido (uma camada só, transform
+   no compositor = leve no mobile; a extrusão multi-camada é que torrava a GPU).
+   Ao "cair" (.landing) desacelera em ~3 voltas e assenta de frente, e o loader
+   some revelando o site. */
+@keyframes loader-coin-spin {
   to {
     transform: rotateY(360deg);
   }
 }
-@keyframes loader-spin-rev {
+@keyframes loader-coin-land {
   from {
-    transform: rotateY(360deg);
-  }
-  to {
     transform: rotateY(0deg);
   }
+  to {
+    transform: rotateY(720deg);
+  }
 }
-.loader-spin {
-  animation: loader-spin 3s linear infinite;
+/* piscadinha com brilho no instante que para, e some (revela o site) */
+@keyframes loader-coin-flash {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.95));
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.28);
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
+    opacity: 0;
+  }
+}
+.loader-coin {
+  animation: loader-coin-spin 0.6s linear infinite;
   transform-origin: center;
-  transform-style: preserve-3d; /* as camadas em translateZ viram volume real */
-  backface-visibility: visible;
   will-change: transform;
 }
-/* anel externo girando ao contrário (efeito giroscópio); período diferente pra
-   não ficar de perfil junto com o globo */
-.loader-spin-rev {
-  animation: loader-spin-rev 3.6s linear infinite;
-  transform-origin: center;
-  transform-style: preserve-3d;
-  backface-visibility: visible;
-  will-change: transform;
+.loader-coin.landing {
+  animation: loader-coin-land 0.6s cubic-bezier(0.15, 0.85, 0.25, 1) forwards;
+}
+.loader-coin.flash {
+  animation: loader-coin-flash 0.38s ease-out forwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  .loader-spin,
-  .loader-spin-rev {
+  .loader-coin,
+  .loader-coin.landing,
+  .loader-coin.flash {
     animation: none;
   }
 }
