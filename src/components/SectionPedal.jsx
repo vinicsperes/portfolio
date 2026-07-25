@@ -34,7 +34,6 @@ function AutoOpenPedal({ reducedMotion }) {
   const explodeRef = useRef(0)
   const smooth = useRef(0)
   const opened = useRef(false)
-  const [split, setSplit] = useState(false)
   const [led, setLed] = useState(false)
   const gl = useThree((s) => s.gl)
   const invalidate = useThree((s) => s.invalidate)
@@ -45,7 +44,6 @@ function AutoOpenPedal({ reducedMotion }) {
       opened.current = true
       smooth.current = 1
       explodeRef.current = 1.1
-      setSplit(true)
       setLed(true)
       invalidate()
       return
@@ -93,7 +91,6 @@ function AutoOpenPedal({ reducedMotion }) {
     const p = smooth.current
     explodeRef.current = p * 1.1
     if (group.current) group.current.rotation.y = p * OPEN_ANGLE
-    if (!split && p > 0.02) setSplit(true)
     if (!led && p > 0.4) setLed(true)
     // segue renderizando enquanto a abertura não assentou; depois idle
     if (!reducedMotion && Math.abs(target - p) > 0.0005) invalidate()
@@ -104,7 +101,15 @@ function AutoOpenPedal({ reducedMotion }) {
       <PedalScene
         palette={palette}
         explodeRef={explodeRef}
-        split={split}
+        // SEMPRE partido, inclusive fechado. O latch antigo (split ao passar de
+        // 2% da abertura) trocava o chassi inteiro no primeiro frame da
+        // animação: dois RoundedBox novos com smoothness 8 (geometria +
+        // toCreasedNormals), dois extrudeGeometry dos frisos e materiais com
+        // clipping plane/DoubleSide inéditos, ou seja, shaders compilando na
+        // hora exata de abrir. Com explode em 0 os dois planos de corte se
+        // encostam no centro e as metades remontam o chassi fechado, então
+        // visualmente é o mesmo pedal e o <Preload all/> já compila tudo.
+        split
         spin={0}
         hideTag
         ledColor={GREEN}

@@ -11,6 +11,8 @@ import {
   Vector3,
   type Group,
   type Mesh,
+  type MeshBasicMaterial,
+  type MeshPhysicalMaterial,
   type PointLight,
   type Side,
 } from "three";
@@ -172,6 +174,14 @@ export function PedalBody({
   const rimTopRef = useRef<Mesh>(null);
   const clipBottom = useMemo(() => new Plane(new Vector3(0, -1, 0), 0), []);
   const clipTop = useMemo(() => new Plane(new Vector3(0, 1, 0), 0), []);
+  // tampa do chassi: translúcida com o pedal aberto (dá pra ver o circuito por
+  // dentro), OPACA enquanto fechado — senão as tripas vazam pela face de cima.
+  // A troca é mutação de material no frame, não re-render: `transparent`,
+  // `opacity` e `depthWrite` estão fora da chave de cache de programa da three,
+  // então não recompila nada (era essa recompilação, junto com a remontagem do
+  // chassi, que dava a travada no instante de abrir).
+  const lidMatRef = useRef<MeshPhysicalMaterial>(null);
+  const ledGlowMatRef = useRef<MeshBasicMaterial>(null);
   useFrame((state, delta) => {
     const ex = explodeRef ? explodeRef.current : explode;
     const g = rootRef.current;
@@ -199,6 +209,17 @@ export function PedalBody({
       rimTopRef.current.scale.z = ex;
       rimTopRef.current.position.y = yTop;
     }
+    // no xray a tampa é translúcida de propósito, aberta ou fechada
+    const lid = lidMatRef.current;
+    if (lid && !xray) {
+      const shut = ex < 0.01;
+      lid.transparent = !shut;
+      lid.opacity = shut ? 1 : splitOp;
+      lid.depthWrite = shut;
+    }
+    // sem damp de propósito: acende igual ao mount condicional que existia aqui
+    const halo = ledGlowMatRef.current;
+    if (halo) halo.opacity = ledActive ? 0.35 : 0;
     const gl = glowRef.current;
     if (gl) gl.intensity = MathUtils.damp(gl.intensity, ledActive ? 0.55 : 0, 5, delta);
   });
@@ -248,8 +269,15 @@ export function PedalBody({
   };
   const baseOp = xray ? 0.12 : 0.95;
   const splitOp = xray ? 0.12 : baseOp; // Do not fade out when exploding
-  const chassisMat = (opacity: number, clip?: Plane[], side: Side = FrontSide, opaque = false) => (
+  const chassisMat = (
+    opacity: number,
+    clip?: Plane[],
+    side: Side = FrontSide,
+    opaque = false,
+    matRef?: typeof lidMatRef
+  ) => (
     <meshPhysicalMaterial
+      ref={matRef}
       color={palette.pedal}
       roughness={0.2}
       metalness={0.2}
@@ -292,7 +320,7 @@ export function PedalBody({
             </RoundedBox>
             <group ref={(g) => void (topGroups.current[0] = g)} position={[0, LY.top, 0]}>
               <RoundedBox position={[0, 0, 0]} args={[W, H, L]} radius={0.08} smoothness={8}>
-                {chassisMat(splitOp, [clipTop], FrontSide)}
+                {chassisMat(splitOp, [clipTop], FrontSide, false, lidMatRef)}
               </RoundedBox>
             </group>
           </>
@@ -377,12 +405,13 @@ export function PedalBody({
             <sphereGeometry args={[0.05, 28, 22]} />
             <meshBasicMaterial color={ledActive ? ledColor : "#15171a"} />
           </mesh>
-          {ledActive && (
-            <mesh position={[0, 0.012, 0]}>
-              <sphereGeometry args={[0.085, 22, 18]} />
-              <meshBasicMaterial color={ledColor} transparent opacity={0.35} />
-            </mesh>
-          )}
+          {/* halo do LED: montado SEMPRE, aceso por opacity no frame. Montá-lo
+              junto com o ledActive compilava um material novo no meio da
+              abertura, mesmo motivo da tampa do chassi */}
+          <mesh position={[0, 0.012, 0]}>
+            <sphereGeometry args={[0.085, 22, 18]} />
+            <meshBasicMaterial ref={ledGlowMatRef} color={ledColor} transparent opacity={0} />
+          </mesh>
         </group>
       </group>
 
