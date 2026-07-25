@@ -20,7 +20,7 @@ export function AboutOverlay({ onNavigate, onContact }) {
   ]
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col p-6 sm:p-12 pt-24 sm:pt-28">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col p-6 sm:p-12">
       {/* scrims de legibilidade: degradê à esquerda no desktop (texto mora lá),
           de baixo pra cima no mobile (texto ancora embaixo, foto respira em cima) */}
       <div
