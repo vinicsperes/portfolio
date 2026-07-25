@@ -70,6 +70,19 @@ export function Hero() {
   // mobile). Só liga na revelação do loader; até lá o CompileGate já compilou.
   const [sceneRevealed, setSceneRevealed] = useState(false)
   const revealScene = useCallback(() => setSceneRevealed(true), [])
+  // NADA abaixo da dobra monta enquanto o loader está na tela. O pedal do
+  // GHOSTFX sozinho custava ~2s de main thread ali (2º contexto WebGL, um
+  // shader compilado por preset + toDataURL, HDRI de 1.5MB) pra uma seção a
+  // duas telas de distância — era o que travava a moeda. Depois da revelação
+  // ainda espera um idle, pra não roubar os primeiros frames do hero.
+  const [belowFold, setBelowFold] = useState(false)
+  useEffect(() => {
+    if (!sceneRevealed) return
+    const idle = window.requestIdleCallback ?? ((cb) => setTimeout(cb, 400))
+    const cancel = window.cancelIdleCallback ?? clearTimeout
+    const h = idle(() => setBelowFold(true), { timeout: 1500 })
+    return () => cancel(h)
+  }, [sceneRevealed])
 
   // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
@@ -400,9 +413,11 @@ export function Hero() {
 
         {/* GHOST FX — tela única: o pedal abre sozinho ao entrar em cena; cards na mesma tela */}
         <section id="ghost" ref={ghostNearRef} className="snap-section relative overflow-hidden">
-          <Suspense fallback={null}>
-            <GhostSectionBg />
-          </Suspense>
+          {belowFold && (
+            <Suspense fallback={null}>
+              <GhostSectionBg />
+            </Suspense>
+          )}
           <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12 py-14 sm:py-16">
             {/* grid-cols-1 é obrigatório: sem template, o track auto dimensiona
                 pelo conteúdo (max-w-md = 448px) e estoura o viewport no mobile */}
@@ -479,7 +494,7 @@ export function Hero() {
                   roda em frameloop="demand" e o pedal abre sozinho pouco depois
                   da seção entrar — parado (aberto) não custa nada */}
               <div className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
-                {(ghostNear || ghostSeen) && (
+                {belowFold && (ghostNear || ghostSeen) && (
                   <Suspense fallback={null}>
                     <SectionPedal />
                   </Suspense>
@@ -488,9 +503,11 @@ export function Hero() {
             </div>
 
             {/* knobs interativos + colorways dos presets, na mesma tela */}
-            <Suspense fallback={null}>
-              <GhostCards />
-            </Suspense>
+            {belowFold && (
+              <Suspense fallback={null}>
+                <GhostCards />
+              </Suspense>
+            )}
           </div>
         </section>
 
@@ -502,9 +519,11 @@ export function Hero() {
           />
           <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
             <RevealBlock className="order-2 md:order-1">
-              <Suspense fallback={null}>
-                <VerveDemo />
-              </Suspense>
+              {belowFold && (
+                <Suspense fallback={null}>
+                  <VerveDemo />
+                </Suspense>
+              )}
             </RevealBlock>
             <RevealBlock className="order-1 md:order-2">
               <span className="font-mono text-xs font-semibold tracking-[0.25em]" style={{ color: EMBER }}>
