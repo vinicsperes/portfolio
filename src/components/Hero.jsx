@@ -6,7 +6,6 @@ import { StaticFallback } from './StaticFallback.jsx'
 import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
-import { useReveal } from '../hooks/useReveal.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
 import { links } from '../content/index.js'
 
@@ -43,18 +42,14 @@ function supportsWebGL() {
   }
 }
 
-function RevealBlock({ children, className = '' }) {
-  const [ref, visible] = useReveal()
-  return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ease-out ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-      } ${className}`}
-    >
-      {children}
-    </div>
-  )
+/**
+ * Bloco de conteúdo das seções. Já nasce visível: as seções NÃO aparecem
+ * conforme o scroll. Além do gosto do dono, o fade escalonado bagunçava a
+ * ordem de leitura — o canvas do pedal, que não passa por aqui, pintava antes
+ * do título e do texto que ficam acima dele.
+ */
+function Block({ children, className = '' }) {
+  return <div className={className}>{children}</div>
 }
 
 export function Hero() {
@@ -397,7 +392,7 @@ export function Hero() {
         {/* Sobre mim mora na CENA (view do quadro); daqui pra baixo: projetos */}
         <div id="projects" className="snap-section border-b border-paper/10">
           <div className="mx-auto max-w-6xl px-6 sm:px-12 py-12 sm:py-14">
-            <RevealBlock>
+            <Block>
               <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
                 {t.sections.projects}
               </span>
@@ -407,7 +402,7 @@ export function Hero() {
               <p className="mt-3 max-w-xl font-mono text-xs sm:text-sm text-paper/60 leading-relaxed">
                 {t.projects.sub}
               </p>
-            </RevealBlock>
+            </Block>
           </div>
         </div>
 
@@ -422,7 +417,7 @@ export function Hero() {
             {/* grid-cols-1 é obrigatório: sem template, o track auto dimensiona
                 pelo conteúdo (max-w-md = 448px) e estoura o viewport no mobile */}
             <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
-              <RevealBlock>
+              <Block>
                 <span className="font-mono text-xs font-semibold tracking-[0.25em]" style={{ color: GREEN }}>
                   {t.ghost.tag}
                 </span>
@@ -488,7 +483,7 @@ export function Hero() {
                     {t.ghost.ready.source}
                   </a>
                 </div>
-              </RevealBlock>
+              </Block>
 
               {/* palco do pedal: monta cedo (Preload compila parado). O canvas
                   roda em frameloop="demand" e o pedal abre sozinho pouco depois
@@ -518,14 +513,14 @@ export function Hero() {
             style={{ background: 'radial-gradient(55% 55% at 30% 50%, rgba(255,107,43,0.07), transparent 70%)' }}
           />
           <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
-            <RevealBlock className="order-2 md:order-1">
+            <Block className="order-2 md:order-1">
               {belowFold && (
                 <Suspense fallback={null}>
                   <VerveDemo />
                 </Suspense>
               )}
-            </RevealBlock>
-            <RevealBlock className="order-1 md:order-2">
+            </Block>
+            <Block className="order-1 md:order-2">
               <span className="font-mono text-xs font-semibold tracking-[0.25em]" style={{ color: EMBER }}>
                 {t.verve.tag}
               </span>
@@ -553,7 +548,7 @@ export function Hero() {
                   {t.verve.source}
                 </a>
               </div>
-            </RevealBlock>
+            </Block>
           </div>
         </section>
 
@@ -563,14 +558,14 @@ export function Hero() {
             <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
               {t.sections.blog}
             </span>
-            <RevealBlock>
+            <Block>
               <h2 className="mt-4 font-poster uppercase leading-[0.9] text-[13vw] sm:text-8xl lg:text-9xl text-stroke-paper">
                 {t.blog.soon}
               </h2>
               <p className="mt-6 max-w-xl font-mono text-sm text-paper/70 leading-relaxed">
                 {t.blog.soonSub}
               </p>
-            </RevealBlock>
+            </Block>
           </div>
         </section>
 
@@ -580,7 +575,7 @@ export function Hero() {
             <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
               {t.sections.contact}
             </span>
-            <RevealBlock>
+            <Block>
               <h2 className="mt-4 font-poster uppercase leading-none text-4xl sm:text-6xl text-paper">
                 {t.contact.titleTop} {t.contact.titleBottom}
               </h2>
@@ -635,7 +630,7 @@ export function Hero() {
                   </a>
                 )}
               </div>
-            </RevealBlock>
+            </Block>
           </div>
         </section>
 

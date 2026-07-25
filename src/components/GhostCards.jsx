@@ -5,7 +5,6 @@ import { Knob3D } from './three/pedal/knobs'
 import { getBlurredGhostThumb, getPresetThumbs, PRESET_OPACITY } from './three/pedal/presetShaders.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
-import { useReveal } from '../hooks/useReveal.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
 
 const GREEN = '#16a030'
@@ -28,11 +27,6 @@ const KNOBS = [
 ]
 
 const noop = () => {}
-
-const revealCls = (visible) =>
-  `transition-all duration-700 ease-out ${
-    visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-  }`
 
 /** Frames estáticos dos shaders de preset do ghostfx, gerados uma única vez. */
 function usePresetThumbs(enabled) {
@@ -166,10 +160,9 @@ export function GhostCards() {
   }, [knobsNear])
   const [knobsRunRef, knobsRun] = useNearViewport('0px')
   const thumbs = usePresetThumbs(knobsNear)
-  const [rRow, vRow] = useReveal(0.1)
 
   return (
-    <div ref={rRow} className={`grid grid-cols-1 gap-3 lg:grid-cols-12 ${revealCls(vRow)}`}>
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
       {/* knobs de verdade, card quadrado */}
       <div
         ref={knobsRef}
