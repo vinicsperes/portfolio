@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Scene } from './three/Scene.jsx'
 import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
+import { PedalLoader } from './PedalLoader.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
 import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
@@ -96,6 +97,9 @@ export function Hero() {
   useEffect(() => {
     if (ghostNear) setGhostSeen(true)
   }, [ghostNear])
+  // pedal pintado de verdade (sinal do ReadyGate lá dentro): apaga o PedalLoader
+  const [pedalReady, setPedalReady] = useState(false)
+  const handlePedalReady = useCallback(() => setPedalReady(true), [])
 
   // Entrar numa view trava o scroll do body no mesmo commit: um scroll SUAVE
   // em voo seria congelado no meio e o overlay (absoluto no hero) ficaria
@@ -144,18 +148,33 @@ export function Hero() {
     }
   }
 
-  // nas views da cena o body não deve rolar (evita scrollbar dupla);
-  // ao voltar, devolve a página exatamente onde estava
+  // Scroll travado em dois casos: nas views da cena (evita scrollbar dupla) e
+  // enquanto o loader cobre a tela. Rolar por baixo do loader levava o
+  // visitante às seções antes de elas existirem: chegava na seção do GHOSTFX
+  // e via o palco vazio, ou o pedal montando na frente dele.
+  // html JUNTO com body: só no body o iOS continua rolando.
   useEffect(() => {
-    document.body.style.overflow = view === 'home' ? '' : 'hidden'
+    const locked = view !== 'home' || !sceneRevealed
+    document.documentElement.style.overflow = locked ? 'hidden' : ''
+    document.body.style.overflow = locked ? 'hidden' : ''
     if (view === 'home' && returnScrollRef.current != null) {
       window.scrollTo({ top: returnScrollRef.current, behavior: 'auto' })
       returnScrollRef.current = null
     }
     return () => {
+      document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
-  }, [view])
+  }, [view, sceneRevealed])
+
+  // Um refresh no meio da página faz o navegador restaurar o scroll, e aí o
+  // loader trava a tela numa posição qualquer. Com ele cobrindo tudo, o lugar
+  // certo de recomeçar é o topo (a volta do about tem restauração própria,
+  // pelo returnScrollRef).
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [])
 
   // Back/Forward do navegador abre/fecha a view about
   useEffect(() => {
@@ -178,18 +197,24 @@ export function Hero() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // deep-link para seções (#ghost, #contact…): rola após o layout assentar.
-  // #about mapeia pra view da cena; e se a página já ABRIU numa view
-  // (?view=about), o body está travado — rolar seria um estado quebrado.
+  // #about mapeia pra view da cena, e isso não depende do loader
   useEffect(() => {
-    const id = window.location.hash.slice(1)
-    if (!id) return
-    if (id === 'about') return navigate('about')
-    if (initialView() !== 'home') return
-    const tm = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 500)
-    return () => clearTimeout(tm)
+    if (window.location.hash.slice(1) === 'about') navigate('about')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // deep-link para seções (#ghost, #contact…): só DEPOIS da revelação, que é
+  // quando o scroll destrava — com o body em overflow hidden o scrollIntoView
+  // não sai do lugar e o link morria. E se a página ABRIU numa view
+  // (?view=about), o body segue travado: rolar seria um estado quebrado.
+  useEffect(() => {
+    if (!sceneRevealed) return
+    const id = window.location.hash.slice(1)
+    if (!id || id === 'about') return
+    if (initialView() !== 'home') return
+    const tm = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 120)
+    return () => clearTimeout(tm)
+  }, [sceneRevealed])
 
   // Escape volta ao quarto de qualquer view
   useEffect(() => {
@@ -491,9 +516,13 @@ export function Hero() {
               <div className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
                 {belowFold && (ghostNear || ghostSeen) && (
                   <Suspense fallback={null}>
-                    <SectionPedal />
+                    <SectionPedal onReady={handlePedalReady} />
                   </Suspense>
                 )}
+                {/* o palco demora: espera o loader liberar, o chunk baixar, o
+                    HDRI chegar e os shaders compilarem. O PedalLoader cobre as
+                    três fases e se apaga sozinho no sinal do ReadyGate */}
+                <PedalLoader done={pedalReady} />
               </div>
             </div>
 

@@ -92,6 +92,33 @@ body {
   }
 }
 
+/* espera do palco do pedal (PedalLoader): o fantasminha boia e uma barra fina
+   varre. Só transform, nada de layout — o pedal está compilando shaders nessa
+   hora e o indicador não pode disputar main thread */
+@keyframes pedal-loader-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-14%) rotate(5deg);
+  }
+}
+@keyframes pedal-loader-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+.pedal-loader-ghost {
+  animation: pedal-loader-float 2.4s ease-in-out infinite;
+}
+.pedal-loader-bar {
+  animation: pedal-loader-sweep 1.4s ease-in-out infinite;
+}
+
 /* logo girando como uma MOEDA no loader: rotateY rápido (uma camada só, transform
    no compositor = leve no mobile; a extrusão multi-camada é que torrava a GPU).
    Ao "cair" (.landing) desacelera em ~3 voltas e assenta de frente, e o loader

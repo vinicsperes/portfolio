@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Preload } from '@react-three/drei'
 import * as THREE from 'three'
@@ -27,7 +27,7 @@ const START_DELAY_MS = 700
  * até a abertura ser agendada, anima renderizando sob demanda e volta a idle
  * assim que assenta aberto.
  */
-function AutoOpenPedal({ reducedMotion }) {
+function AutoOpenPedal({ reducedMotion, armed }) {
   const group = useRef()
   // a abertura anima por ref (zero re-render por frame): o PedalBody lê
   // explodeRef no próprio useFrame; setState aqui só nos latches (split/led)
@@ -53,8 +53,16 @@ function AutoOpenPedal({ reducedMotion }) {
     // demand não haveria re-render até o timer — o pedal "surgiria do nada"
     invalidate()
     const warm = [80, 260, 600].map((ms) => setTimeout(invalidate, ms))
+    return () => warm.forEach(clearTimeout)
+  }, [invalidate, reducedMotion])
 
-    // observa a seção que contém o canvas; agenda a abertura UMA vez ao entrar
+  // A abertura só é ARMADA depois de o pedal estar pintado (`armed`, vindo do
+  // ReadyGate). Antes isso morava no mount: quem chegasse na seção antes de o
+  // pedal carregar via a animação acontecer por baixo do PedalLoader ainda na
+  // tela. Armando aqui, o fade do loader (320ms) termina bem antes do
+  // START_DELAY_MS, e a abertura sempre acontece com o palco limpo.
+  useEffect(() => {
+    if (reducedMotion || !armed) return
     const section = gl.domElement.closest('section') || gl.domElement
     let timer = 0
     const io = new IntersectionObserver(
@@ -73,10 +81,9 @@ function AutoOpenPedal({ reducedMotion }) {
     io.observe(section)
     return () => {
       io.disconnect()
-      warm.forEach(clearTimeout)
       if (timer) clearTimeout(timer)
     }
-  }, [gl, invalidate, reducedMotion])
+  }, [gl, invalidate, reducedMotion, armed])
 
   useFrame((_, delta) => {
     const target = opened.current ? 1 : 0
@@ -120,11 +127,33 @@ function AutoOpenPedal({ reducedMotion }) {
 }
 
 /**
+ * Avisa que o pedal já está PINTADO, não só montado. Vive dentro do Suspense,
+ * então só existe depois do HDRI; e conta frames de verdade (o canvas roda em
+ * demand), então dispara depois de o Preload compilar e o primeiro desenho
+ * sair. É esse sinal que apaga o PedalLoader.
+ */
+function ReadyGate({ onReady }) {
+  const frames = useRef(0)
+  useFrame(() => {
+    frames.current += 1
+    if (frames.current === 2) onReady?.()
+  })
+  return null
+}
+
+/**
  * Canvas contido da seção Ghost. Showcase: o pointer fica desligado (nenhuma
  * interação de knob/footswitch), o pedal só abre sozinho e permanece aberto.
  */
-export function SectionPedal() {
+export function SectionPedal({ onReady }) {
   const reducedMotion = useReducedMotion()
+  // o mesmo sinal serve pra duas coisas: apagar o PedalLoader lá fora e armar
+  // a abertura aqui dentro, pra animação nunca rodar por baixo do loader
+  const [ready, setReady] = useState(false)
+  const handleReady = useCallback(() => {
+    setReady(true)
+    onReady?.()
+  }, [onReady])
   return (
     <Canvas
       // mais de cima (como no ghostfx): com o chassi aberto dá pra ver o circuito
@@ -143,8 +172,9 @@ export function SectionPedal() {
       <directionalLight position={[5, 4, -3]} intensity={1.2} color="#c8d8f0" />
       <Suspense fallback={null}>
         <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.7} />
-        <AutoOpenPedal reducedMotion={reducedMotion} />
+        <AutoOpenPedal reducedMotion={reducedMotion} armed={ready} />
         <Preload all />
+        <ReadyGate onReady={handleReady} />
       </Suspense>
     </Canvas>
   )
