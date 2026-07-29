@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { Text } from "@react-three/drei";
 import * as THREE from "three";
-import { PCB_BH, PCB_CU, SILK } from "../constants";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { PCB_BH, PCB_CU } from "../constants";
 import {
   ElCap,
   ICDip,
@@ -9,17 +9,13 @@ import {
   Diode,
   DiscCap,
   Transistor,
-  SilkRect,
-  GhostSilk,
-  SilkText,
   BeltonBrick,
-  SilkRing,
 } from "../parts";
+import { boxAt, cylAt, paintSilk, sphereAt, type SilkPlan } from "./pcbSilk";
 
 export function PCBBoard({ w, l }: { w: number; l: number }) {
   const TH = 0.003;
   const top = PCB_BH / 2 + TH / 2;
-  const silkY = top + 0.0024;
 
   const BACK_EXT = 0.38;
   const physL = l + BACK_EXT;
@@ -110,8 +106,41 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
   ];
   conns.forEach(({ px, pz, nx, nz }) => segs.push({ x1: px, z1: pz, x2: nx, z2: nz, tw: 0.012 }));
 
+  // Silkscreen: dados, não malhas. Ver pcbSilk.ts.
+  const silk: SilkPlan = {
+    rects: [
+      { x: 0, z: 0, w: w - 0.1, d: l - 0.1, t: 0.005 },
+      { x: ic1[0], z: ic1[1], w: 0.24, d: 0.34 },
+      { x: ic2[0], z: ic2[1], w: 0.6, d: 0.24 },
+      { x: brick[0], z: brick[1], w: 0.49, d: 0.95 },
+      ...raX.map((rx) => ({ x: rx, z: raZ, w: 0.08, d: 0.3, t: 0.003 })),
+      ...rbX.map((rx) => ({ x: rx, z: rbZ, w: 0.08, d: 0.3, t: 0.003 })),
+    ],
+    rings: [
+      { x: c100[0], z: c100[1], r: 0.102 },
+      { x: c47[0], z: c47[1], r: 0.084 },
+      ...ecD.map(([ex, ez]) => ({ x: ex, z: ez, r: 0.07 })),
+      { x: ecOut[0], z: ecOut[1], r: 0.07 },
+    ],
+    texts: [
+      ...raX.map((rx, i) => ({ x: rx, z: raZ + 0.21, text: `R${i + 1}` })),
+      ...rbX.map((rx, i) => ({ x: rx, z: rbZ + 0.2, text: `R${i + 5}` })),
+      { x: ic1[0], z: ic1[1] + 0.24, text: "IC1" },
+      { x: ic2[0], z: ic2[1] + 0.18, text: "IC2" },
+      { x: brick[0], z: brick[1] - 0.55, text: "BR1" },
+      { x: dg1[0] + 0.12, z: dg1[1], text: "D1" },
+      { x: dg2[0] + 0.12, z: dg2[1] + 0.06, text: "D2" },
+      { x: d3[0] - 0.14, z: d3[1] + 0.07, text: "D3" },
+      { x: q1[0], z: q1[1] - 0.12, text: "Q1" },
+      { x: q2[0], z: q2[1] - 0.12, text: "Q2" },
+      { x: reg[0], z: reg[1] + 0.13, text: "REG" },
+      { x: 0.245, z: 1.0, text: "GHOST FX MK.I", size: 0.036, align: "left" as const },
+    ],
+    ghost: { x: 0.6, z: 1.0, size: 0.1 },
+  };
+
   const boardTex = useMemo(() => {
-    const cw = 512;
+    const cw = 1024; // dobrado: a serigrafia agora vive aqui, precisa aguentar leitura
     const ch = Math.round(cw * (physL / w));
     const c = document.createElement("canvas");
     c.width = cw;
@@ -120,27 +149,74 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
     ctx.fillStyle = "#0e3a1c";
     ctx.fillRect(0, 0, cw, ch);
     ctx.strokeStyle = "rgba(176,140,58,0.34)";
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.4 * (cw / 512);
     const nx = 30;
     const nz = Math.round(nx * (physL / w));
     for (let i = 1; i < nx; i++) {
-      const px = Math.round((i / nx) * cw) + 0.5;
+      const pxx = Math.round((i / nx) * cw) + 0.5;
       ctx.beginPath();
-      ctx.moveTo(px, 0);
-      ctx.lineTo(px, ch);
+      ctx.moveTo(pxx, 0);
+      ctx.lineTo(pxx, ch);
       ctx.stroke();
     }
     for (let j = 1; j < nz; j++) {
-      const py = Math.round((j / nz) * ch) + 0.5;
+      const pyy = Math.round((j / nz) * ch) + 0.5;
       ctx.beginPath();
-      ctx.moveTo(0, py);
-      ctx.lineTo(cw, py);
+      ctx.moveTo(0, pyy);
+      ctx.lineTo(cw, pyy);
       ctx.stroke();
     }
+    paintSilk(ctx, silk, { cw, ch, boardW: w, physL, zOffset: BACK_EXT / 2 });
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 8;
+    t.colorSpace = THREE.SRGBColorSpace;
     return t;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [w, physL]);
+
+  /**
+   * Trilhas, vias, conectores e furos fundidos em QUATRO malhas.
+   *
+   * Eram ~130 malhas com material inline cada (o JSX criava um
+   * meshStandardMaterial novo por peça), ou seja ~130 draw calls por frame só
+   * de cobre. A geometria é toda estática, então dá pra fundir uma vez.
+   */
+  const merged = useMemo(() => {
+    const traces: THREE.BufferGeometry[] = [];
+    const vias: THREE.BufferGeometry[] = [];
+    for (const { x1, z1, x2, z2, tw } of segs) {
+      const hLen = Math.abs(x2 - x1);
+      const vLen = Math.abs(z2 - z1);
+      if (hLen > 0.006) traces.push(boxAt(hLen, TH, tw, (x1 + x2) / 2, top, z1));
+      if (vLen > 0.006) traces.push(boxAt(tw, TH, vLen, x2, top, (z1 + z2) / 2));
+      vias.push(cylAt(tw * 0.95, TH * 2.5, 8, x2, top, z1));
+    }
+
+    const pads: THREE.BufferGeometry[] = [];
+    const beads: THREE.BufferGeometry[] = [];
+    for (const { px, pz } of conns) {
+      pads.push(cylAt(0.024, TH * 2.5, 14, px, top, pz));
+      beads.push(sphereAt(0.014, 12, 8, px, top + TH * 1.6, pz));
+    }
+    for (const [mx, mz] of [
+      [-w / 2 + 0.07, -l / 2 + 0.07],
+      [w / 2 - 0.07, -l / 2 + 0.07],
+      [w / 2 - 0.07, l / 2 - 0.07],
+      [-w / 2 + 0.07, l / 2 - 0.07],
+    ] as [number, number][]) {
+      pads.push(cylAt(0.028, TH * 2.5, 12, mx, top, mz));
+    }
+
+    const out = {
+      traces: mergeGeometries(traces, false)!,
+      vias: mergeGeometries(vias, false)!,
+      pads: mergeGeometries(pads, false)!,
+      beads: mergeGeometries(beads, false)!,
+    };
+    for (const g of [...traces, ...vias, ...pads, ...beads]) g.dispose();
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w, l]);
 
   return (
     <group>
@@ -149,121 +225,18 @@ export function PCBBoard({ w, l }: { w: number; l: number }) {
         <meshStandardMaterial map={boardTex} roughness={0.65} metalness={0.08} />
       </mesh>
 
-      {segs.map(({ x1, z1, x2, z2, tw }, i) => {
-        const hLen = Math.abs(x2 - x1);
-        const vLen = Math.abs(z2 - z1);
-        return (
-          <group key={i}>
-            {hLen > 0.006 && (
-              <mesh position={[(x1 + x2) / 2, top, z1]}>
-                <boxGeometry args={[hLen, TH, tw]} />
-                <meshStandardMaterial color={PCB_CU} roughness={0.28} metalness={0.65} />
-              </mesh>
-            )}
-            {vLen > 0.006 && (
-              <mesh position={[x2, top, (z1 + z2) / 2]}>
-                <boxGeometry args={[tw, TH, vLen]} />
-                <meshStandardMaterial color={PCB_CU} roughness={0.28} metalness={0.65} />
-              </mesh>
-            )}
-            <mesh position={[x2, top, z1]}>
-              <cylinderGeometry args={[tw * 0.95, tw * 0.95, TH * 2.5, 8]} />
-              <meshStandardMaterial color="#c8a040" roughness={0.18} metalness={0.74} />
-            </mesh>
-          </group>
-        );
-      })}
-
-      {conns.map(({ px, pz }, i) => (
-        <group key={`conn${i}`} position={[px, top, pz]}>
-          <mesh>
-            <cylinderGeometry args={[0.024, 0.024, TH * 2.5, 14]} />
-            <meshStandardMaterial color="#c9b070" roughness={0.22} metalness={0.7} />
-          </mesh>
-          <mesh position={[0, TH * 1.6, 0]}>
-            <sphereGeometry args={[0.014, 12, 8]} />
-            <meshStandardMaterial color="#c4c4c8" metalness={0.85} roughness={0.26} />
-          </mesh>
-        </group>
-      ))}
-
-      {(
-        [
-          [-w / 2 + 0.07, -l / 2 + 0.07],
-          [w / 2 - 0.07, -l / 2 + 0.07],
-          [w / 2 - 0.07, l / 2 - 0.07],
-          [-w / 2 + 0.07, l / 2 - 0.07],
-        ] as [number, number][]
-      ).map(([mx, mz], i) => (
-        <mesh key={`mh${i}`} position={[mx, top, mz]}>
-          <cylinderGeometry args={[0.028, 0.028, TH * 2.5, 12]} />
-          <meshStandardMaterial color="#8a9a70" metalness={0.5} roughness={0.4} />
-        </mesh>
-      ))}
-
-      <SilkRect x={0} z={0} w={w - 0.1} d={l - 0.1} y={silkY} t={0.005} />
-      <SilkRect x={ic1[0]} z={ic1[1]} w={0.24} d={0.34} y={silkY} />
-      <SilkRect x={ic2[0]} z={ic2[1]} w={0.6} d={0.24} y={silkY} />
-      <SilkRect x={brick[0]} z={brick[1]} w={0.49} d={0.95} y={silkY} />
-      <SilkRing x={c100[0]} z={c100[1]} r={0.102} y={silkY} />
-      <SilkRing x={c47[0]} z={c47[1]} r={0.084} y={silkY} />
-      {ecD.map(([ex, ez], i) => (
-        <SilkRing key={`secd${i}`} x={ex} z={ez} r={0.07} y={silkY} />
-      ))}
-      <SilkRing x={ecOut[0]} z={ecOut[1]} r={0.07} y={silkY} />
-      {raX.map((rx, i) => (
-        <SilkRect key={`sra${i}`} x={rx} z={raZ} w={0.08} d={0.3} y={silkY} t={0.003} />
-      ))}
-      {rbX.map((rx, i) => (
-        <SilkRect key={`srb${i}`} x={rx} z={rbZ} w={0.08} d={0.3} y={silkY} t={0.003} />
-      ))}
-
-      {raX.map((rx, i) => (
-        <SilkText key={`dra${i}`} x={rx} z={raZ + 0.21} y={silkY}>{`R${i + 1}`}</SilkText>
-      ))}
-      {rbX.map((rx, i) => (
-        <SilkText key={`drb${i}`} x={rx} z={rbZ + 0.2} y={silkY}>{`R${i + 5}`}</SilkText>
-      ))}
-      <SilkText x={ic1[0]} z={ic1[1] + 0.24} y={silkY}>
-        IC1
-      </SilkText>
-      <SilkText x={ic2[0]} z={ic2[1] + 0.18} y={silkY}>
-        IC2
-      </SilkText>
-      <SilkText x={brick[0]} z={brick[1] - 0.55} y={silkY}>
-        BR1
-      </SilkText>
-      <SilkText x={dg1[0] + 0.12} z={dg1[1]} y={silkY}>
-        D1
-      </SilkText>
-      <SilkText x={dg2[0] + 0.12} z={dg2[1] + 0.06} y={silkY}>
-        D2
-      </SilkText>
-      <SilkText x={d3[0] - 0.14} z={d3[1] + 0.07} y={silkY}>
-        D3
-      </SilkText>
-      <SilkText x={q1[0]} z={q1[1] - 0.12} y={silkY}>
-        Q1
-      </SilkText>
-      <SilkText x={q2[0]} z={q2[1] - 0.12} y={silkY}>
-        Q2
-      </SilkText>
-      <SilkText x={reg[0]} z={reg[1] + 0.13} y={silkY}>
-        REG
-      </SilkText>
-      <Text
-        position={[0.245, silkY, 1.0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.036}
-        color={SILK}
-        anchorX="left"
-        anchorY="middle"
-        letterSpacing={0.05}
-        renderOrder={6}
-      >
-        GHOST FX MK.I
-      </Text>
-      <GhostSilk x={0.6} z={1.0} y={silkY} size={0.1} />
+      <mesh geometry={merged.traces}>
+        <meshStandardMaterial color={PCB_CU} roughness={0.28} metalness={0.65} />
+      </mesh>
+      <mesh geometry={merged.vias}>
+        <meshStandardMaterial color="#c8a040" roughness={0.18} metalness={0.74} />
+      </mesh>
+      <mesh geometry={merged.pads}>
+        <meshStandardMaterial color="#c9b070" roughness={0.22} metalness={0.7} />
+      </mesh>
+      <mesh geometry={merged.beads}>
+        <meshStandardMaterial color="#c4c4c8" metalness={0.85} roughness={0.26} />
+      </mesh>
 
       <ElCap x={c100[0]} z={c100[1]} h={0.3} r={0.085} color="#1a3a6a" label="100uF 25V" />
       <ElCap x={c47[0]} z={c47[1]} h={0.29} r={0.067} color="#1a1a1a" label="47uF" />
