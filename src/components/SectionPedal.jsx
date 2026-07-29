@@ -94,7 +94,10 @@ function AutoOpenPedal({ reducedMotion, armed }) {
       // clampa o delta: o 1º frame depois do idle vem com dt enorme (relógio
       // seguiu correndo) e daria um salto na abertura
       const dt = Math.min(delta, 0.033)
-      smooth.current = THREE.MathUtils.damp(smooth.current, target, 1.5, dt)
+      // lambda 4.5 assenta em ~1.5s. Com 1.5 levava ~5s, e durante todo esse
+      // tempo o canvas redesenha o pedal inteiro: medido a 4x de CPU, era a
+      // janela em que o frame ia de 16.7ms pra 28.6ms
+      smooth.current = THREE.MathUtils.damp(smooth.current, target, 4.5, dt)
     }
     const p = smooth.current
     explodeRef.current = p * 1.1
