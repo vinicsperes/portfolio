@@ -341,15 +341,15 @@ export function Hero() {
             {/* faixa de selos sob o lockup (como a Jeleiz): marcas soltas e
                 nítidas — no mobile encolhem e perdem os pontos, mas FICAM */}
             <div className={`mt-5 sm:mt-8 flex items-center gap-3 sm:gap-5 ${reveal(view === 'home', 'delay-300')}`}>
-              <img src="/peres-logo.svg" alt="" className="h-9 w-9 sm:h-16 sm:w-16" />
+              <img src="/peres-logo.svg" alt="" width={873} height={873} decoding="async" className="h-9 w-9 sm:h-16 sm:w-16" />
               <span className="hidden sm:inline text-paper/35" aria-hidden="true">
                 ·
               </span>
-              <img src="/peres-stamp-wordmark.svg" alt="" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
+              <img src="/peres-stamp-wordmark.svg" alt="" width={688} height={299} decoding="async" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
               <span className="hidden sm:inline text-paper/35" aria-hidden="true">
                 ·
               </span>
-              <img src="/peres-stamp-globe.svg" alt="" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
+              <img src="/peres-stamp-globe.svg" alt="" width={561} height={318} decoding="async" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
             </div>
 
             {/* boas-vindas */}
@@ -698,18 +698,30 @@ export function Hero() {
             src="/peres-pillmark.svg"
             alt=""
             aria-hidden="true"
+            width={2049}
+            height={595}
+            loading="lazy"
+            decoding="async"
             className="pointer-events-none select-none absolute left-1/2 top-1/2 hidden w-[115%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.045] sm:block"
           />
+          {/* versão já branca do arquivo, em vez de `invert` (= filter: invert)
+              no CSS: renderizado a 210% da largura da tela, esse era o elemento
+              mais caro do DOM em celular — uma layer composta E filtrada maior
+              que o viewport inteiro */}
           <img
-            src="/peres-logo.svg"
+            src="/peres-logo-white.svg"
             alt=""
             aria-hidden="true"
-            className="pointer-events-none select-none absolute left-1/2 top-1/2 w-[210%] max-w-none -translate-x-1/2 -translate-y-1/2 invert opacity-[0.05] sm:hidden"
+            width={873}
+            height={873}
+            loading="lazy"
+            decoding="async"
+            className="pointer-events-none select-none absolute left-1/2 top-1/2 w-[210%] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-[0.05] sm:hidden"
           />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-12 pt-14 sm:pt-16 pb-8">
             <div className="flex flex-wrap items-start justify-between gap-10">
               <div>
-                <img src="/peres-stamp-wordmark.svg" alt="Vinicius Peres" className="h-12 w-auto invert opacity-90" />
+                <img src="/peres-stamp-wordmark.svg" alt="Vinicius Peres" width={688} height={299} loading="lazy" decoding="async" className="h-12 w-auto invert opacity-90" />
                 <p className="mt-4 font-mono text-[10px] tracking-[0.22em] text-paper/45">
                   {t.hero.badge.l2}
                 </p>
@@ -750,7 +762,7 @@ export function Hero() {
             </div>
             <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-paper/10 pt-6 font-mono text-[10px] tracking-widest text-paper/55">
               <span>© {new Date().getFullYear()} VINICIUS PERES</span>
-              <img src="/peres-stamp-globe.svg" alt="" className="h-7 w-auto invert opacity-50" />
+              <img src="/peres-stamp-globe.svg" alt="" width={561} height={318} loading="lazy" decoding="async" className="h-7 w-auto invert opacity-50" />
             </div>
           </div>
         </footer>

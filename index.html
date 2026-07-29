@@ -25,12 +25,30 @@
       content="Projetos, experimentos e um jeito de falar comigo."
     />
     <meta name="twitter:image" content="https://vinicsperes.com/og.png" />
+    <!-- primeira imagem visível do site (a moeda do loader). Sem isso ela só
+         começava a baixar depois do bundle inteiro ser baixado e parseado -->
+    <link rel="preload" as="image" href="/peres-globe-white.png" fetchpriority="high" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Fontes sem bloquear a renderização: como stylesheet puro isso custava dois
+      RTTs (o CSS do Google, depois os woff2) ANTES do primeiro pixel, e o
+      primeiro pixel aqui é um loader escuro com uma moeda — nada que precise
+      da fonte. Com display=swap o texto já entrava por FOUT de qualquer jeito.
+      Os pesos 500 saíram: não há um `font-medium` sequer no projeto.
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif:ital@0;1&display=swap"
+      onload="this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif:ital@0;1&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

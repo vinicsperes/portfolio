@@ -84,19 +84,27 @@ export function BootLoader({ ready = false, onReveal }) {
         {/* moeda: gira rápido no eixo Y; ao "cair" (landing) desacelera até de
             frente, e no fim (ending) dá a piscadinha com brilho e some. PNG
             (raster): o SVG re-rasterizava a cada ângulo da rotação 3D e travava */}
-        <img
-          src="/peres-globe-white.png"
-          alt=""
-          aria-hidden="true"
-          className={`w-3/4 ${
-            reducedMotion ? '' : ending ? 'loader-coin flash' : landing ? 'loader-coin landing' : 'loader-coin'
-          }`}
-        />
-        {/* barra discreta (a moeda é o foco) */}
+        <div className={`loader-coin-wrap w-3/4 ${!reducedMotion && ending ? 'flash' : ''}`}>
+          <img
+            src="/peres-globe-white.png"
+            alt=""
+            aria-hidden="true"
+            width={900}
+            height={428}
+            className={`w-full ${
+              reducedMotion ? '' : ending ? 'loader-coin flash' : landing ? 'loader-coin landing' : 'loader-coin'
+            }`}
+          />
+        </div>
+        {/* barra discreta (a moeda é o foco). scaleX e não width: animar width
+            é layout + paint a cada frame, por 2,2s, bem no meio do load */}
         <div className="h-px w-full bg-paper/10 relative overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 bg-paper/40"
-            style={{ width: `${width}%`, transition: `width ${ready ? 300 : 2200}ms ease-out` }}
+            className="absolute inset-y-0 left-0 w-full origin-left bg-paper/40"
+            style={{
+              transform: `scaleX(${width / 100})`,
+              transition: `transform ${ready ? 300 : 2200}ms ease-out`,
+            }}
           />
         </div>
       </div>
