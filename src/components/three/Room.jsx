@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { RoundedBox, Sparkles, useTexture } from '@react-three/drei'
+import { RoundedBox, useTexture } from '@react-three/drei'
 import { Hotspot } from './Hotspot.jsx'
 import { CandleCluster } from './Candles.jsx'
 import { getLightPreset } from '../../scene/lighting.js'
@@ -257,16 +257,13 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Cozy: velas no parapeito da janela ─── */}
       <CandleCluster position={[-2.55, 1.21, -5.68]} />
 
-      {/* ─── Poeira flutuando no feixe da janela (1 draw call, shader do drei) ─── */}
-      <Sparkles
-        count={35}
-        scale={[5.5, 3.2, 2.6]}
-        position={[-2.8, 1.4, -3.9]}
-        size={1.8}
-        speed={0.22}
-        opacity={0.32}
-        color={L.dust}
-      />
+      {/* (a poeira flutuando no feixe da janela foi REMOVIDA: o volume ocupava
+          z de -5.2 a -2.6 e a câmera do "sobre" para em z=-2.05 olhando pra
+          dentro dele, então as 35 partículas passavam a ~0.5-3 unidades da
+          lente e, com atenuação por distância, viravam quads transparentes do
+          tamanho da tela — 35 camadas empilhadas em tela cheia, estouro de
+          fill-rate que travava a entrada no "sobre". O dono também não gostava
+          do efeito.) */}
 
       {/* (estante + porta-retrato vivem juntos no hotspot do "sobre", mais abaixo) */}
 

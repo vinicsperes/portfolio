@@ -10,17 +10,15 @@
  * dusk    = crepúsculo: sol mais baixo e vermelho, céu roxo-rosado
  * day     = fim de manhã: luz neutra clara, quarto arejado
  *
- * `sky` escolhe a textura da vista da janela (Room.jsx); `dust` tinge a
- * poeira do feixe da janela; `wallEmissive` é o auto-brilho da parede do
- * fundo — substitui os antigos point lights de "wash" (custo zero por
- * fragmento, não entram no loop de luzes) e mantém a parede legível, inclusive
- * acima da janela no retrato.
+ * `sky` escolhe a textura da vista da janela (Room.jsx); `wallEmissive` é o
+ * auto-brilho da parede do fundo — substitui os antigos point lights de
+ * "wash" (custo zero por fragmento, não entram no loop de luzes) e mantém a
+ * parede legível, inclusive acima da janela no retrato.
  */
 export const LIGHT_PRESETS = {
   night: {
     exposure: 1.12,
     sky: 'night',
-    dust: '#aac4ff',
     fog: '#0c0e15',
     ambient: { color: '#9aa2c0', intensity: 0.62 },
     sun: { color: '#9db4e8', intensity: 0.95 },
@@ -32,7 +30,6 @@ export const LIGHT_PRESETS = {
   golden: {
     exposure: 1.4,
     sky: 'sunset',
-    dust: '#ffd9a0',
     fog: '#1a1512',
     ambient: { color: '#d3c1a0', intensity: 1.4 },
     sun: { color: '#ffb266', intensity: 1.9 },
@@ -44,7 +41,6 @@ export const LIGHT_PRESETS = {
   dusk: {
     exposure: 1.3,
     sky: 'sunset',
-    dust: '#f2bda0',
     fog: '#171021',
     ambient: { color: '#af92a4', intensity: 0.92 },
     sun: { color: '#ff704a', intensity: 2.0 },
@@ -56,7 +52,6 @@ export const LIGHT_PRESETS = {
   day: {
     exposure: 1.5,
     sky: 'sunset',
-    dust: '#fff2d0',
     fog: '#1f1b16',
     ambient: { color: '#dbd3c3', intensity: 1.35 },
     sun: { color: '#fff1d4', intensity: 2.0 },
