@@ -1,7 +1,14 @@
 import { shaderMaterial } from '@react-three/drei'
 import { extend } from '@react-three/fiber'
+import { IS_MOBILE } from '../../scene/deviceTier.js'
 
-export const noiseGLSL = /* glsl */ `
+/**
+ * Cada oitava do fbm são 4 hash(), e cada hash() é um sin() por fragmento —
+ * 4 oitavas custam 16 sin/fragmento. Quem paga isso TODO frame (o CRT) usa a
+ * contagem do tier; quem paga uma vez só (o atlas de chama do Fire, assado no
+ * mount) fica nas 4, porque ali o detalhe aparece e o custo não repete.
+ */
+export const makeNoiseGLSL = (octaves) => /* glsl */ `
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
   }
@@ -20,8 +27,7 @@ export const noiseGLSL = /* glsl */ `
   float fbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
-    // 4 oitavas: visualmente ~igual a 5, bem mais leve em iGPU
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < ${octaves}; i++) {
       v += a * noise(p);
       p *= 2.0;
       a *= 0.5;
@@ -29,6 +35,9 @@ export const noiseGLSL = /* glsl */ `
     return v;
   }
 `
+
+// 4 oitavas: visualmente ~igual a 5, bem mais leve em iGPU
+export const noiseGLSL = makeNoiseGLSL(4)
 
 /**
  * Tela CRT: tubo escuro quente, linhas de "código" fake, scanlines,
@@ -50,7 +59,7 @@ export const CRTMaterial = shaderMaterial(
     uniform float uHeat;
     varying vec2 vUv;
 
-    ${noiseGLSL}
+    ${makeNoiseGLSL(IS_MOBILE ? 2 : 4)}
 
     void main() {
       // distorção de barril leve, coisa de tubo
@@ -91,9 +100,15 @@ export const CRTMaterial = shaderMaterial(
       // flicker global
       col *= 0.85 + 0.15 * hash(vec2(floor(uTime * 24.0), 3.0));
 
-      // o fogo sangrando pelo topo da tela (uHeat acalma no close do verve)
-      float heat = smoothstep(0.55, 1.0, uv.y) * (0.6 + 0.4 * fbm(vec2(uv.x * 5.0, uTime * 2.0)));
-      col = mix(col, vec3(1.0, 0.45, 0.08), heat * 0.7 * uHeat);
+      // o fogo sangrando pelo topo da tela (uHeat acalma no close do verve).
+      // O fbm só entra onde a máscara deixa: era calculado em TODO fragmento e
+      // jogado fora em ~55% da tela. O branch é coerente no espaço (blocos
+      // inteiros tomam o mesmo caminho), então a GPU realmente pula o trabalho.
+      float mask = smoothstep(0.55, 1.0, uv.y);
+      if (mask > 0.001) {
+        float heat = mask * (0.6 + 0.4 * fbm(vec2(uv.x * 5.0, uTime * 2.0)));
+        col = mix(col, vec3(1.0, 0.45, 0.08), heat * 0.7 * uHeat);
+      }
 
       // vinheta
       float vig = 1.0 - dot(c, c) * 1.4;

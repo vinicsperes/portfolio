@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
@@ -8,9 +8,16 @@ import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { VIEWS } from '../../scene/hotspots.js'
 import { getLightPreset } from '../../scene/lighting.js'
+import { IS_MOBILE } from '../../scene/deviceTier.js'
 
 // resolvido uma vez no load: trocar de preset (?light=) implica reload mesmo
 const L = getLightPreset()
+
+// Cada point light custa POR PIXEL em toda a cena, e o quarto é geometria de
+// tela cheia (chão 60×60, parede 60×20). Em mobile ficam só as duas que dão
+// vida ao quarto (prateleiras e fogo do CRT); a do canto e a das velas saem, e
+// o ambiente sobe um pouco pra compensar o piso de luminosidade que elas davam.
+const AMBIENT_INTENSITY = L.ambient.intensity * (IS_MOBILE ? 1.14 : 1)
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -74,16 +81,23 @@ function CameraController({ view }) {
  * pedaço novo monta (Suspense resolvendo, pedal lazy chegando). Sem isso o
  * passe de sombra re-desenhava ~20 casters em TODO frame, à toa.
  */
-function ShadowKick({ frames = 10 }) {
+function Kick({ frames, onDone }) {
   const { gl } = useThree()
   const left = useRef(frames)
   useFrame(() => {
-    if (left.current > 0) {
-      gl.shadowMap.needsUpdate = true
-      left.current--
-    }
+    gl.shadowMap.needsUpdate = true
+    left.current--
+    if (left.current <= 0) onDone()
   })
   return null
+}
+
+function ShadowKick({ frames = 10 }) {
+  // gastos os N frames o callback é DESMONTADO: um useFrame vivo pra sempre só
+  // pra testar um contador ainda entra no loop de callbacks em todo frame
+  const [alive, setAlive] = useState(true)
+  const stop = useCallback(() => setAlive(false), [])
+  return alive ? <Kick frames={frames} onDone={stop} /> : null
 }
 
 /**
@@ -137,14 +151,15 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
   const [dpr, setDpr] = useState(MAX_DPR)
   const showMarkers = view === 'home' && !reducedMotion
 
+  // NOTA: sem localClippingEnabled no gl. Os clipping planes são do chassi do
+  // pedal, que roda no OUTRO canvas (SectionPedal habilita o dele). Ligado aqui
+  // à toa, todo shader da cena carregava os uniforms de clipping.
   return (
     <Canvas
       camera={{ position: VIEWS.home.camera.position, fov: 40 }}
       frameloop={active ? 'always' : 'never'}
-      gl={{ antialias: true, alpha: true, toneMappingExposure: L.exposure, localClippingEnabled: true }}
+      gl={{ antialias: true, alpha: true, toneMappingExposure: L.exposure }}
       onCreated={({ gl }) => {
-        // os clipping planes do chassi do pedal dependem disso
-        gl.localClippingEnabled = true
         // sombra em modo manual: o ShadowKick atualiza quando algo monta
         gl.shadowMap.autoUpdate = false
       }}
@@ -166,8 +181,9 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         {/* névoa quente — funde as bordas do chão na golden hour */}
         <fog attach="fog" args={[L.fog, 26, 60]} />
 
-        {/* fill ambiente morno e generoso — o quarto não é mais noturno */}
-        <ambientLight intensity={L.ambient.intensity} color={L.ambient.color} />
+        {/* fill ambiente morno e generoso — o quarto não é mais noturno.
+            Em mobile sobe um pouco: compensa as duas point lights cortadas */}
+        <ambientLight intensity={AMBIENT_INTENSITY} color={L.ambient.color} />
 
         {/* sol baixo entrando pela janela (golden hour): quente e direcional */}
         <directionalLight
@@ -212,6 +228,7 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
             blur={2.4}
             far={4}
             color="#000000"
+            resolution={256}
             frames={1}
           />
         </group>
@@ -229,16 +246,21 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           blur={2.2}
           far={3}
           color="#000000"
+          resolution={256}
           frames={1}
         />
-        {/* luz de canto âmbar */}
-        <pointLight
-          position={[-1.4, -0.5, -2.2]}
-          color={L.corner.color}
-          intensity={L.corner.intensity}
-          distance={7}
-          decay={2}
-        />
+        {/* luz de canto âmbar — fora em mobile: é wash estático, e uma point
+            light custa por pixel na cena INTEIRA (a atenuação por distância é
+            calculada em todo fragmento, não só nos que ela alcança) */}
+        {!IS_MOBILE && (
+          <pointLight
+            position={[-1.4, -0.5, -2.2]}
+            color={L.corner.color}
+            intensity={L.corner.intensity}
+            distance={7}
+            decay={2}
+          />
+        )}
 
         {/* compila os shaders (async, sem travar/renderizar) e libera o loader
             quando pronto; a cena só começa a renderizar na revelação */}

@@ -1,8 +1,9 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { extend, useFrame } from '@react-three/fiber'
 import { Billboard, shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { noiseGLSL } from './materials.jsx'
+import { IS_MOBILE } from '../../scene/deviceTier.js'
 
 /**
  * O fogo procedural (FBM, ~32 hashes por fragmento) era o item mais caro da
@@ -15,8 +16,10 @@ import { noiseGLSL } from './materials.jsx'
 const COLS = 8
 const ROWS = 8
 const FRAMES = COLS * ROWS
-const TILE_W = 128
-const TILE_H = 192
+// meio tile em mobile: a chama é um billboard pequeno na tela, e o atlas cai de
+// 1024x1536 (~6MB de VRAM, 1.5M fragmentos de fbm no mount) pra 512x768
+const TILE_W = IS_MOBILE ? 64 : 128
+const TILE_H = IS_MOBILE ? 96 : 192
 const LOOP_SECONDS = 3.2 // 64 frames / 3.2s = 20fps no playback
 const FPS = FRAMES / LOOP_SECONDS
 
@@ -174,53 +177,97 @@ export function Flame({ position = [0, 0, 0], scale = 1, intensity = 1, seed = 0
 }
 
 /**
+ * Material da fumaça: a subida e a ondulação acontecem no VERTEX SHADER, a
+ * partir de uma semente estática por partícula. Antes o useFrame percorria as
+ * 40 partículas em CPU chamando getY/setY/getX/setX e marcava
+ * `position.needsUpdate = true`, o que re-enviava o buffer inteiro pra GPU em
+ * TODO frame. Agora o useFrame só escreve dois uniforms.
+ */
+const SmokeMaterial = shaderMaterial(
+  { uMap: null, uTime: 0, uOpacity: 0.3, uHeight: 2.2, uSize: 0.28, uScale: 300 },
+  /* glsl */ `
+    attribute float aSeed;
+    uniform float uTime;
+    uniform float uHeight;
+    uniform float uSize;
+    uniform float uScale;
+    varying float vFade;
+
+    void main() {
+      // sobe em loop; cada partícula com velocidade e fase próprias
+      float speed = 0.35 + aSeed * 0.35;
+      float y = mod(position.y + uTime * speed, uHeight);
+      float x = position.x + sin(uTime * 1.2 + aSeed * 20.0) * 0.08;
+      vec4 mv = modelViewMatrix * vec4(x, y, position.z, 1.0);
+
+      // esmaece nas duas pontas: some no topo e nasce sem "piscar" embaixo
+      float h = y / uHeight;
+      vFade = smoothstep(0.0, 0.12, h) * (1.0 - smoothstep(0.55, 1.0, h));
+
+      // mesma conta do sizeAttenuation do PointsMaterial:
+      // (size * pixelRatio) * (alturaDoCanvas * 0.5 / -z), tudo em uScale
+      gl_PointSize = uSize * uScale / -mv.z;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  /* glsl */ `
+    uniform sampler2D uMap;
+    uniform float uOpacity;
+    varying float vFade;
+
+    void main() {
+      vec4 c = texture2D(uMap, gl_PointCoord);
+      float a = c.a * uOpacity * vFade;
+      if (a < 0.004) discard;
+      gl_FragColor = vec4(vec3(0.333, 0.333, 0.376), a);
+    }
+  `,
+  (mat) => {
+    mat.transparent = true
+    mat.depthWrite = false
+  }
+)
+
+extend({ SmokeMaterial })
+
+/**
  * Fumaça: pontos subindo com turbulência, esmaecendo com a altura.
  */
 export function Smoke({ position = [0, 0, 0], count = 40, height = 2.2, level = 1, levelRef, dimRef }) {
-  const points = useRef()
+  const mat = useRef()
   const cur = useRef(1)
 
-  const positions = new Float32Array(count * 3)
-  const seeds = new Float32Array(count)
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 0.4
-    positions[i * 3 + 1] = Math.random() * height
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 0.4
-    seeds[i] = Math.random()
-  }
-
-  useFrame(({ clock }, delta) => {
-    const pos = points.current.geometry.attributes.position
-    const t = clock.elapsedTime
-    // aba em background devolve um delta gigante no primeiro frame de volta;
-    // sem clamp o X (que nunca é resetado) espalharia as partículas pra sempre
-    const dt = Math.min(delta, 0.1)
+  // sem useMemo isso era realocado a cada render do componente
+  const { positions, seeds } = useMemo(() => {
+    const positions = new Float32Array(count * 3)
+    const seeds = new Float32Array(count)
     for (let i = 0; i < count; i++) {
-      let y = pos.getY(i) + dt * (0.35 + seeds[i] * 0.35)
-      if (y > height) y = 0
-      pos.setY(i, y)
-      pos.setX(i, pos.getX(i) + Math.sin(t * 1.2 + seeds[i] * 20) * dt * 0.08)
+      positions[i * 3] = (Math.random() - 0.5) * 0.4
+      positions[i * 3 + 1] = Math.random() * height
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 0.4
+      seeds[i] = Math.random()
     }
-    pos.needsUpdate = true
+    return { positions, seeds }
+  }, [count, height])
+
+  useFrame(({ clock, gl, size }, delta) => {
+    const m = mat.current
+    if (!m) return
+    const t = clock.elapsedTime
     const target = (levelRef?.current ?? level) * (1 - (dimRef?.current ?? 0) * 0.92)
     cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
-    points.current.material.opacity = (0.28 + Math.sin(t * 3) * 0.04) * cur.current
+    m.uTime = t
+    m.uOpacity = (0.28 + Math.sin(t * 3) * 0.04) * cur.current
+    m.uScale = size.height * 0.5 * gl.getPixelRatio()
   })
 
   return (
-    <points ref={points} position={position}>
+    <points position={position} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-aSeed" args={[seeds, 1]} />
       </bufferGeometry>
-      <pointsMaterial
-        size={0.28}
-        color="#555560"
-        transparent
-        opacity={0.3}
-        depthWrite={false}
-        map={smokeSprite()}
-        sizeAttenuation
-      />
+      <smokeMaterial ref={mat} uMap={smokeSprite()} uHeight={height} uSize={0.28} />
     </points>
   )
 }
