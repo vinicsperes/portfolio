@@ -192,8 +192,22 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   const collageTex = useTexture('/img/ghost-collage-tex.jpg')
   const kidTex = useTexture('/img/vini-kid.jpg')
 
-  return (
-    <group>
+  /**
+   * Tudo do quarto que NÃO depende da view, memoizado.
+   *
+   * Trocar de view muda `activeView`, que existe aqui por um motivo só: o
+   * `disabled` do Hotspot do porta-retrato. Sem isto, esse booleano fazia os
+   * ~100 elementos R3F do quarto reconciliarem junto. Medido com o profiler de
+   * amostragem (CPU a 4x): ~51ms de commitUpdate/reconciliação por troca, que
+   * eram as long tasks de 50-63ms no frame em que a câmera começa a andar.
+   *
+   * Guardando os ELEMENTOS num useMemo, a identidade deles não muda entre
+   * renders e o React descarta a subárvore inteira do diff. As texturas são a
+   * única dependência real (vêm do cache do worker).
+   */
+  const quarto = useMemo(
+    () => (
+      <>
       {/* ─── Floor ─── */}
       <mesh position={[0, -2.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
@@ -327,6 +341,15 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         ))}
       </group>
 
+      </>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [woodTex, rugTex, wallTex, skyTex, collageTex, kidTex]
+  )
+
+  return (
+    <group>
+      {quarto}
       {/* ─── Estante + porta-retrato = hotspot do "sobre". A estante INTEIRA
           (prateleiras, livros, cubo mágico, foto) é clicável e faz hover, pra
           ser bem fácil de perceber ─── */}
