@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>bake</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+      }
+      #stage {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Página só de build, não vai pro deploy: o vite build só entra pelo
+         index.html da raiz. Serve pra assar assets estáticos (still dos knobs,
+         thumbs dos presets) com o chrome headless. Ver scripts/bake.mjs -->
+    <div id="stage"></div>
+    <script type="module" src="./bake.jsx"></script>
+  </body>
+</html>

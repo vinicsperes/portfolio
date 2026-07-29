@@ -1,14 +1,13 @@
-import { Suspense, useEffect, useState } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { ContactShadows, Environment, Float, Preload } from '@react-three/drei'
-import { Knob3D } from './three/pedal/knobs'
-import { getBlurredGhostThumb, getPresetThumbs, PRESET_OPACITY } from './three/pedal/presetShaders.js'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { PRESET_OPACITY } from './three/pedal/presetShaders.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
-import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { useNearViewport } from '../hooks/useNearViewport.js'
+import { IS_MOBILE } from '../scene/deviceTier.js'
+
+// chunk próprio: em mobile o card usa o still e este import nunca é resolvido
+const KnobsCanvas = lazy(() => import('./KnobsCanvas.jsx').then((m) => ({ default: m.KnobsCanvas })))
 
 const GREEN = '#16a030'
-const LED = '#20f040'
 
 // colorways reais do produto (ghostfx/src/data/presets.ts → PRESET_META)
 const PRESET_META = [
@@ -26,25 +25,27 @@ const KNOBS = [
   { label: 'REVERB', x: 0.55 },
 ]
 
-const noop = () => {}
+/**
+ * Frames dos shaders de preset do ghostfx, ASSADOS EM BUILD (scripts/bake.mjs).
+ *
+ * Antes eram gerados no navegador do visitante: um contexto WebGL extra só pra
+ * isso, 6 shaders compilados e 6 `canvas.toDataURL('image/png')` SÍNCRONOS na
+ * main thread — ~600KB de base64 que ainda voltavam a ser decodificados como
+ * imagem. Tudo isso caía no primeiro scroll, junto com os canvases da seção.
+ */
+const PRESET_THUMBS = [
+  '/img/presets/haunted.webp',
+  '/img/presets/occult.webp',
+  '/img/presets/glacier.webp',
+  '/img/presets/hollow.webp',
+  '/img/presets/ether.webp',
+  '/img/presets/delirium.webp',
+]
+const GHOST_BLUR = '/img/presets/ghost-blur.webp'
 
-/** Frames estáticos dos shaders de preset do ghostfx, gerados uma única vez. */
-function usePresetThumbs(enabled) {
-  const [thumbs, setThumbs] = useState(null)
-  useEffect(() => {
-    if (!enabled || thumbs) return
-    // adia para não competir com os canvases 3D na entrada da seção
-    const id = setTimeout(() => {
-      try {
-        setThumbs(getPresetThumbs())
-      } catch {
-        /* sem WebGL: cards ficam só com a cor do preset */
-      }
-    }, 250)
-    return () => clearTimeout(id)
-  }, [enabled, thumbs])
-  return thumbs
-}
+// margens de pré-carga em função da tela, não em pixels fixos: '900px' num
+// celular de 844px de altura já vale como "perto" com a página no topo
+const KNOBS_MARGIN = `${Math.round((typeof window === 'undefined' ? 900 : window.innerHeight) * 0.6)}px`
 
 /**
  * Fundo da seção Ghost: o shader do preset GHOST (frame estático) bem
@@ -52,25 +53,15 @@ function usePresetThumbs(enabled) {
  */
 export function GhostSectionBg() {
   const [ref, near] = useNearViewport('400px')
-  const thumbs = usePresetThumbs(near)
-  const [bg, setBg] = useState(null)
-  useEffect(() => {
-    if (!thumbs?.[0] || bg) return
-    let alive = true
-    Promise.resolve(getBlurredGhostThumb()).then((url) => alive && url && setBg(url))
-    return () => {
-      alive = false
-    }
-  }, [thumbs, bg])
   return (
     <div ref={ref} className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {bg && (
+      {near && (
         // o blur vem PRÉ-APLICADO na imagem: `filter: blur()` aqui era um
         // passe de composição por frame numa div de tela cheia, brigando
         // com os dois canvases da seção
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bg})`, opacity: 0.14, transform: 'scale(1.06)' }}
+          style={{ backgroundImage: `url(${GHOST_BLUR})`, opacity: 0.14, transform: 'scale(1.06)' }}
         />
       )}
       <div
@@ -84,64 +75,6 @@ export function GhostSectionBg() {
   )
 }
 
-/** Três knobs do pedal, decorativos (a animação de boot ainda roda). */
-const KNOB_VALS = [0.72, 0.45, 0.85]
-
-function KnobsCanvas({ boot }) {
-  const reducedMotion = useReducedMotion()
-  return (
-    <Canvas
-      camera={{ position: [0, 1.05, 1.5], fov: 30, near: 0.1, far: 20 }}
-      gl={{ antialias: true, alpha: true }}
-      dpr={[1, 1.25]}
-      frameloop={boot ? 'always' : 'never'}
-      onCreated={({ camera }) => camera.lookAt(0, 0.1, 0)}
-    >
-      <ambientLight intensity={0.5} color="#f0e8d8" />
-      <directionalLight position={[-3, 4, 2]} intensity={2} color="#e8dfc8" />
-      <directionalLight position={[3, 3, -2]} intensity={1.2} color="#c8d8f0" />
-      <Suspense fallback={null}>
-        <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.6} />
-        {/* knobs vitrine: assentam nos valores no boot e depois só flutuam;
-            sem interação (nada de tooltip/arrasto) */}
-        <Float
-          speed={reducedMotion ? 0 : 1.5}
-          rotationIntensity={reducedMotion ? 0 : 0.15}
-          floatIntensity={reducedMotion ? 0 : 0.6}
-        >
-          {KNOBS.map((k, i) => (
-            <Knob3D
-              key={k.label}
-              position={[k.x, 0, 0]}
-              value={KNOB_VALS[i]}
-              onChange={noop}
-              ink="#e0e0ec"
-              accent={LED}
-              label={k.label}
-              setControlsEnabled={noop}
-              bootTrigger={boot ? 1 : 0}
-              delay={i * 0.12}
-              interactive={false}
-            />
-          ))}
-        </Float>
-        {/* frames={1}: sem isso a sombra re-renderiza a cena TODA a cada frame
-            (os knobs mal flutuam — ninguém percebe a sombra parada) */}
-        <ContactShadows
-          position={[0, -0.001, 0]}
-          opacity={0.5}
-          scale={4}
-          blur={2.4}
-          far={0.8}
-          resolution={256}
-          frames={1}
-        />
-        <Preload all />
-      </Suspense>
-    </Canvas>
-  )
-}
-
 /**
  * Linha de cards da seção Ghost: knobs interativos (quadradinho) e os seis
  * presets com seus backgrounds reais ao lado — tudo na mesma tela do hero.
@@ -152,14 +85,15 @@ export function GhostCards() {
   const presets = t.ghost.presets
   // monta cedo (Preload compila com o frameloop parado); roda só quando
   // visível. Depois de montar uma vez FICA montado: desmontar/remontar
-  // refazia contexto WebGL + HDRI a cada revisita (card em branco)
-  const [knobsRef, knobsNear] = useNearViewport('900px')
+  // refazia contexto WebGL + HDRI a cada revisita (card em branco).
+  // Margem relativa à viewport: '900px' fixo já estava satisfeito com o scroll
+  // em zero num celular de 844px de altura, ou seja, não filtrava nada
+  const [knobsRef, knobsNear] = useNearViewport(KNOBS_MARGIN)
   const [knobsSeen, setKnobsSeen] = useState(false)
   useEffect(() => {
     if (knobsNear) setKnobsSeen(true)
   }, [knobsNear])
   const [knobsRunRef, knobsRun] = useNearViewport('0px')
-  const thumbs = usePresetThumbs(knobsNear)
 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
@@ -177,7 +111,28 @@ export function GhostCards() {
         </div>
         {/* pointer-events-none: os knobs aqui são vitrine, não controle */}
         <div ref={knobsRunRef} className="pointer-events-none relative h-44 flex-1">
-          {(knobsNear || knobsSeen) && <KnobsCanvas boot={knobsRun} />}
+          {IS_MOBILE ? (
+            // Em celular estes knobs custavam um TERCEIRO contexto WebGL vivo
+            // (além do hero e do pedal), com HDRI próprio e frameloop 'always'
+            // enquanto o card estivesse na tela — tudo por um <Float> em três
+            // knobs que nem são clicáveis. Vira um still assado (14KB).
+            <img
+              src="/img/knobs-still.webp"
+              alt=""
+              width={780}
+              height={352}
+              loading="lazy"
+              decoding="async"
+              aria-hidden="true"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            (knobsNear || knobsSeen) && (
+              <Suspense fallback={null}>
+                <KnobsCanvas boot={knobsRun} />
+              </Suspense>
+            )
+          )}
           {/* silkscreen em DOM: alinhado por terços com os knobs em x = -0.55/0/0.55 */}
           <div
             className="pointer-events-none absolute inset-x-0 bottom-2 grid grid-cols-3 text-center font-mono text-[8px] font-bold tracking-[0.3em]"
@@ -204,13 +159,11 @@ export function GhostCards() {
               className="preset-cell relative overflow-hidden border p-3"
               style={{ '--pc': PRESET_META[i].color, '--po': PRESET_OPACITY[i] }}
             >
-              {thumbs?.[i] && (
-                <div
-                  className="preset-bg absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${thumbs[i]})` }}
-                  aria-hidden="true"
-                />
-              )}
+              <div
+                className="preset-bg absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${PRESET_THUMBS[i]})` }}
+                aria-hidden="true"
+              />
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
