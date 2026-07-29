@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNearViewport } from '../hooks/useNearViewport.js'
 
 const SENTENCES = [
   'speed comes from calm and steady hands',
@@ -16,8 +17,21 @@ const EMBER = '#ff6b2b'
 export function VerveDemo() {
   const [, setTick] = useState(0)
   const s = useRef({ idx: 0, chars: 0, wpm: 0, time: 0 })
+  // A digitação re-renderiza ~11x por segundo. Sem porteiro isso rodava PARA
+  // SEMPRE, inclusive com a seção três telas fora da viewport e com a aba em
+  // segundo plano — 11 reconciliações do React por segundo brigando com o
+  // scroll inercial do celular. Agora só anda quando está visível de verdade.
+  const [ref, near] = useNearViewport('0px')
+  const [awake, setAwake] = useState(() => document.visibilityState !== 'hidden')
 
   useEffect(() => {
+    const onVisibility = () => setAwake(document.visibilityState !== 'hidden')
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+
+  useEffect(() => {
+    if (!near || !awake) return
     const id = setInterval(() => {
       const st = s.current
       const sentence = SENTENCES[st.idx]
@@ -34,7 +48,7 @@ export function VerveDemo() {
       setTick((t) => t + 1)
     }, 90)
     return () => clearInterval(id)
-  }, [])
+  }, [near, awake])
 
   const { idx, chars, wpm, time } = s.current
   const sentence = SENTENCES[idx]
@@ -42,7 +56,7 @@ export function VerveDemo() {
   const rest = sentence.slice(chars)
 
   return (
-    <div className="rounded-md bg-[#151518] border border-paper/8 p-8 sm:p-12 shadow-2xl">
+    <div ref={ref} className="rounded-md bg-[#151518] border border-paper/8 p-8 sm:p-12 shadow-2xl">
       {/* header */}
       <div className="flex items-center gap-3 font-mono text-sm">
         <span className="h-2 w-2 rounded-full" style={{ background: EMBER }} />

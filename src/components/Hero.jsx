@@ -29,6 +29,9 @@ const VALID_VIEWS = ['home', 'about']
 const GREEN = '#16a030'
 const EMBER = '#ff6b2b'
 
+// margem de pré-carga do palco do pedal em função da altura da tela
+const GHOST_MARGIN = `${Math.round((typeof window === 'undefined' ? 1600 : window.innerHeight) * 0.9)}px`
+
 function initialView() {
   const v = new URLSearchParams(window.location.search).get('view')
   return VALID_VIEWS.includes(v) ? v : 'home'
@@ -53,6 +56,23 @@ function Block({ children, className = '' }) {
   return <div className={className}>{children}</div>
 }
 
+/**
+ * Libera N estágios de montagem, um por idle, depois que `armed` fica true.
+ * Cada estágio só é liberado quando o navegador respira do anterior, então o
+ * trabalho pesado abaixo da dobra entra em fila em vez de tudo de uma vez.
+ */
+function useStagedMount(armed, count) {
+  const [stage, setStage] = useState(0)
+  useEffect(() => {
+    if (!armed || stage >= count) return
+    const idle = window.requestIdleCallback ?? ((cb) => setTimeout(cb, 400))
+    const cancel = window.cancelIdleCallback ?? clearTimeout
+    const h = idle(() => setStage((s) => s + 1), { timeout: 1500 })
+    return () => cancel(h)
+  }, [armed, stage, count])
+  return stage
+}
+
 export function Hero() {
   const { setLang, t } = useLang()
   const reducedMotion = useReducedMotion()
@@ -71,14 +91,13 @@ export function Hero() {
   // shader compilado por preset + toDataURL, HDRI de 1.5MB) pra uma seção a
   // duas telas de distância — era o que travava a moeda. Depois da revelação
   // ainda espera um idle, pra não roubar os primeiros frames do hero.
-  const [belowFold, setBelowFold] = useState(false)
-  useEffect(() => {
-    if (!sceneRevealed) return
-    const idle = window.requestIdleCallback ?? ((cb) => setTimeout(cb, 400))
-    const cancel = window.cancelIdleCallback ?? clearTimeout
-    const h = idle(() => setBelowFold(true), { timeout: 1500 })
-    return () => cancel(h)
-  }, [sceneRevealed])
+  //
+  // E não monta tudo no MESMO tick: a liberação é escalonada em estágios, um
+  // idle por vez. Antes, o instante em que belowFold virava true disparava de
+  // uma vez o fundo da seção, o canvas do pedal (2º contexto WebGL + HDRI) e o
+  // dos knobs (3º contexto + o mesmo HDRI de novo) — um dogpile que caía
+  // exatamente em cima do primeiro scroll do visitante.
+  const stage = useStagedMount(sceneRevealed, 3)
 
   // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
@@ -92,7 +111,9 @@ export function Hero() {
   // margem generosa: o canvas do pedal monta e compila bem antes de aparecer.
   // Depois de montar uma vez, FICA montado (frameloop pausa fora da tela):
   // desmontar/remontar refazia contexto WebGL + HDRI a cada revisita
-  const [ghostNearRef, ghostNear] = useNearViewport('1600px')
+  // margem relativa à tela, não em pixels fixos: '1600px' num celular de 844px
+  // de altura já valia como "perto" com a página no topo, ou seja, não filtrava
+  const [ghostNearRef, ghostNear] = useNearViewport(GHOST_MARGIN)
   const [ghostSeen, setGhostSeen] = useState(false)
   useEffect(() => {
     if (ghostNear) setGhostSeen(true)
@@ -153,8 +174,12 @@ export function Hero() {
   // visitante às seções antes de elas existirem: chegava na seção do GHOSTFX
   // e via o palco vazio, ou o pedal montando na frente dele.
   // html JUNTO com body: só no body o iOS continua rolando.
+  // Sem WebGL nada disso vale: o BootLoader nem chega a ser renderizado (o
+  // return do StaticFallback vem depois deste effect), então `sceneRevealed`
+  // ficaria false pra sempre e a página inteira nascia com overflow hidden —
+  // a StaticFallback era IMPOSSÍVEL de rolar.
   useEffect(() => {
-    const locked = view !== 'home' || !sceneRevealed
+    const locked = webgl && (view !== 'home' || !sceneRevealed)
     document.documentElement.style.overflow = locked ? 'hidden' : ''
     document.body.style.overflow = locked ? 'hidden' : ''
     if (view === 'home' && returnScrollRef.current != null) {
@@ -165,7 +190,7 @@ export function Hero() {
       document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
-  }, [view, sceneRevealed])
+  }, [view, sceneRevealed, webgl])
 
   // Um refresh no meio da página faz o navegador restaurar o scroll, e aí o
   // loader trava a tela numa posição qualquer. Com ele cobrindo tudo, o lugar
@@ -433,7 +458,8 @@ export function Hero() {
 
         {/* GHOST FX — tela única: o pedal abre sozinho ao entrar em cena; cards na mesma tela */}
         <section id="ghost" ref={ghostNearRef} className="snap-section relative overflow-hidden">
-          {belowFold && (
+          {/* estágio 1: o mais barato da fila (uma div com background) */}
+          {stage >= 1 && (
             <Suspense fallback={null}>
               <GhostSectionBg />
             </Suspense>
@@ -514,7 +540,8 @@ export function Hero() {
                   roda em frameloop="demand" e o pedal abre sozinho pouco depois
                   da seção entrar — parado (aberto) não custa nada */}
               <div className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
-                {belowFold && (ghostNear || ghostSeen) && (
+                {/* estágio 2: o mais caro (chunk de 183KB, contexto WebGL, HDRI) */}
+                {stage >= 2 && (ghostNear || ghostSeen) && (
                   <Suspense fallback={null}>
                     <SectionPedal onReady={handlePedalReady} />
                   </Suspense>
@@ -527,7 +554,7 @@ export function Hero() {
             </div>
 
             {/* knobs interativos + colorways dos presets, na mesma tela */}
-            {belowFold && (
+            {stage >= 3 && (
               <Suspense fallback={null}>
                 <GhostCards />
               </Suspense>
@@ -543,7 +570,7 @@ export function Hero() {
           />
           <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
             <Block className="order-2 md:order-1">
-              {belowFold && (
+              {stage >= 3 && (
                 <Suspense fallback={null}>
                   <VerveDemo />
                 </Suspense>
