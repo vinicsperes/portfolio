@@ -4,6 +4,7 @@ import { Environment, Preload } from '@react-three/drei'
 import * as THREE from 'three'
 import { PedalScene } from './three/pedal/scene'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
+import { HDRI } from '../scene/env.js'
 
 const GREEN = '#16a030'
 const palette = {
@@ -119,6 +120,11 @@ function AutoOpenPedal({ reducedMotion, armed }) {
         split
         spin={0}
         hideTag
+        // showCircuit fica no default (true) mesmo em celular: os ~500 draw
+        // calls da nota do PedalBody só são pagos enquanto algo se move, e este
+        // canvas roda em frameloop="demand" — ele fica ocioso assim que a
+        // abertura assenta. Desligar economiza quase nada e deixa o pedal
+        // abrindo vazio, que é justamente o que a seção existe pra mostrar.
         ledColor={GREEN}
         ledActive={led}
       />
@@ -171,7 +177,11 @@ export function SectionPedal({ onReady }) {
       <directionalLight position={[-4, 6, 3]} intensity={2} color="#e8dfc8" />
       <directionalLight position={[5, 4, -3]} intensity={1.2} color="#c8d8f0" />
       <Suspense fallback={null}>
-        <Environment files="/hdri/potsdamer_platz_1k.hdr" environmentIntensity={0.7} />
+        {/* 512x256 (era 1k, 1.5MB): serve só de IBL pro reflexo no chassi e nos
+            knobs, nunca aparece como fundo. O que pesava não era o download e
+            sim o decode RGBE + a geração do PMREM — e isso acontecia DUAS
+            vezes, porque textura de GPU não atravessa contexto WebGL */}
+        <Environment files={HDRI} environmentIntensity={0.7} />
         <AutoOpenPedal reducedMotion={reducedMotion} armed={ready} />
         <Preload all />
         <ReadyGate onReady={handleReady} />
