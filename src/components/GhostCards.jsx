@@ -1,11 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { useNearViewport } from '../hooks/useNearViewport.js'
 import { PRESET_OPACITY } from './three/pedal/presetShaders.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
-import { useNearViewport } from '../hooks/useNearViewport.js'
-import { IS_MOBILE } from '../scene/deviceTier.js'
-
-// chunk próprio: em mobile o card usa o still e este import nunca é resolvido
-const KnobsCanvas = lazy(() => import('./KnobsCanvas.jsx').then((m) => ({ default: m.KnobsCanvas })))
 
 const GREEN = '#16a030'
 
@@ -43,10 +38,6 @@ const PRESET_THUMBS = [
 ]
 const GHOST_BLUR = '/img/presets/ghost-blur.webp'
 
-// margens de pré-carga em função da tela, não em pixels fixos: '900px' num
-// celular de 844px de altura já vale como "perto" com a página no topo
-const KNOBS_MARGIN = `${Math.round((typeof window === 'undefined' ? 900 : window.innerHeight) * 0.6)}px`
-
 /**
  * Fundo da seção Ghost: o shader do preset GHOST (frame estático) bem
  * difuso, para diferenciar a seção sem competir com o pedal.
@@ -83,23 +74,10 @@ export function GhostCards() {
   const { t } = useLang()
   const k = t.ghost.features.knobs
   const presets = t.ghost.presets
-  // monta cedo (Preload compila com o frameloop parado); roda só quando
-  // visível. Depois de montar uma vez FICA montado: desmontar/remontar
-  // refazia contexto WebGL + HDRI a cada revisita (card em branco).
-  // Margem relativa à viewport: '900px' fixo já estava satisfeito com o scroll
-  // em zero num celular de 844px de altura, ou seja, não filtrava nada
-  const [knobsRef, knobsNear] = useNearViewport(KNOBS_MARGIN)
-  const [knobsSeen, setKnobsSeen] = useState(false)
-  useEffect(() => {
-    if (knobsNear) setKnobsSeen(true)
-  }, [knobsNear])
-  const [knobsRunRef, knobsRun] = useNearViewport('0px')
-
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
       {/* knobs de verdade, card quadrado */}
       <div
-        ref={knobsRef}
         className="relative flex flex-col overflow-hidden border border-paper/10 lg:col-span-4"
         style={{
           background: 'linear-gradient(180deg, rgba(22,160,48,0.07) 0%, rgba(10,10,15,0) 55%)',
@@ -110,29 +88,25 @@ export function GhostCards() {
           <p className="mt-1 font-mono text-[10px] text-paper/60 leading-relaxed">{k.p}</p>
         </div>
         {/* pointer-events-none: os knobs aqui são vitrine, não controle */}
-        <div ref={knobsRunRef} className="pointer-events-none relative h-44 flex-1">
-          {IS_MOBILE ? (
-            // Em celular estes knobs custavam um TERCEIRO contexto WebGL vivo
-            // (além do hero e do pedal), com HDRI próprio e frameloop 'always'
-            // enquanto o card estivesse na tela — tudo por um <Float> em três
-            // knobs que nem são clicáveis. Vira um still assado (14KB).
-            <img
-              src="/img/knobs-still.webp"
-              alt=""
-              width={780}
-              height={352}
-              loading="lazy"
-              decoding="async"
-              aria-hidden="true"
-              className="h-full w-full object-contain"
-            />
-          ) : (
-            (knobsNear || knobsSeen) && (
-              <Suspense fallback={null}>
-                <KnobsCanvas boot={knobsRun} />
-              </Suspense>
-            )
-          )}
+        <div className="pointer-events-none relative h-44 flex-1">
+          {/*
+            Still assado (scripts/bake.mjs), não canvas. Estes três knobs eram
+            um contexto WebGL inteiro, com HDRI e frameloop 'always' enquanto o
+            card estivesse na tela, por uma flutuação em peças que nem são
+            clicáveis (interactive={false}, container com pointer-events-none).
+            Virar imagem tira um contexto WebGL do desktop e acaba com o
+            caminho duplo que existia só no celular.
+          */}
+          <img
+            src="/img/knobs-still.webp"
+            alt=""
+            width={780}
+            height={352}
+            loading="lazy"
+            decoding="async"
+            aria-hidden="true"
+            className="h-full w-full object-contain"
+          />
           {/* silkscreen em DOM: alinhado por terços com os knobs em x = -0.55/0/0.55 */}
           <div
             className="pointer-events-none absolute inset-x-0 bottom-2 grid grid-cols-3 text-center font-mono text-[8px] font-bold tracking-[0.3em]"
