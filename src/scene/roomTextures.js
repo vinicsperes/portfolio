@@ -1,5 +1,6 @@
 import * as THREE from 'three'
-import { TEXTURE_SPECS, paintTexture } from './roomPainters.js'
+import { paintTexture, textureSize } from './roomPainters.js'
+import { IS_MOBILE } from './deviceTier.js'
 
 /**
  * Texturas procedurais do quarto, assadas UMA vez e fora da main thread.
@@ -17,11 +18,36 @@ import { TEXTURE_SPECS, paintTexture } from './roomPainters.js'
 
 const NAMES = ['floor', 'rug', 'wall', 'window']
 
+// Em mobile as quatro em tamanho cheio somavam ~21MB de VRAM (RGBA + mipmaps).
+// Metade da resolução corta isso por 4 — são padrões de madeira/ruído sempre
+// vistos MINIFICADOS (chão de 60x60, tapete no chão, janela ao longe), então
+// numa tela de celular a diferença não se lê.
+//
+// A parede é a exceção e fica em tamanho cheio: a câmera da view "sobre" para
+// a ~3.7 unidades dela, ou seja, a parede aparece AMPLIADA ocupando a tela
+// inteira. Ali reduzir a textura é a única coisa que apareceria de verdade.
+const SCALES = {
+  floor: IS_MOBILE ? 0.5 : 1,
+  rug: IS_MOBILE ? 0.5 : 1,
+  wall: 1,
+  window: IS_MOBILE ? 0.5 : 1,
+}
+
+// minificação forte: o chão é um plano de 60x60 com repeat(4,4), então na
+// distância cada pixel da tela cobre muitos texels. Sem anisotropia isso
+// cintila E amostra mal; com 4 o hardware resolve por bem menos que subir
+// resolução de textura
+const ANISOTROPY = 4
+
 // o que cada textura precisa além do default (o resto vem do construtor)
 const TWEAKS = {
   floor: (t) => {
     t.wrapS = t.wrapT = THREE.RepeatWrapping
     t.repeat.set(4, 4)
+    t.anisotropy = ANISOTROPY
+  },
+  rug: (t) => {
+    t.anisotropy = ANISOTROPY
   },
   wall: (t) => {
     t.wrapS = t.wrapT = THREE.RepeatWrapping
@@ -35,11 +61,11 @@ const WORKER_TIMEOUT_MS = 4000
 function paintHere(sky) {
   const out = {}
   for (const name of NAMES) {
-    const { w, h } = TEXTURE_SPECS[name]
+    const { w, h } = textureSize(name, SCALES[name])
     const canvas = document.createElement('canvas')
     canvas.width = w
     canvas.height = h
-    paintTexture(name, canvas.getContext('2d'), sky)
+    paintTexture(name, canvas.getContext('2d'), sky, SCALES[name])
     const tex = new THREE.CanvasTexture(canvas)
     TWEAKS[name]?.(tex)
     out[name] = tex
@@ -75,7 +101,7 @@ function paintInWorker(sky) {
       }
       done(resolve, out)
     }
-    worker.postMessage({ names: NAMES, sky })
+    worker.postMessage({ names: NAMES, sky, scales: SCALES })
   })
 }
 

@@ -9,12 +9,21 @@
 
 const WOOD = '#5c3a24'
 
-/** Tamanho de cada textura: a fonte da verdade para os dois caminhos. */
+/**
+ * Tamanho lógico de cada textura: é nesse sistema de coordenadas que todos os
+ * pintores desenham. O tamanho REAL do canvas sai de textureSize(), que aplica
+ * um fator de escala — em mobile as quatro juntas passavam de 20MB de VRAM.
+ */
 export const TEXTURE_SPECS = {
   floor: { w: 1024, h: 1024 },
   rug: { w: 1536, h: 1024 },
   wall: { w: 1024, h: 1024 },
   window: { w: 1024, h: 512 },
+}
+
+export function textureSize(name, scale = 1) {
+  const { w, h } = TEXTURE_SPECS[name]
+  return { w: Math.round(w * scale), h: Math.round(h * scale) }
 }
 
 function paintFloor(ctx) {
@@ -218,8 +227,10 @@ function paintWall(ctx) {
     ctx.fill()
   }
 
-  // grão fino do reboco
-  const img = ctx.getImageData(0, 0, S, S)
+  // grão fino do reboco. getImageData/putImageData ignoram a transformação do
+  // contexto, então aqui vale o tamanho REAL do canvas, não o lógico — é o que
+  // faz o custo desse loop cair junto quando a textura é reduzida
+  const img = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height)
   const d = img.data
   for (let i = 0; i < d.length; i += 4) {
     const n = (Math.random() - 0.5) * 16
@@ -361,9 +372,14 @@ function drawSunsetView(ctx, W, H) {
 /**
  * Pinta a textura `name` no contexto 2d dado. `sky` só interessa à vista da
  * janela ('night' = céu noturno com lua; qualquer outro = golden hour).
+ *
+ * `scale` reduz a textura sem tocar em nenhum pintor: eles continuam
+ * desenhando no sistema de coordenadas de TEXTURE_SPECS e o contexto encolhe o
+ * resultado. Ver textureSize().
  */
-export function paintTexture(name, ctx, sky) {
+export function paintTexture(name, ctx, sky, scale = 1) {
   const { w, h } = TEXTURE_SPECS[name]
+  if (scale !== 1) ctx.scale(scale, scale)
   if (name === 'floor') return paintFloor(ctx)
   if (name === 'rug') return paintRug(ctx)
   if (name === 'wall') return paintWall(ctx)

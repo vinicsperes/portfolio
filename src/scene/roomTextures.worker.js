@@ -8,16 +8,18 @@
  * ImageBitmap (WebGLTextures pula o pixelStorei nesse caso), então o bitmap
  * precisa chegar já na orientação que a CanvasTexture antiga produzia.
  */
-import { TEXTURE_SPECS, paintTexture } from './roomPainters.js'
+import { paintTexture, textureSize } from './roomPainters.js'
 
 self.onmessage = async (e) => {
-  const { names, sky } = e.data
+  // as escalas vêm de fora: quem sabe o tier do aparelho é a main thread
+  const { names, sky, scales = {} } = e.data
   try {
     const bitmaps = {}
     for (const name of names) {
-      const { w, h } = TEXTURE_SPECS[name]
+      const scale = scales[name] ?? 1
+      const { w, h } = textureSize(name, scale)
       const canvas = new OffscreenCanvas(w, h)
-      paintTexture(name, canvas.getContext('2d'), sky)
+      paintTexture(name, canvas.getContext('2d'), sky, scale)
       bitmaps[name] = await createImageBitmap(canvas, {
         imageOrientation: 'flipY',
         premultiplyAlpha: 'none',
