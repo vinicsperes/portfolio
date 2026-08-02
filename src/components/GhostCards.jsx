@@ -14,11 +14,17 @@ const PRESET_META = [
   { color: '#f02a96', word: 'DELIRIUM' },
 ]
 
+// x = centro de cada knob DENTRO do still (% da largura da imagem, medido nos
+// pixels de knobs-still.webp). Não são terços: o render tem margem lateral.
 const KNOBS = [
-  { label: 'DRIVE', x: -0.55 },
-  { label: 'ECHO', x: 0 },
-  { label: 'REVERB', x: 0.55 },
+  { label: 'DRIVE', x: 24.6 },
+  { label: 'ECHO', x: 49.9 },
+  { label: 'REVERB', x: 75.3 },
 ]
+
+// proporção do still; a caixa dos rótulos usa a mesma para acompanhar a imagem
+const STILL_W = 780
+const STILL_H = 352
 
 /**
  * Frames dos shaders de preset do ghostfx, ASSADOS EM BUILD (scripts/bake.mjs).
@@ -88,34 +94,52 @@ export function GhostCards() {
           <p className="mt-1 font-mono text-[10px] text-paper/60 leading-relaxed">{k.p}</p>
         </div>
         {/* pointer-events-none: os knobs aqui são vitrine, não controle */}
-        <div className="pointer-events-none relative h-44 flex-1">
-          {/*
-            Still assado (scripts/bake.mjs), não canvas. Estes três knobs eram
-            um contexto WebGL inteiro, com HDRI e frameloop 'always' enquanto o
-            card estivesse na tela, por uma flutuação em peças que nem são
-            clicáveis (interactive={false}, container com pointer-events-none).
-            Virar imagem tira um contexto WebGL do desktop e acaba com o
-            caminho duplo que existia só no celular.
-          */}
-          <img
-            src="/img/knobs-still.webp"
-            alt=""
-            width={780}
-            height={352}
-            loading="lazy"
-            decoding="async"
-            aria-hidden="true"
-            className="h-full w-full object-contain"
-          />
-          {/* silkscreen em DOM: alinhado por terços com os knobs em x = -0.55/0/0.55 */}
+        <div className="pointer-events-none flex h-44 flex-1 items-center">
+          {/* caixa com a proporção do still: assim os rótulos se ancoram na
+              IMAGEM, não no card. Com `object-contain` num card mais largo que
+              390px a imagem ficava centralizada com sobra dos lados e a
+              serigrafia (que media terços do card) escorregava dos knobs.
+              max-w-390 = a mesma largura que o contain dava a 176px de altura */}
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-2 grid grid-cols-3 text-center font-mono text-[8px] font-bold tracking-[0.3em]"
-            style={{ color: GREEN }}
-            aria-hidden="true"
+            className="relative mx-auto w-full max-w-[390px]"
+            style={{ aspectRatio: `${STILL_W} / ${STILL_H}` }}
           >
-            {KNOBS.map((kn) => (
-              <span key={kn.label}>{kn.label}</span>
-            ))}
+            {/*
+              Still assado (scripts/bake.mjs), não canvas. Estes três knobs eram
+              um contexto WebGL inteiro, com HDRI e frameloop 'always' enquanto o
+              card estivesse na tela, por uma flutuação em peças que nem são
+              clicáveis (interactive={false}, container com pointer-events-none).
+              Virar imagem tira um contexto WebGL do desktop e acaba com o
+              caminho duplo que existia só no celular.
+            */}
+            <img
+              src="/img/knobs-still.webp"
+              alt=""
+              width={STILL_W}
+              height={STILL_H}
+              loading="lazy"
+              decoding="async"
+              aria-hidden="true"
+              className="h-full w-full"
+            />
+            {/* silkscreen em DOM: cada rótulo centrado no eixo do seu knob; o
+                +0.15em compensa o tracking, que joga um espaço sobrando à
+                direita da última letra e desloca os glifos pra esquerda */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-[79%] font-mono text-[8px] font-bold tracking-[0.3em]"
+              style={{ color: GREEN }}
+              aria-hidden="true"
+            >
+              {KNOBS.map((kn) => (
+                <span
+                  key={kn.label}
+                  className="absolute whitespace-nowrap"
+                  style={{ left: `${kn.x}%`, transform: 'translateX(calc(-50% + 0.15em))' }}
+                >
+                  {kn.label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
