@@ -311,7 +311,7 @@ export function Hero() {
             precisa de `invisible` (não só opacity-0): senão os botões seguem
             clicáveis/focáveis por baixo do overlay do about */}
         <div
-          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end pb-[11svh] px-6 sm:justify-center sm:pb-0 sm:px-12 ${
+          className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end px-6 pb-[calc(17svh+env(safe-area-inset-bottom,0px))] sm:justify-center sm:px-12 sm:pb-0 ${
             view === 'home' ? '' : 'opacity-0 invisible'
           } transition-opacity duration-500`}
         >
@@ -414,8 +414,11 @@ export function Hero() {
         )}
 
         {/* rodapé do hero: cue de scroll centralizada — clicável, leva à
-            primeira seção (quem pede pra rolar tem que rolar no clique) */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-5 sm:px-12">
+            primeira seção (quem pede pra rolar tem que rolar no clique).
+            O inset de safe area também entra no lockup acima, então os dois
+            sobem juntos e o respiro entre eles não muda; sem isso a cue fica
+            embaixo da barra dos navegadores in-app (Instagram) */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] sm:px-12">
           <div className="w-16" aria-hidden="true" />
           <button
             onClick={() =>
