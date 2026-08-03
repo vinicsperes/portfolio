@@ -148,6 +148,25 @@ const BakedFlameMaterial = shaderMaterial(
 extend({ BakedFlameMaterial })
 
 /**
+ * Tempo do fogo, acumulado no delta em vez de lido do relógio da cena.
+ *
+ * NÃO dá pra usar `clock.elapsedTime` aqui: o R3F ZERA o relógio toda vez que o
+ * frameloop muda (`setFrameloop` faz `clock.elapsedTime = 0`), e o hero alterna
+ * entre 'always' e 'never' conforme entra e sai da viewport. Como a chama é um
+ * loop de 3.2s tocado pela fase, zerar o relógio jogava ela de estalo pro
+ * primeiro frame — era o "trava e reseta" (travada porque, com o frameloop em
+ * 'never', qualquer render avulso desenha sempre o mesmo t=0). Com tempo
+ * próprio ela retoma de onde parou.
+ *
+ * O clamp segura o salto de quando a aba volta do background com um delta de
+ * vários segundos.
+ */
+function useOwnTime() {
+  const t = useRef(0)
+  return (delta) => (t.current += Math.min(delta, 0.1))
+}
+
+/**
  * Labareda: um plano único sempre virado pra câmera (billboard) tocando o
  * atlas assado. Instâncias com seed diferente entram em fases diferentes do
  * loop e não parecem clones.
@@ -155,13 +174,15 @@ extend({ BakedFlameMaterial })
 export function Flame({ position = [0, 0, 0], scale = 1, intensity = 1, seed = 0, level = 1, levelRef, dimRef }) {
   const mat = useRef()
   const cur = useRef(1)
+  const tick = useOwnTime()
 
-  useFrame(({ clock, gl }, delta) => {
+  useFrame(({ gl }, delta) => {
+    const t = tick(delta)
     const target = (levelRef?.current ?? level) * (1 - (dimRef?.current ?? 0) * 0.92)
     cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
     if (mat.current) {
       if (!mat.current.uMap) mat.current.uMap = getFlameAtlas(gl)
-      mat.current.uTime = clock.elapsedTime
+      mat.current.uTime = t
       mat.current.uFade = intensity * cur.current
     }
   })
@@ -236,6 +257,8 @@ extend({ SmokeMaterial })
 export function Smoke({ position = [0, 0, 0], count = 40, height = 2.2, level = 1, levelRef, dimRef }) {
   const mat = useRef()
   const cur = useRef(1)
+  // mesmo motivo da chama: o relógio da cena zera quando o frameloop muda
+  const tick = useOwnTime()
 
   // sem useMemo isso era realocado a cada render do componente
   const { positions, seeds } = useMemo(() => {
@@ -250,10 +273,10 @@ export function Smoke({ position = [0, 0, 0], count = 40, height = 2.2, level = 
     return { positions, seeds }
   }, [count, height])
 
-  useFrame(({ clock, gl, size }, delta) => {
+  useFrame(({ gl, size }, delta) => {
+    const t = tick(delta)
     const m = mat.current
     if (!m) return
-    const t = clock.elapsedTime
     const target = (levelRef?.current ?? level) * (1 - (dimRef?.current ?? 0) * 0.92)
     cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
     m.uTime = t
