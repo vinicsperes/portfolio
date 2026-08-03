@@ -121,15 +121,16 @@ function WallShelves() {
           <RoundedBox args={[2.3, 0.06, 0.34]} radius={0.01} castShadow>
             <meshStandardMaterial color={WOOD_DARK} roughness={0.6} />
           </RoundedBox>
-          {/* mãos francesas */}
-          {[-0.9, 0.9].map((x) => (
+          {/* mãos francesas: nas PONTAS da tábua (a 0.9 elas caíam bem em cima
+              do primeiro livro da prateleira de baixo e o atravessavam) */}
+          {[-1.06, 1.06].map((x) => (
             <mesh key={x} position={[x, -0.09, -0.06]}>
               <boxGeometry args={[0.05, 0.14, 0.2]} />
               <meshStandardMaterial color="#141414" roughness={0.4} metalness={0.6} />
             </mesh>
           ))}
-          {/* livros: corpo + faixas no lombo (não são mais só retângulos) e
-              assentados na tábua (sem flutuar) */}
+          {/* livros: capa + miolo de páginas + faixas no lombo (não são mais só
+              retângulos) e assentados na tábua (sem flutuar) */}
           {(() => {
             // cima: livros começam à direita do retrato; baixo: a partir da esquerda
             let bx = si === 0 ? 0.3 : -1.0
@@ -137,15 +138,37 @@ function WallShelves() {
               const x = bx + b.w / 2
               bx += b.w + 0.05
               const depth = 0.24 + (bi % 2) * 0.05
+              // livro tombado pivota numa quina de baixo: o centro sobe pelo
+              // cosseno da altura MAIS o seno da lombada. Com a conta antiga
+              // (subtrair) a quina afundava na tábua
+              const tilt = Math.abs(b.lean)
+              const y = 0.03 + (b.h / 2) * Math.cos(tilt) + (b.w / 2) * Math.sin(tilt)
               return (
                 <group
                   key={bi}
-                  position={[x + (b.lean ? 0.05 : 0), 0.03 + b.h / 2 - Math.abs(b.lean) * 0.05, 0]}
+                  // o deslocamento do livro tombado é o vão que ele precisa pra
+                  // deitar por cima do vizinho sem entrar nele
+                  position={[x + (b.lean ? 0.05 : 0), y, 0]}
                   rotation-z={b.lean}
                 >
-                  <RoundedBox args={[b.w, b.h, depth]} radius={0.006} castShadow>
+                  {/* capa em box seco: a 0.006 de raio o arredondamento do
+                      RoundedBox não aparecia nesse tamanho e o box é bem mais
+                      leve. A capa é 6mm mais baixa que o livro — os 6mm de
+                      cima são o miolo */}
+                  <mesh position={[0, -0.003, 0]} castShadow>
+                    <boxGeometry args={[b.w, b.h - 0.006, depth]} />
                     <meshStandardMaterial color={b.color} roughness={0.88} />
-                  </RoundedBox>
+                  </mesh>
+                  {/* miolo: só a tampa de páginas no topo, com a capa fazendo
+                      borda em volta (sem isso o livro é um bloco chapado de uma
+                      cor só). É de propósito que ele NÃO é um bloco inteiro
+                      dentro da capa: assim a face lateral dele vazava como um
+                      risco claro na borda de qualquer livro visto de lado.
+                      Como tampa, só 4mm ficam enterrados e nada escapa */}
+                  <mesh position={[0, b.h / 2 - 0.005, -0.008]}>
+                    <boxGeometry args={[b.w - 0.024, 0.01, depth - 0.02]} />
+                    <meshStandardMaterial color="#e0d7bd" roughness={1} />
+                  </mesh>
                   {/* faixas do lombo (título) */}
                   <mesh position={[0, b.h * 0.22, depth / 2 + 0.002]}>
                     <planeGeometry args={[b.w * 0.62, b.h * 0.05]} />
