@@ -8,16 +8,25 @@ import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { VIEWS } from '../../scene/hotspots.js'
 import { getLightPreset } from '../../scene/lighting.js'
-import { IS_MOBILE } from '../../scene/deviceTier.js'
 
 // resolvido uma vez no load: trocar de preset (?light=) implica reload mesmo
 const L = getLightPreset()
 
-// Cada point light custa POR PIXEL em toda a cena, e o quarto é geometria de
-// tela cheia (chão 60×60, parede 60×20). Em mobile ficam só as duas que dão
-// vida ao quarto (prateleiras e fogo do CRT); a do canto e a das velas saem, e
-// o ambiente sobe um pouco pra compensar o piso de luminosidade que elas davam.
-const AMBIENT_INTENSITY = L.ambient.intensity * (IS_MOBILE ? 1.14 : 1)
+// Sobrou UMA point light na cena: a do fogo do CRT, que pisca e faz trabalho
+// visual. Canto, velas e luz de leitura da estante saíram (2026-08-03).
+//
+// HONESTIDADE SOBRE O MOTIVO: point light custa por pixel na cena inteira, e o
+// quarto é geometria de tela cheia — foi o que motivou os cortes anteriores. Só
+// que o A/B entre builds, com ordem controlada, NÃO mostrou ganho ao tirar
+// estas três (~13ms de GPU por frame nos dois). Quem disse que havia ganho foi
+// uma ablação em runtime que depois se mostrou não confiável. Então o corte
+// vale pela cena mais simples e pelas velas que o dono quis fora, não por perf
+// comprovada. Se for medir de novo: A/B entre builds, alternando a ordem — a
+// GPU desta máquina esquenta e penaliza sempre quem roda por último.
+//
+// O ambiente sobe pra repor o piso de luminosidade que elas davam: era o que o
+// mobile já fazia (que não tinha canto nem velas), agora vale pra todo mundo.
+const AMBIENT_INTENSITY = L.ambient.intensity * 1.14
 
 // escratches reutilizados — nada de alocar por frame
 const _pos = new THREE.Vector3()
@@ -181,8 +190,8 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         {/* névoa quente — funde as bordas do chão na golden hour */}
         <fog attach="fog" args={[L.fog, 26, 60]} />
 
-        {/* fill ambiente morno e generoso — o quarto não é mais noturno.
-            Em mobile sobe um pouco: compensa as duas point lights cortadas */}
+        {/* fill ambiente morno e generoso — o quarto não é mais noturno. Sobe
+            14% pra repor o piso de luz das point lights cortadas */}
         <ambientLight intensity={AMBIENT_INTENSITY} color={L.ambient.color} />
 
         {/* sol baixo entrando pela janela (golden hour): quente e direcional */}
@@ -249,18 +258,9 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           resolution={256}
           frames={1}
         />
-        {/* luz de canto âmbar — fora em mobile: é wash estático, e uma point
-            light custa por pixel na cena INTEIRA (a atenuação por distância é
-            calculada em todo fragmento, não só nos que ela alcança) */}
-        {!IS_MOBILE && (
-          <pointLight
-            position={[-1.4, -0.5, -2.2]}
-            color={L.corner.color}
-            intensity={L.corner.intensity}
-            distance={7}
-            decay={2}
-          />
-        )}
+        {/* (a luz de canto âmbar foi REMOVIDA, mesmo no desktop: era wash
+            estático, e o mobile já vivia sem ela. Sobre o custo dela, ver a
+            nota em AMBIENT_INTENSITY — não deu ganho medível.) */}
 
         {/* compila os shaders (async, sem travar/renderizar) e libera o loader
             quando pronto; a cena só começa a renderizar na revelação */}

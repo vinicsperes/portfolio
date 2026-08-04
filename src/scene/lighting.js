@@ -14,6 +14,10 @@
  * auto-brilho da parede do fundo — substitui os antigos point lights de
  * "wash" (custo zero por fragmento, não entram no loop de luzes) e mantém a
  * parede legível, inclusive acima da janela no retrato.
+ *
+ * Não há mais `corner`: a luz de canto âmbar saiu em 2026-08-03, junto com as
+ * das velas e da estante (ver a nota em Scene.jsx sobre o que a medição de
+ * verdade mostrou — e não mostrou — nesse corte).
  */
 export const LIGHT_PRESETS = {
   night: {
@@ -23,7 +27,6 @@ export const LIGHT_PRESETS = {
     ambient: { color: '#9aa2c0', intensity: 0.62 },
     sun: { color: '#9db4e8', intensity: 0.95 },
     hemi: { sky: '#5f7099', ground: '#2a2320', intensity: 0.5 },
-    corner: { color: '#f5a623', intensity: 3.0 },
     wallEmissive: { color: '#39303c', intensity: 0.6 },
   },
 
@@ -34,7 +37,6 @@ export const LIGHT_PRESETS = {
     ambient: { color: '#d3c1a0', intensity: 1.4 },
     sun: { color: '#ffb266', intensity: 1.9 },
     hemi: { sky: '#9db0d8', ground: '#4a3a2e', intensity: 0.45 },
-    corner: { color: '#f5a623', intensity: 2.4 },
     wallEmissive: { color: '#5a4632', intensity: 1.35 },
   },
 
@@ -45,7 +47,6 @@ export const LIGHT_PRESETS = {
     ambient: { color: '#af92a4', intensity: 0.92 },
     sun: { color: '#ff704a', intensity: 2.0 },
     hemi: { sky: '#8087d6', ground: '#3c2e3c', intensity: 0.6 },
-    corner: { color: '#f5a623', intensity: 2.8 },
     wallEmissive: { color: '#3f2a34', intensity: 0.82 },
   },
 
@@ -56,7 +57,6 @@ export const LIGHT_PRESETS = {
     ambient: { color: '#dbd3c3', intensity: 1.35 },
     sun: { color: '#fff1d4', intensity: 2.0 },
     hemi: { sky: '#bcd0ea', ground: '#5a4c3e', intensity: 0.6 },
-    corner: { color: '#f5a623', intensity: 1.9 },
     wallEmissive: { color: '#4a4038', intensity: 1.05 },
   },
 }

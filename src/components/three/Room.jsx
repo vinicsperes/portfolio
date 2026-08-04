@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { RoundedBox, useTexture } from '@react-three/drei'
 import { Hotspot } from './Hotspot.jsx'
-import { CandleCluster } from './Candles.jsx'
 import { getLightPreset } from '../../scene/lighting.js'
 import { useRoomTextures } from '../../scene/roomTextures.js'
 
@@ -291,8 +290,9 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
           uma point light custando por pixel na cena toda) */}
       <Notepad position={[5.2, 0.1, -3.1]} rotation={[0, 0.35, 0]} />
 
-      {/* ─── Cozy: velas no parapeito da janela ─── */}
-      <CandleCluster position={[-2.55, 1.21, -5.68]} />
+      {/* (as velas do parapeito foram REMOVIDAS a pedido do dono, com a point
+          light quente delas junto — ver a nota em AMBIENT_INTENSITY, na
+          Scene.jsx, sobre o que o corte de luzes rendeu de perf) */}
 
       {/* (a poeira flutuando no feixe da janela foi REMOVIDA: o volume ocupava
           z de -5.2 a -2.6 e a câmera do "sobre" para em z=-2.05 olhando pra
@@ -385,10 +385,12 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       >
         {(hovered) => (
           <>
-            {/* prateleiras + luz de leitura */}
+            {/* prateleiras. A "luz de leitura" que morava aqui era uma point
+                light só pra iluminar este cantinho, mas custando na cena
+                inteira. Quem segura a leitura da foto agora é o emissive do
+                próprio porta-retrato, logo abaixo */}
             <group position={[0.55, 2.62, -5.78]}>
               <WallShelves />
-              <pointLight position={[0, 0.4, 1.2]} color="#ffd090" intensity={1.6} distance={4} decay={2} />
             </group>
             {/* porta-retrato em pé na PONTA ESQUERDA da prateleira de cima:
                 na view about ele fica ao lado do texto (que mora sobre a janela) */}
@@ -396,13 +398,32 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
               <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
                 <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
               </RoundedBox>
+              {/* passe-partout e foto com auto-brilho: é o que substitui a
+                  point light de leitura. Emissive não entra no loop de luzes
+                  (custo por fragmento zero) e ainda deixa a foto legível na
+                  view "sobre", que é onde ela é a protagonista.
+                  Segurar a mão na intensidade: emissive soma luz POR IGUAL, e
+                  levantar os tons escuros da foto lava ela (a 0.55 saiu
+                  esbranquiçada). A cor quente evita o desbotado pro branco e
+                  ainda combina com a luz do quarto. */}
               <mesh position={[0, 0, 0.08]}>
                 <planeGeometry args={[0.94, 0.66]} />
-                <meshStandardMaterial color="#e8e2d2" roughness={1} />
+                <meshStandardMaterial
+                  color="#e8e2d2"
+                  emissive="#e8e2d2"
+                  emissiveIntensity={0.15}
+                  roughness={1}
+                />
               </mesh>
               <mesh position={[0, 0, 0.09]}>
                 <planeGeometry args={[0.86, 0.57]} />
-                <meshStandardMaterial map={kidTex} roughness={0.9} />
+                <meshStandardMaterial
+                  map={kidTex}
+                  emissiveMap={kidTex}
+                  emissive="#ffe8cc"
+                  emissiveIntensity={0.22}
+                  roughness={0.9}
+                />
               </mesh>
             </group>
           </>
