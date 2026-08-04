@@ -21,6 +21,7 @@ function FireLight({ position, levelRef, dimRef }) {
   useFrame(({ clock }, delta) => {
     const target = (levelRef?.current ?? 1) * (1 - (dimRef?.current ?? 0) * 0.92)
     cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
+    if (!light.current) return // exceção aqui derruba o loop inteiro da cena
     const t = clock.elapsedTime
     // mais contida: o glow estourava branco sobre a parede/pôster
     light.current.intensity =

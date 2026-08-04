@@ -4,9 +4,13 @@
  * ShadowKick; mover luz depois não re-renderiza o shadow map) — só cor,
  * intensidade, névoa e exposição.
  *
- * night   = ESCOLHIDO pelo dono (2026-07-19), é o default: luar frio pela
- *           janela, interior vive do fogo, céu noturno com lua na vista
- * golden  = o antigo pôr do sol quente
+ * golden  = O DEFAULT (é o que `getLightPreset` devolve sem `?light=`): pôr do
+ *           sol quente. É o quarto que aparece no site hoje.
+ * night   = luar frio pela janela, interior vive do fogo, céu noturno com lua.
+ *           Foi escolhido pelo dono em 2026-07-19 e o comentário daqui dizia
+ *           que era o default, mas o código nunca o usou como fallback — quem
+ *           ficou no ar foi o golden. Pra virar padrão de fato, é trocar o
+ *           fallback lá embaixo.
  * dusk    = crepúsculo: sol mais baixo e vermelho, céu roxo-rosado
  * day     = fim de manhã: luz neutra clara, quarto arejado
  *

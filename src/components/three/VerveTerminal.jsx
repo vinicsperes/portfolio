@@ -55,7 +55,7 @@ const IDLE_WORDS = ['typing', 'speed', 'terminal', 'rust', 'flow', 'rhythm']
  */
 export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
   const crt = useRef()
-  const { canvas, ctx, texture } = useMemo(() => {
+  const { ctx, texture } = useMemo(() => {
     const canvas = document.createElement('canvas')
     // desenho em espaco LOGICO 1024x800, rasterizado a 640x500: o upload da
     // textura por frame cai pra ~40% (era o maior custo de banda da cena)
@@ -65,7 +65,9 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
     ctx.setTransform(canvas.width / LW, 0, 0, canvas.height / LH, 0, 0)
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
-    return { canvas, ctx, texture }
+    // o canvas em si não sai daqui: quem desenha usa `ctx`, e quem sobe pra
+    // GPU é a `texture` (via needsUpdate)
+    return { ctx, texture }
   }, [])
 
   const stateRef = useRef(null)
