@@ -101,6 +101,37 @@ function Kick({ frames, onDone }) {
   return null
 }
 
+/**
+ * Guarda de contexto WebGL. O navegador descarta a GPU de aba em background
+ * (o dono viu voltando do alt+tab): o three reenvia texturas normais sozinho,
+ * mas o que mora em RENDER TARGET não tem como voltar, porque não existe cópia
+ * em CPU. São dois aqui: o atlas assado da chama (some) e o SHADOW MAP — e o
+ * shadow map é pior, porque com `autoUpdate = false` ele nunca é redesenhado,
+ * então as superfícies grandes (chão, parede, tapete, mesa) ficam pretas, como
+ * se estivessem em sombra total.
+ *
+ * O `visibilitychange` é rede de segurança: se o mapa se perder sem que venha
+ * o evento de restauração, voltar pra aba redesenha ele. Custa um passe de
+ * sombra 512², só na volta.
+ */
+function ContextGuard({ onRestored }) {
+  const gl = useThree((s) => s.gl)
+  useEffect(() => {
+    const el = gl.domElement
+    const restored = () => onRestored()
+    const visible = () => {
+      if (!document.hidden) gl.shadowMap.needsUpdate = true
+    }
+    el.addEventListener('webglcontextrestored', restored)
+    document.addEventListener('visibilitychange', visible)
+    return () => {
+      el.removeEventListener('webglcontextrestored', restored)
+      document.removeEventListener('visibilitychange', visible)
+    }
+  }, [gl, onRestored])
+  return null
+}
+
 function ShadowKick({ frames = 10 }) {
   // gastos os N frames o callback é DESMONTADO: um useFrame vivo pra sempre só
   // pra testar um contador ainda entra no loop de callbacks em todo frame
@@ -159,6 +190,11 @@ const MAX_DPR = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRa
 export function Scene({ view, onNavigate, labels, reducedMotion, markers, active = true, dimRef, onReady }) {
   const [dpr, setDpr] = useState(MAX_DPR)
   const showMarkers = view === 'home' && !reducedMotion
+  // incrementa a cada restauração de contexto, pra remontar o ShadowKick e
+  // redesenhar o shadow map perdido (o atlas da chama se recupera sozinho,
+  // dentro do Fire.jsx)
+  const [ctxGen, setCtxGen] = useState(0)
+  const handleRestored = useCallback(() => setCtxGen((g) => g + 1), [])
 
   // NOTA: sem localClippingEnabled no gl. Os clipping planes são do chassi do
   // pedal, que roda no OUTRO canvas (SectionPedal habilita o dele). Ligado aqui
@@ -245,7 +281,10 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
         {/* Canto musical: amp + vinis decorativos (o pedal do chão foi removido
             — perf: um pedal completo em scale 0.3 custava ~116 draw calls/frame
             + uma point light interna, só de enfeite). */}
-        <ShadowKick />
+        <ContextGuard onRestored={handleRestored} />
+        {/* a key remonta o kick quando o contexto volta: o shadow map perdido
+            precisa ser redesenhado, senão a cena fica preta */}
+        <ShadowKick key={ctxGen} />
         <GuitarAmp position={[-4.5, -2.1, -5.0]} rotation={[0, 0.3, 0]} />
         <VinylCrate position={[-6.2, -2.1, -4.4]} rotation={[0, 0.7, 0]} />
         <ContactShadows

@@ -68,6 +68,27 @@ const bakeFragment = /* glsl */ `
 `
 
 let cachedAtlas = null
+let cachedTarget = null
+// muda quando o atlas é invalidado; cada chama compara com a versão que usou
+let atlasVersion = 0
+
+/**
+ * O atlas mora num WebGLRenderTarget, e conteúdo de render target NÃO volta
+ * quando o contexto WebGL é restaurado (o navegador descarta a GPU da aba em
+ * background; o three reenvia texturas normais sozinho, mas render target não
+ * tem cópia em CPU pra reenviar). Sem isto, voltar do alt+tab deixava a chama
+ * sumida. O atlas se invalida sozinho no evento de restauração e a próxima
+ * chamada de `getFlameAtlas` assa de novo — quem assa é quem sabe recuperar.
+ */
+function invalidateAtlas() {
+  // sem dispose(): isto só roda na restauração de contexto, e a essa altura os
+  // objetos de GPU do target antigo já morreram junto com o contexto — pedir
+  // pra deletar rende "INVALID_OPERATION: object does not belong to this
+  // context" no console. Basta soltar as referências.
+  cachedTarget = null
+  cachedAtlas = null
+  atlasVersion++
+}
 
 function getFlameAtlas(gl) {
   if (cachedAtlas) return cachedAtlas
@@ -103,7 +124,10 @@ function getFlameAtlas(gl) {
   quad.geometry.dispose()
   material.dispose()
 
+  cachedTarget = target
   cachedAtlas = target.texture
+  // `once`: a próxima assadura registra de novo, então não acumula listener
+  gl.domElement.addEventListener('webglcontextrestored', invalidateAtlas, { once: true })
   return cachedAtlas
 }
 
@@ -175,13 +199,19 @@ export function Flame({ position = [0, 0, 0], scale = 1, intensity = 1, seed = 0
   const mat = useRef()
   const cur = useRef(1)
   const tick = useOwnTime()
+  const usedVersion = useRef(-1)
 
   useFrame(({ gl }, delta) => {
     const t = tick(delta)
     const target = (levelRef?.current ?? level) * (1 - (dimRef?.current ?? 0) * 0.92)
     cur.current = THREE.MathUtils.damp(cur.current, target, 2.5, delta)
     if (mat.current) {
-      if (!mat.current.uMap) mat.current.uMap = getFlameAtlas(gl)
+      // versão diferente = o atlas foi invalidado (contexto restaurado) e o
+      // uMap atual aponta pra uma textura morta
+      if (!mat.current.uMap || usedVersion.current !== atlasVersion) {
+        mat.current.uMap = getFlameAtlas(gl)
+        usedVersion.current = atlasVersion
+      }
       mat.current.uTime = t
       mat.current.uFade = intensity * cur.current
     }
