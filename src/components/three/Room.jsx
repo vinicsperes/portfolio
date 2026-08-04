@@ -93,20 +93,133 @@ function Notepad({ position, rotation = [0, 0, 0] }) {
   )
 }
 
+const BOARD_W = 2.0
+const BOARD_TOP = 0.03 // meia espessura da tábua: onde as coisas se apoiam
+const PAGES = '#e0d7bd'
+
+/**
+ * Lombada de um livro em pé. `deco` dá acabamentos diferentes pra fileira não
+ * virar quatro retângulos iguais de cores diferentes: 'bands' (duas faixas),
+ * 'label' (etiqueta única, tipo livro técnico) e 'plain' (só um filete no pé).
+ */
+function Book({ w, h, depth, color, band, deco = 'bands' }) {
+  return (
+    <>
+      {/* capa em box seco: a 0.006 de raio o arredondamento do RoundedBox não
+          aparecia nesse tamanho e o box é bem mais leve. A capa é 6mm mais
+          baixa que o livro — os 6mm de cima são o miolo */}
+      <mesh position={[0, -0.003, 0]} castShadow>
+        <boxGeometry args={[w, h - 0.006, depth]} />
+        <meshStandardMaterial color={color} roughness={0.88} />
+      </mesh>
+      {/* miolo: só a tampa de páginas no topo, com a capa fazendo borda em
+          volta (sem isso o livro é um bloco chapado de uma cor só). É de
+          propósito que ele NÃO é um bloco inteiro dentro da capa: assim a face
+          lateral dele vazava como um risco claro na borda de qualquer livro
+          visto de lado. Como tampa, só 4mm ficam enterrados e nada escapa */}
+      <mesh position={[0, h / 2 - 0.005, -0.008]}>
+        <boxGeometry args={[w - 0.024, 0.01, depth - 0.02]} />
+        <meshStandardMaterial color={PAGES} roughness={1} />
+      </mesh>
+      {deco === 'bands' && (
+        <>
+          <mesh position={[0, h * 0.22, depth / 2 + 0.002]}>
+            <planeGeometry args={[w * 0.62, h * 0.05]} />
+            <meshStandardMaterial color={band} roughness={0.5} />
+          </mesh>
+          <mesh position={[0, h * 0.09, depth / 2 + 0.002]}>
+            <planeGeometry args={[w * 0.44, h * 0.022]} />
+            <meshStandardMaterial color={band} roughness={0.5} />
+          </mesh>
+        </>
+      )}
+      {deco === 'label' && (
+        <mesh position={[0, h * 0.16, depth / 2 + 0.002]}>
+          <planeGeometry args={[w * 0.68, h * 0.3]} />
+          <meshStandardMaterial color={band} roughness={0.7} />
+        </mesh>
+      )}
+      {deco === 'plain' && (
+        <mesh position={[0, -h * 0.34, depth / 2 + 0.002]}>
+          <planeGeometry args={[w * 0.5, h * 0.018]} />
+          <meshStandardMaterial color={band} roughness={0.5} />
+        </mesh>
+      )}
+    </>
+  )
+}
+
+/**
+ * Pilha de livros DEITADOS. Serve de aparador na ponta da fileira (senão a
+ * fileira morre no vazio no meio da tábua) e quebra a monotonia de tudo em pé.
+ * Cada um levemente torto, como pilha de verdade.
+ */
+function BookStack({ position, books }) {
+  let y = BOARD_TOP
+  return (
+    <group position={position}>
+      {books.map((b, i) => {
+        const cy = y + b.t / 2
+        y += b.t
+        return (
+          <group key={i} position={[b.dx ?? 0, cy, 0]} rotation-y={b.rot ?? 0}>
+            <mesh castShadow>
+              <boxGeometry args={[b.len, b.t, b.d]} />
+              <meshStandardMaterial color={b.color} roughness={0.88} />
+            </mesh>
+            {/* corte das páginas na frente do volume deitado. Fino e mais
+                sujo que o corte de cima: cheio demais, três deles empilhados
+                liam como pilha de folha solta, não de livro */}
+            <mesh position={[0, 0, b.d / 2 - 0.004]}>
+              <boxGeometry args={[b.len - 0.06, b.t - 0.026, 0.008]} />
+              <meshStandardMaterial color="#cdc0a2" roughness={1} />
+            </mesh>
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+
+/**
+ * Mão francesa em L com travessa diagonal. A versão anterior era um bloco
+ * preto de 5cm que sumia na parede escura, e a tábua lia como prancha
+ * flutuando; a diagonal é o que faz o olho entender que aquilo sustenta peso.
+ */
+function Bracket({ x }) {
+  return (
+    <group position={[x, 0, 0]}>
+      {/* montante contra a parede */}
+      <mesh position={[0, -0.13, -0.13]} castShadow>
+        <boxGeometry args={[0.04, 0.22, 0.05]} />
+        <meshStandardMaterial color="#4a453e" roughness={0.35} metalness={0.65} />
+      </mesh>
+      {/* travessa diagonal: do pé do montante até a frente da tábua */}
+      <mesh position={[0, -0.12, -0.015]} rotation-x={0.93} castShadow>
+        <boxGeometry args={[0.032, 0.3, 0.032]} />
+        <meshStandardMaterial color="#4a453e" roughness={0.35} metalness={0.65} />
+      </mesh>
+    </group>
+  )
+}
+
 /** Prateleiras suspensas na parede (parte do hotspot do "sobre"). */
 function WallShelves() {
+  // Alturas MENORES que o vão entre as tábuas (0.7): antes os livros de 0.56
+  // quase encostavam na tábua de cima e o olho os pendurava nela. Espessura,
+  // altura e acabamento variam pra fileira não parecer um bloco repetido.
   const shelfBooks = [
     // prateleira de cima: par de livros à DIREITA (o porta-retrato mora à esquerda)
     [
-      { w: 0.16, h: 0.5, color: '#2a3a4a', band: '#c9b083', lean: 0 },
-      { w: 0.2, h: 0.55, color: '#4a2a20', band: '#d9c39a', lean: -0.16 },
+      { w: 0.15, h: 0.42, color: '#2a3a4a', band: '#c9b083', deco: 'label' },
+      { w: 0.19, h: 0.46, color: '#4a2a20', band: '#d9c39a', deco: 'bands', lean: -0.14 },
     ],
     // prateleira de baixo concentra os livros
     [
-      { w: 0.2, h: 0.52, color: '#4a3a1a', band: '#e2d2a2', lean: 0 },
-      { w: 0.16, h: 0.46, color: '#1a3a3a', band: '#a9c0b4', lean: 0 },
-      { w: 0.14, h: 0.5, color: '#2a4a30', band: '#cbb27a', lean: 0 },
-      { w: 0.18, h: 0.56, color: '#4a1a2a', band: '#d3a6a6', lean: 0.16 },
+      { w: 0.2, h: 0.44, color: '#4a3a1a', band: '#e2d2a2', deco: 'bands' },
+      { w: 0.15, h: 0.36, color: '#1a3a3a', band: '#a9c0b4', deco: 'plain' },
+      { w: 0.13, h: 0.42, color: '#2a4a30', band: '#cbb27a', deco: 'label' },
+      { w: 0.17, h: 0.46, color: '#4a1a2a', band: '#d3a6a6', deco: 'bands', lean: 0.15 },
     ],
   ]
 
@@ -117,22 +230,17 @@ function WallShelves() {
       {boardY.map((y, si) => (
         <group key={si} position={[0, y, 0]}>
           {/* tábua */}
-          <RoundedBox args={[2.3, 0.06, 0.34]} radius={0.01} castShadow>
+          <RoundedBox args={[BOARD_W, 0.06, 0.34]} radius={0.01} castShadow>
             <meshStandardMaterial color={WOOD_DARK} roughness={0.6} />
           </RoundedBox>
-          {/* mãos francesas: nas PONTAS da tábua (a 0.9 elas caíam bem em cima
-              do primeiro livro da prateleira de baixo e o atravessavam) */}
-          {[-1.06, 1.06].map((x) => (
-            <mesh key={x} position={[x, -0.09, -0.06]}>
-              <boxGeometry args={[0.05, 0.14, 0.2]} />
-              <meshStandardMaterial color="#141414" roughness={0.4} metalness={0.6} />
-            </mesh>
-          ))}
-          {/* livros: capa + miolo de páginas + faixas no lombo (não são mais só
-              retângulos) e assentados na tábua (sem flutuar) */}
+          {/* mãos francesas nas PONTAS: a 0.9 elas caíam em cima do primeiro
+              livro da prateleira de baixo e o atravessavam */}
+          <Bracket x={-0.88} />
+          <Bracket x={0.88} />
+          {/* fileira em pé */}
           {(() => {
             // cima: livros começam à direita do retrato; baixo: a partir da esquerda
-            let bx = si === 0 ? 0.3 : -1.0
+            let bx = si === 0 ? 0.15 : -0.86
             return shelfBooks[si].map((b, bi) => {
               const x = bx + b.w / 2
               bx += b.w + 0.05
@@ -140,51 +248,34 @@ function WallShelves() {
               // livro tombado pivota numa quina de baixo: o centro sobe pelo
               // cosseno da altura MAIS o seno da lombada. Com a conta antiga
               // (subtrair) a quina afundava na tábua
-              const tilt = Math.abs(b.lean)
-              const y = 0.03 + (b.h / 2) * Math.cos(tilt) + (b.w / 2) * Math.sin(tilt)
+              const tilt = Math.abs(b.lean ?? 0)
+              const y = BOARD_TOP + (b.h / 2) * Math.cos(tilt) + (b.w / 2) * Math.sin(tilt)
               return (
                 <group
                   key={bi}
                   // o deslocamento do livro tombado é o vão que ele precisa pra
                   // deitar por cima do vizinho sem entrar nele
                   position={[x + (b.lean ? 0.05 : 0), y, 0]}
-                  rotation-z={b.lean}
+                  rotation-z={b.lean ?? 0}
                 >
-                  {/* capa em box seco: a 0.006 de raio o arredondamento do
-                      RoundedBox não aparecia nesse tamanho e o box é bem mais
-                      leve. A capa é 6mm mais baixa que o livro — os 6mm de
-                      cima são o miolo */}
-                  <mesh position={[0, -0.003, 0]} castShadow>
-                    <boxGeometry args={[b.w, b.h - 0.006, depth]} />
-                    <meshStandardMaterial color={b.color} roughness={0.88} />
-                  </mesh>
-                  {/* miolo: só a tampa de páginas no topo, com a capa fazendo
-                      borda em volta (sem isso o livro é um bloco chapado de uma
-                      cor só). É de propósito que ele NÃO é um bloco inteiro
-                      dentro da capa: assim a face lateral dele vazava como um
-                      risco claro na borda de qualquer livro visto de lado.
-                      Como tampa, só 4mm ficam enterrados e nada escapa */}
-                  <mesh position={[0, b.h / 2 - 0.005, -0.008]}>
-                    <boxGeometry args={[b.w - 0.024, 0.01, depth - 0.02]} />
-                    <meshStandardMaterial color="#e0d7bd" roughness={1} />
-                  </mesh>
-                  {/* faixas do lombo (título) */}
-                  <mesh position={[0, b.h * 0.22, depth / 2 + 0.002]}>
-                    <planeGeometry args={[b.w * 0.62, b.h * 0.05]} />
-                    <meshStandardMaterial color={b.band} roughness={0.5} />
-                  </mesh>
-                  <mesh position={[0, b.h * 0.09, depth / 2 + 0.002]}>
-                    <planeGeometry args={[b.w * 0.44, b.h * 0.022]} />
-                    <meshStandardMaterial color={b.band} roughness={0.5} />
-                  </mesh>
+                  <Book {...b} depth={depth} />
                 </group>
               )
             })
           })()}
         </group>
       ))}
+      {/* pilha deitada ancorando a ponta direita da prateleira de baixo */}
+      <BookStack
+        position={[0.6, 0, 0]}
+        books={[
+          { len: 0.44, t: 0.05, d: 0.3, color: '#3a2f22', rot: 0.04 },
+          { len: 0.4, t: 0.045, d: 0.27, color: '#26303a', rot: -0.05, dx: 0.015 },
+          { len: 0.36, t: 0.04, d: 0.25, color: '#4a3320', rot: 0.02, dx: -0.02 },
+        ]}
+      />
       {/* plantinha na ponta da prateleira de cima */}
-      <group position={[0.95, 0.73, 0]} scale={0.45}>
+      <group position={[0.78, 0.73, 0]} scale={0.45}>
         <mesh position={[0, 0.12, 0]} castShadow>
           <cylinderGeometry args={[0.16, 0.12, 0.24, 12]} />
           <meshStandardMaterial color="#b8654a" roughness={0.9} />
@@ -378,7 +469,7 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
           ser bem fácil de perceber ─── */}
       <Hotspot
         label={labels.painting}
-        labelPosition={[0.0, 4.25, -5.55]}
+        labelPosition={[0.4, 3.7, -5.55]}
         onActivate={() => onNavigate?.('about')}
         disabled={activeView === 'about'}
         marker={markers.about}
@@ -389,12 +480,17 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
                 light só pra iluminar este cantinho, mas custando na cena
                 inteira. Quem segura a leitura da foto agora é o emissive do
                 próprio porta-retrato, logo abaixo */}
-            <group position={[0.55, 2.62, -5.78]}>
+            {/* posição do conjunto: MAIS BAIXO e mais longe da janela (a ponta
+                esquerda quase encostava no caixilho, e sobrava parede vazia
+                daqui até a mesa). Mexer aqui exige mexer no porta-retrato
+                abaixo E na câmera da view "sobre" (scene/hotspots.js), que
+                enquadra a foto — os três andam juntos */}
+            <group position={[0.85, 2.07, -5.78]}>
               <WallShelves />
             </group>
             {/* porta-retrato em pé na PONTA ESQUERDA da prateleira de cima:
                 na view about ele fica ao lado do texto (que mora sobre a janela) */}
-            <group position={[0.0, 3.74, -5.72]} rotation-x={-0.07}>
+            <group position={[0.4, 3.19, -5.72]} rotation-x={-0.07}>
               <RoundedBox args={[1.06, 0.78, 0.14]} radius={0.025} castShadow>
                 <meshStandardMaterial color={hovered ? '#2e2218' : '#1a1510'} roughness={0.7} metalness={0.1} />
               </RoundedBox>

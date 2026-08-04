@@ -19,8 +19,12 @@ export const VIEWS = {
   // direita GRANDE e a coluna de texto cai inteira sobre a janela (fundo
   // suave = legível). No retrato (mobile), lookAt abaixo do quadro sobe a
   // foto pro terço superior e o texto ancora embaixo.
+  // A estante desceu 0.55 e andou 0.40 pra direita em 2026-08-03; estas duas
+  // câmeras foram transladadas do MESMO tanto, então o enquadramento da foto
+  // ficou idêntico ao que o dono já tinha aprovado. Se a estante mudar de
+  // lugar de novo, mover as duas junto (Room.jsx, grupo do porta-retrato).
   about: {
-    camera: { position: [-1.15, 3.55, -3.95], lookAt: [-0.45, 3.65, -5.72], fov: 42 },
-    cameraPortrait: { position: [0.0, 3.0, -2.05], lookAt: [0.0, 2.85, -5.75], fov: 54 },
+    camera: { position: [-0.75, 3.0, -3.95], lookAt: [-0.05, 3.1, -5.72], fov: 42 },
+    cameraPortrait: { position: [0.4, 2.45, -2.05], lookAt: [0.4, 2.3, -5.75], fov: 54 },
   },
 }
