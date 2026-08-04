@@ -3,21 +3,54 @@ import { useFrame } from '@react-three/fiber'
 import { Billboard } from '@react-three/drei'
 import { HoverLabel } from './HoverLabel.jsx'
 
-/** Marcador-pulso âmbar: affordance de descoberta dos hotspots. */
+const PING_CYCLE = 1.9 // segundos por onda
+
+/**
+ * Marcador âmbar dos hotspots: núcleo sólido + DUAS ondas que nascem nele e
+ * abrem pra fora, defasadas em meio ciclo (radar). A versão anterior era um
+ * anel parado só mudando de opacidade, e piscar no lugar não puxa o olho —
+ * movimento pra fora puxa.
+ *
+ * Tempo próprio em vez de clock.elapsedTime: o R3F zera o relógio quando o
+ * frameloop muda (o hero alterna ao sair da viewport) e a onda saltaria no
+ * meio do caminho. Mesmo motivo do fogo, em Fire.jsx.
+ */
 function PulseMarker({ position }) {
-  const ring = useRef()
-  useFrame(({ clock }) => {
-    if (ring.current) ring.current.opacity = 0.4 + Math.sin(clock.elapsedTime * 2.4) * 0.25
+  const waves = [useRef(), useRef()]
+  const core = useRef()
+  const t = useRef(0)
+
+  useFrame((_, delta) => {
+    t.current += Math.min(delta, 0.1)
+    waves.forEach((w, i) => {
+      const m = w.current
+      if (!m) return
+      // fase 0..1; a segunda onda entra meio ciclo depois da primeira
+      const p = (t.current / PING_CYCLE + i * 0.5) % 1
+      // abre até ~2.7x: a onda precisa passar do tamanho do próprio marcador
+      // pra ser percebida de longe, senão continua sendo "bolinha piscando"
+      m.scale.setScalar(0.6 + p * 2.1)
+      // some antes de chegar na borda, com desaceleração (não é linear)
+      m.material.opacity = 0.55 * (1 - p) * (1 - p)
+    })
+    if (core.current) {
+      const b = Math.sin(t.current * 4.2)
+      core.current.material.opacity = 0.82 + b * 0.18
+      core.current.scale.setScalar(1 + b * 0.09) // respira junto, não só acende
+    }
   })
+
   return (
     <Billboard position={position}>
-      <mesh>
-        <ringGeometry args={[0.09, 0.13, 24]} />
-        <meshBasicMaterial ref={ring} color="#f5a623" transparent opacity={0.5} depthWrite={false} />
-      </mesh>
-      <mesh>
-        <circleGeometry args={[0.045, 16]} />
-        <meshBasicMaterial color="#f5a623" transparent opacity={0.85} depthWrite={false} />
+      {waves.map((w, i) => (
+        <mesh key={i} ref={w}>
+          <ringGeometry args={[0.075, 0.1, 32]} />
+          <meshBasicMaterial color="#f5a623" transparent opacity={0} depthWrite={false} toneMapped={false} />
+        </mesh>
+      ))}
+      <mesh ref={core}>
+        <circleGeometry args={[0.062, 20]} />
+        <meshBasicMaterial color="#ffcf6a" transparent opacity={0.9} depthWrite={false} toneMapped={false} />
       </mesh>
     </Billboard>
   )

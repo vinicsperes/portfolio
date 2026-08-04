@@ -365,25 +365,35 @@ export function Hero() {
             {/* entrada pro "sobre mim" (view do quadro na cena) + convite de
                 idioma, escrito no OUTRO idioma de propósito */}
             <div className={`mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 ${reveal(view === 'home', 'delay-500')}`}>
-              <button
-                onClick={() => navigate('about')}
-                className="group pointer-events-auto relative overflow-hidden border-2 border-amber px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.22em] text-amber transition-colors duration-300 hover:text-ink focus-visible:text-ink"
-              >
-                {/* preenchimento âmbar desliza de baixo; conteúdo por cima */}
+              {/* CTA primário. Era um botão de CONTORNO, mais fraco que o
+                  próprio texto ao lado dele; sólido, vira a única mancha cheia
+                  de âmbar da tela e o olho vai nele. A "sombra" é um contorno
+                  deslocado: no dark não existe sombra escura que apareça.
+                  O hover encosta o botão na sombra e o clique afunda até
+                  encaixar — é daí que vem a sensação de apertar. */}
+              <span className="group pointer-events-auto relative inline-block">
+                {/* a sombra fica PARADA no deslocamento; quem anda é o botão.
+                    No clique ele pousa exatamente em cima dela, e é o encaixe
+                    que dá a sensação de apertar */}
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 translate-y-full bg-amber transition-transform duration-300 ease-out group-hover:translate-y-0 group-focus-visible:translate-y-0"
+                  className="absolute inset-0 translate-x-[7px] translate-y-[7px] border-2 border-amber/45"
                 />
-                <span className="relative z-10 inline-flex items-center gap-3">
-                  {t.sections.about}
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    →
+                <button
+                  onClick={() => navigate('about')}
+                  className="relative bg-amber px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.22em] text-ink transition-transform duration-150 ease-out group-hover:translate-x-[3px] group-hover:translate-y-[3px] group-active:translate-x-[7px] group-active:translate-y-[7px] focus-visible:translate-x-[3px] focus-visible:translate-y-[3px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper motion-reduce:transition-none"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    {t.sections.about}
+                    <span
+                      aria-hidden="true"
+                      className="transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none"
+                    >
+                      →
+                    </span>
                   </span>
-                </span>
-              </button>
+                </button>
+              </span>
               <button
                 onClick={() => setLang(t.hero.langCta.to)}
                 className="pointer-events-auto inline-flex items-center gap-3 font-accent italic text-xl sm:text-2xl text-paper underline decoration-1 underline-offset-8 hover:text-amber transition-colors"
