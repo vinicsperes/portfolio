@@ -201,8 +201,25 @@ function paintRug(ctx) {
 }
 
 /**
+ * Deslocamentos para uma forma de raio `r` centrada em `c` dar a volta no tile
+ * de lado `S`: quem encosta numa borda é redesenhado do lado oposto. É o que
+ * torna o padrão contínuo quando a textura repete.
+ */
+function wrapOffsets(c, r, S) {
+  const out = [0]
+  if (c - r < 0) out.push(S)
+  if (c + r > S) out.push(-S)
+  return out
+}
+
+/**
  * Parede: reboco pintado com grão, manchas amplas e sujeirinha nos cantos.
  * Sem isso ela lia como fundo preto chapado ao lado do chão texturizado.
+ *
+ * TUDO aqui é desenhado com wrap. A parede tem 60 unidades de largura com
+ * repeat(5,2), então o tile aparece dez vezes, e o dono via as emendas: as
+ * manchas eram cortadas na borda e a descontinuidade virava uma linha vertical
+ * na parede, denunciando onde a textura reseta.
  */
 function paintWall(ctx) {
   const { w: S } = TEXTURE_SPECS.wall
@@ -217,14 +234,20 @@ function paintWall(ctx) {
     const x = (i * 271 + 61) % S
     const y = (i * 397 + 137) % S
     const r = 110 + ((i * 53) % 170)
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r)
     const light = i % 3 !== 0
-    g.addColorStop(0, light ? 'rgba(120,108,126,0.15)' : 'rgba(24,22,32,0.2)')
-    g.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = g
-    ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
-    ctx.fill()
+    for (const dx of wrapOffsets(x, r, S)) {
+      for (const dy of wrapOffsets(y, r, S)) {
+        const cx = x + dx
+        const cy = y + dy
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+        g.addColorStop(0, light ? 'rgba(120,108,126,0.15)' : 'rgba(24,22,32,0.2)')
+        g.addColorStop(1, 'rgba(0,0,0,0)')
+        ctx.fillStyle = g
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
   }
 
   // grão fino do reboco. getImageData/putImageData ignoram a transformação do
@@ -240,12 +263,16 @@ function paintWall(ctx) {
   }
   ctx.putImageData(img, 0, 0)
 
-  // riscos verticais discretos (marca de rolo de pintura)
+  // riscos verticais discretos (marca de rolo de pintura). Vão de topo a base,
+  // então já emendam na vertical; o que sobra da borda direita volta na
+  // esquerda pra não virar um risco pela metade
   ctx.globalAlpha = 0.05
   for (let i = 0; i < 40; i++) {
     const x = (i * 149 + 23) % S
+    const w = 1 + (i % 3)
     ctx.fillStyle = i % 2 ? '#5a5266' : '#1a1822'
-    ctx.fillRect(x, 0, 1 + (i % 3), S)
+    ctx.fillRect(x, 0, w, S)
+    if (x + w > S) ctx.fillRect(x - S, 0, w, S)
   }
   ctx.globalAlpha = 1
 }
