@@ -30,17 +30,12 @@ body,
   }
 }
 
-/* Snap por seção: um scroll curto assenta na próxima seção em vez de parar
-   no meio. `proximity` (não `mandatory`): seções mais altas que a tela
-   (ghost/verve no mobile) continuam roláveis livremente por dentro. */
-@media (prefers-reduced-motion: no-preference) and (pointer: fine) {
-  html {
-    scroll-snap-type: y proximity;
-  }
-  .snap-section {
-    scroll-snap-align: start;
-  }
-}
+/* Sem scroll-snap. Ele brigava com o scroll suave do html: perto de uma
+   borda de seção o navegador reancorava no meio do movimento, e no trackpad,
+   com inércia, isso é sentido como a página travando na mão. Seções mais
+   altas que a tela (ghost/verve) pioravam o efeito, porque `align: start`
+   nunca deixava descansar no meio delas. A classe .snap-section continua nos
+   elementos: ela marca as seções e serve de âncora. */
 
 body {
   /* mesmo fundo escuro do app: o body aparece no overscroll (iOS) e em
