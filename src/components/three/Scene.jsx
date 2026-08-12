@@ -8,6 +8,7 @@ import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
 import { VIEWS } from '../../scene/hotspots.js'
 import { getLightPreset } from '../../scene/lighting.js'
+import { warmScene } from '../../scene/warmup.js'
 
 // resolvido uma vez no load: trocar de preset (?light=) implica reload mesmo
 const L = getLightPreset()
@@ -143,41 +144,22 @@ function ShadowKick({ frames = 10 }) {
 /**
  * Prepara a cena SEM ligar o frameloop (que fica 'never' até a revelação, pra
  * não gastar GPU num quarto invisível atrás do loader — mobile agradece):
- * 1. `compileAsync` compila os shaders em paralelo (KHR_parallel_shader_compile)
- *    sem travar a thread, então a moeda do loader segue lisa;
- * 2. WARM_FRAMES frames reais via advance(), ainda atrás do loader opaco: sobem
- *    texturas/buffers pra GPU, desenham o shadow map e deixam o canvas já
- *    pintado. Sem eles, tudo isso caía no 1º frame DA REVELAÇÃO — centenas de
- *    ms de freeze (loader preso) com o canvas ainda vazio (o flash preto).
- * Só então dispara `onReady`.
+ * compila os shaders em paralelo e desenha o quarto em fatias, um programa por
+ * frame (ver scene/warmup.js). Sem isso, a estreia de todos os materiais caía
+ * num frame só: ~1s de thread parada com o loader na tela, o que fazia a moeda
+ * congelar no meio do giro. E sem os frames de aquecimento, esse mesmo custo
+ * cairia no 1º frame DA REVELAÇÃO, com o canvas ainda vazio (o flash preto).
+ * Só quando tudo está quente dispara `onReady`.
  */
-const WARM_FRAMES = 3
-
 function CompileGate({ onReady }) {
   const gl = useThree((s) => s.gl)
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
   const advance = useThree((s) => s.advance)
-  useEffect(() => {
-    let alive = true
-    let raf = 0
-    const warm = (left) => {
-      if (!alive) return
-      if (left === 0) return onReady?.()
-      advance(performance.now())
-      raf = requestAnimationFrame(() => warm(left - 1))
-    }
-    const done = () => warm(WARM_FRAMES)
-    if (gl.compileAsync) gl.compileAsync(scene, camera).then(done)
-    else {
-      gl.compile(scene, camera)
-      done()
-    }
-    return () => {
-      alive = false
-      cancelAnimationFrame(raf)
-    }
-  }, [gl, scene, camera, advance, onReady])
+  useEffect(
+    () => warmScene({ gl, scene, camera, advance, onReady, shadows: true }),
+    [gl, scene, camera, advance, onReady]
+  )
   return null
 }
 
@@ -207,6 +189,12 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
       onCreated={({ gl }) => {
         // sombra em modo manual: o ShadowKick atualiza quando algo monta
         gl.shadowMap.autoUpdate = false
+        // Em produção o three NÃO checa erro de shader. A checagem parece de
+        // graça e não é: ler getProgramInfoLog obriga a CPU a esperar o driver
+        // terminar de linkar aquele programa, e isso se repete a cada estreia.
+        // Medido com o aquecimento em pé: ~800ms a menos de thread travada na
+        // montagem. Em dev fica ligada, senão shader quebrado falha calado.
+        gl.debug.checkShaderErrors = import.meta.env.DEV
       }}
       dpr={dpr}
       shadows
