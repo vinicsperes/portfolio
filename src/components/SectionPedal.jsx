@@ -1,10 +1,11 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Preload } from '@react-three/drei'
+import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import { PedalScene } from './three/pedal/scene'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
 import { HDRI } from '../scene/env.js'
+import { warmScene } from '../scene/warmup.js'
 
 const GREEN = '#16a030'
 const palette = {
@@ -24,9 +25,9 @@ const START_DELAY_MS = 700
 
 /**
  * O pedal abre sozinho, uma vez, pouco depois da seção entrar na viewport —
- * desvinculado do scroll. Roda em `frameloop="demand"`: fica idle (custo zero)
- * até a abertura ser agendada, anima renderizando sob demanda e volta a idle
- * assim que assenta aberto.
+ * desvinculado do scroll. O canvas roda em `frameloop="demand"`: fica idle
+ * (custo zero) até a abertura ser agendada, anima renderizando sob demanda e
+ * volta a idle assim que assenta aberto.
  */
 function AutoOpenPedal({ reducedMotion, armed }) {
   const group = useRef()
@@ -39,26 +40,17 @@ function AutoOpenPedal({ reducedMotion, armed }) {
   const gl = useThree((s) => s.gl)
   const invalidate = useThree((s) => s.invalidate)
 
+  // sem movimento: já entra aberto e estático (quem desenha é o CompileGate)
   useEffect(() => {
-    // sem movimento: já entra aberto e estático
-    if (reducedMotion) {
-      opened.current = true
-      smooth.current = 1
-      explodeRef.current = 1.1
-      setLed(true)
-      invalidate()
-      return
-    }
-    // pinta o pedal FECHADO de forma confiável antes da abertura: o 1º frame do
-    // mount pode sair incompleto (texturas/canvas desenhados em effect) e em
-    // demand não haveria re-render até o timer — o pedal "surgiria do nada"
-    invalidate()
-    const warm = [80, 260, 600].map((ms) => setTimeout(invalidate, ms))
-    return () => warm.forEach(clearTimeout)
-  }, [invalidate, reducedMotion])
+    if (!reducedMotion) return
+    opened.current = true
+    smooth.current = 1
+    explodeRef.current = 1.1
+    setLed(true)
+  }, [reducedMotion])
 
   // A abertura só é ARMADA depois de o pedal estar pintado (`armed`, vindo do
-  // ReadyGate). Antes isso morava no mount: quem chegasse na seção antes de o
+  // CompileGate). Antes isso morava no mount: quem chegasse na seção antes de o
   // pedal carregar via a animação acontecer por baixo do PedalLoader ainda na
   // tela. Armando aqui, o fade do loader (320ms) termina bem antes do
   // START_DELAY_MS, e a abertura sempre acontece com o palco limpo.
@@ -119,7 +111,7 @@ function AutoOpenPedal({ reducedMotion, armed }) {
         // clipping plane/DoubleSide inéditos, ou seja, shaders compilando na
         // hora exata de abrir. Com explode em 0 os dois planos de corte se
         // encostam no centro e as metades remontam o chassi fechado, então
-        // visualmente é o mesmo pedal e o <Preload all/> já compila tudo.
+        // visualmente é o mesmo pedal e o aquecimento já compila tudo.
         split
         spin={0}
         hideTag
@@ -136,17 +128,23 @@ function AutoOpenPedal({ reducedMotion, armed }) {
 }
 
 /**
- * Avisa que o pedal já está PINTADO, não só montado. Vive dentro do Suspense,
- * então só existe depois do HDRI; e conta frames de verdade (o canvas roda em
- * demand), então dispara depois de o Preload compilar e o primeiro desenho
- * sair. É esse sinal que apaga o PedalLoader.
+ * Prepara o pedal e avisa quando ele está PINTADO, não só montado. É esse sinal
+ * que apaga o PedalLoader e arma a abertura.
+ *
+ * No lugar do `<Preload all />`, que chamava `gl.compile()` (síncrono, com o
+ * driver travando a thread material por material) e ainda renderizava a cena
+ * seis vezes numa CubeCamera que o pedal nem usa. O aquecimento em fatias mora
+ * em scene/warmup.js, compartilhado com o quarto do hero.
  */
-function ReadyGate({ onReady }) {
-  const frames = useRef(0)
-  useFrame(() => {
-    frames.current += 1
-    if (frames.current === 2) onReady?.()
-  })
+function CompileGate({ onReady }) {
+  const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+  const camera = useThree((s) => s.camera)
+  const advance = useThree((s) => s.advance)
+  useEffect(
+    () => warmScene({ gl, scene, camera, advance, onReady }),
+    [gl, scene, camera, advance, onReady]
+  )
   return null
 }
 
@@ -169,10 +167,18 @@ export function SectionPedal({ onReady }) {
       camera={{ position: [-0.6, 4.6, 5.6], fov: 40, near: 0.1, far: 60 }}
       gl={{ antialias: true, alpha: true }}
       dpr={[1, 1.25]}
-      frameloop="demand"
+      // 'never' até o CompileGate liberar. Em 'demand' o R3F invalida sozinho no
+      // commit da árvore, e o rAF seguinte desenhava o pedal antes de o driver
+      // terminar de linkar os shaders — a thread ficava esperando por ele no
+      // meio do primeiro scroll. Com 'never' quem desenha o 1º frame é o
+      // CompileGate, por advance(), depois de compilar.
+      frameloop={ready ? 'demand' : 'never'}
       style={{ pointerEvents: 'none' }}
       onCreated={({ gl, camera }) => {
         gl.localClippingEnabled = true
+        // mesma história do canvas do hero: cada checagem de shader é uma
+        // espera pelo driver (ver Scene.jsx)
+        gl.debug.checkShaderErrors = import.meta.env.DEV
         camera.lookAt(0, 0.2, 0)
       }}
     >
@@ -186,8 +192,7 @@ export function SectionPedal({ onReady }) {
             vezes, porque textura de GPU não atravessa contexto WebGL */}
         <Environment files={HDRI} environmentIntensity={0.7} />
         <AutoOpenPedal reducedMotion={reducedMotion} armed={ready} />
-        <Preload all />
-        <ReadyGate onReady={handleReady} />
+        <CompileGate onReady={handleReady} />
       </Suspense>
     </Canvas>
   )
