@@ -218,19 +218,35 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
             14% pra repor o piso de luz das point lights cortadas */}
         <ambientLight intensity={AMBIENT_INTENSITY} color={L.ambient.color} />
 
-        {/* sol baixo entrando pela janela (golden hour): quente e direcional */}
+        {/* Sol baixo entrando pela janela (golden hour): quente e direcional.
+            Fica LONGE na mesma direção (o vetor antigo era [-7, 4.5, 2], este é
+            ele vezes 3): direcional não tem atenuação, então a luz não muda,
+            mas a câmera de sombra passa a ver o quarto inteiro pela frente.
+            Perto assim, parte dos móveis caía ATRÁS dela e simplesmente não
+            entrava no shadow map.
+
+            Os limites do quadro de sombra são medidos, não chutados: a caixa
+            dos 47 casters projetada no espaço desta câmera é x[-13.9, 2.7]
+            y[-16.1, 14.5] z[3.4, 52.7]. O quadro antigo (±10, far 30) cortava
+            os três eixos, e o corte aparecia como uma borda reta de luz na
+            parede, bem visível na view do quadro. Enquadrando o que existe de
+            verdade, o mapa 1024 rende ~60 texels por unidade contra os ~26 de
+            antes, e o passe de sombra continua custando o mesmo: ele roda em
+            modo manual, só quando algo monta. Se entrar móvel novo longe do
+            centro, medir de novo. */}
         <directionalLight
-          position={[-7, 4.5, 2]}
+          position={[-21, 13.5, 6]}
           intensity={L.sun.intensity}
           color={L.sun.color}
           castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
-          shadow-camera-far={30}
-          shadow-camera-left={-10}
-          shadow-camera-right={10}
-          shadow-camera-top={10}
-          shadow-camera-bottom={-10}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-near={1}
+          shadow-camera-far={56}
+          shadow-camera-left={-14.5}
+          shadow-camera-right={3.5}
+          shadow-camera-top={15}
+          shadow-camera-bottom={-17}
           shadow-bias={-0.001}
         />
 
