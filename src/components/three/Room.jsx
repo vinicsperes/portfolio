@@ -322,9 +322,14 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
     () => (
       <>
       {/* ─── Floor ─── */}
+      {/* Lambert, não Standard: 60x60 de chão é onde mora a maior parte dos
+          pixels da tela, e o BRDF de PBR era pago em cada um deles. Madeira
+          fosca não tem specular pra perder — o brilho médio do chão mudou
+          0,3% e o frame de GPU caiu ~20% (medido com timer query, A/B entre
+          builds com ordem alternada). É custo por pixel, sem tocar em dpr. */}
       <mesh position={[0, -2.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial map={woodTex} roughness={0.75} />
+        <meshLambertMaterial map={woodTex} />
       </mesh>
 
       {/* ─── Rug (horizontal, empurrado pra trás — encostado sob a mesa/parede) ─── */}
@@ -336,15 +341,17 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
       {/* ─── Back Wall ─── */}
       {/* auto-brilho leve (emissive) no lugar dos antigos 3 point lights de
           wash: garante um piso de luminosidade na parede inteira (inclusive
-          acima da janela no retrato) sem pesar no loop de luzes por pixel */}
+          acima da janela no retrato) sem pesar no loop de luzes por pixel.
+          Lambert pelo mesmo motivo do chão; o emissive sobe 7% porque sem o
+          termo especular do Standard a parede escurecia ~5%, e com esse ajuste
+          o brilho medido volta a bater (+0,2%). */}
       <mesh position={[0, 4, -6]} receiveShadow>
         <planeGeometry args={[60, 20]} />
-        <meshStandardMaterial
+        <meshLambertMaterial
           map={wallTex}
           emissiveMap={wallTex}
           emissive={L.wallEmissive.color}
-          emissiveIntensity={L.wallEmissive.intensity}
-          roughness={0.9}
+          emissiveIntensity={L.wallEmissive.intensity * 1.07}
         />
       </mesh>
 
