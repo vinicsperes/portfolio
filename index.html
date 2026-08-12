@@ -10,6 +10,9 @@
       content="Meus projetos, experimentos e um jeito de falar comigo."
     />
     <meta name="theme-color" content="#0a0a0f" />
+    <meta name="author" content="Vinicius Peres" />
+    <link rel="canonical" href="https://vinicsperes.com/" />
+    <meta property="og:locale" content="pt_BR" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://vinicsperes.com/" />
     <meta property="og:title" content="Vinicius Peres" />
@@ -49,9 +52,92 @@
         href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif:ital@0;1&display=swap"
       />
     </noscript>
+    <!-- Cartão de identidade da página em dados estruturados: é o que buscador
+         e assistente leem pra saber QUEM é o dono do site, sem depender de
+         interpretar o texto -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Vinicius Peres",
+        "url": "https://vinicsperes.com/",
+        "jobTitle": "Desenvolvedor de software",
+        "email": "mailto:vinicsperes@gmail.com",
+        "address": {
+          "@type": "PostalAddress",
+          "addressRegion": "Santa Catarina",
+          "addressCountry": "BR"
+        },
+        "sameAs": [
+          "https://github.com/vinicsperes",
+          "https://linkedin.com/in/vinicsperes"
+        ],
+        "knowsAbout": ["Desenvolvimento web", "WebGL", "Web Audio", "Rust", "React"]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      O conteúdo aqui dentro é a versão em texto do site, e existe por um
+      motivo só: o que o servidor entrega é este arquivo, e ele terminava em
+      <div id="root"></div>. Quem não executa o bundle (buscador que não roda
+      JS, preview de link, leitor de RSS, curl) via uma casca vazia, sem uma
+      palavra sobre quem é o dono ou o que ele faz.
+
+      O React apaga tudo isto no primeiro render (createRoot limpa o
+      container), então ele não convive com a cena 3D: é o que fica no lugar
+      enquanto o bundle não chegou, e o que sobra pra sempre pra quem nunca
+      vai executá-lo. Por isso o estilo vai inline e sem depender do CSS do
+      app: nesse momento ele também pode não ter chegado.
+
+      Mantenha em dia com src/content/pt.js quando os textos mudarem.
+    -->
+    <div id="root">
+      <main
+        style="
+          max-width: 44rem;
+          margin: 0 auto;
+          padding: 12vh 1.5rem 4rem;
+          color: #eae8e3;
+          font-family: ui-sans-serif, system-ui, sans-serif;
+          line-height: 1.6;
+        "
+      >
+        <p style="font-size: 0.75rem; letter-spacing: 0.3em; color: #f5a623; margin: 0">
+          DEV CRIATIVO FULLSTACK
+        </p>
+        <h1 style="font-size: 2.5rem; line-height: 1.1; margin: 0.75rem 0 0">Vinicius Peres</h1>
+        <p style="color: #b9b5ad; margin: 0.25rem 0 2rem">Santa Catarina, Brasil</p>
+
+        <p>
+          Prazer, sou o Vinícius, desenvolvedor de software. Passo os dias construindo produtos e
+          interfaces para a web, do design à engenharia. Aqui ficam meus trabalhos mais recentes.
+        </p>
+
+        <h2 style="font-size: 1.25rem; margin: 2.5rem 0 0.5rem">Projetos</h2>
+        <ul style="padding-left: 1.1rem">
+          <li style="margin-bottom: 1rem">
+            <strong>GHOSTFX</strong>, um pedal de guitarra no navegador: drive, echo, modulação e
+            reverb em tempo real, com a cadeia de sinal inteira feita à mão na Web Audio API e um
+            pedal 3D cujos knobs você gira de verdade.
+            <a href="https://ghostfx.app" style="color: #f5a623">ghostfx.app</a> ·
+            <a href="https://github.com/vinicsperes/ghostfx" style="color: #f5a623">código fonte</a>
+          </li>
+          <li style="margin-bottom: 1rem">
+            <strong>VERVE</strong>, um teste de velocidade de digitação que vive no terminal, feito
+            em Rust com ratatui e crossterm, num único binário auto-contido.
+            <a href="https://github.com/vinicsperes/verve" style="color: #f5a623">código fonte</a>
+          </li>
+        </ul>
+
+        <h2 style="font-size: 1.25rem; margin: 2.5rem 0 0.5rem">Contato</h2>
+        <p>
+          <a href="mailto:vinicsperes@gmail.com" style="color: #f5a623">vinicsperes@gmail.com</a><br />
+          <a href="https://github.com/vinicsperes" style="color: #f5a623">GitHub</a> ·
+          <a href="https://linkedin.com/in/vinicsperes" style="color: #f5a623">LinkedIn</a>
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
