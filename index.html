@@ -76,7 +76,12 @@
       }
     </script>
   </head>
-  <body>
+  <!-- Sem rolagem na espera: o texto de fallback vive uma tela abaixo, e a
+       barra de rolagem que ele criava aparecia por cima do loader estático (o
+       loader do app trava o scroll, então ele nunca teve barra). Quem limpa
+       isto é o próprio Hero: quando ele destrava a página, seta
+       `document.body.style.overflow = ''`, o que apaga este inline. -->
+  <body style="overflow: hidden">
     <!--
       O conteúdo aqui dentro é a versão em texto do site, e existe por um
       motivo só: o que o servidor entrega é este arquivo, e ele terminava em
@@ -90,24 +95,64 @@
       vai executá-lo. Por isso o estilo vai inline e sem depender do CSS do
       app: nesse momento ele também pode não ter chegado.
 
-      Ele começa UMA TELA abaixo do topo de propósito. Nos navegadores de
-      dentro de app (o do Instagram, principalmente) o bundle demora, e o
-      visitante via o site em três atos: um texto com o nome, depois o loader,
-      depois a cena. Empurrado pra baixo da dobra, o que aparece nesse intervalo
-      é a tela escura de sempre, e o texto segue aqui pra quem lê o HTML.
-      Quem está sem JS não tem esse intervalo: o <noscript> abaixo desfaz o
-      empurrão, senão a página abriria numa tela vazia pra essa pessoa.
+      Ele começa UMA TELA abaixo do topo, atrás do loader estático que vem
+      logo acima dele. Nos navegadores de dentro de app (o do Instagram,
+      principalmente) o bundle demora, e o visitante via o site em três atos:
+      um texto com o nome, depois o loader, depois a cena.
+
+      Quem está sem JS não vê loader nenhum, porque loader sem JS é mentira:
+      o <noscript> abaixo esconde a moeda e traz o texto pro topo.
 
       Mantenha em dia com src/content/pt.js quando os textos mudarem.
     -->
     <noscript>
       <style>
+        .fallback-loader {
+          display: none !important;
+        }
         .fallback-seo {
           padding-top: 3rem !important;
+        }
+        /* devolve a rolagem que o body trava pra espera: sem JS o texto é a
+           página inteira, e ele é mais alto que a tela */
+        body {
+          overflow: auto !important;
         }
       </style>
     </noscript>
     <div id="root">
+      <!--
+        A MOEDA, PARADA. O loader do app só existe depois que o bundle roda, e
+        até lá a tela ficava escura e vazia: o dono abriu o site pelo Instagram
+        e reclamou que o loader não é a primeira coisa que acontece.
+
+        Este bloco é o mesmo loader em HTML puro, nas mesmas classes do
+        BootLoader.jsx, então ele nasce exatamente onde o React vai desenhar o
+        de verdade. Quando o bundle chega, a moeda simplesmente começa a girar.
+        (Por isso o BootLoader não tem mais fade de entrada: com ele, a moeda
+        sumia por um instante e voltava.) A imagem já vem com preload no head.
+
+        Se mexer nas medidas do loader lá, mexa aqui também.
+      -->
+      <div
+        class="fallback-loader"
+        style="
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #0a0a0f;
+        "
+        aria-hidden="true"
+      >
+        <div class="flex w-52 sm:w-72 flex-col items-center gap-8">
+          <div class="w-3/4">
+            <img src="/peres-globe-white.png" alt="" width="900" height="428" class="w-full" />
+          </div>
+          <div class="h-px w-full bg-paper/10"></div>
+        </div>
+      </div>
       <main
         class="fallback-seo"
         style="

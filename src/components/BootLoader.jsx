@@ -75,12 +75,11 @@ export function BootLoader({ ready = false, onReveal }) {
       }`}
       aria-hidden="true"
     >
-      <div
-        className={`flex w-52 sm:w-72 flex-col items-center gap-8 transition-all duration-700 ease-out ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-        }`}
-        style={{ perspective: '900px' }}
-      >
+      {/* Sem fade de entrada. Ele existia pra suavizar a chegada do loader numa
+          tela vazia, e agora a tela não está vazia: o index.html já desenha
+          esta mesma moeda, parada, enquanto o bundle não chega. Com o fade, ela
+          sumia por um instante e voltava. `mounted` continua movendo a barra. */}
+      <div className="flex w-52 sm:w-72 flex-col items-center gap-8" style={{ perspective: '900px' }}>
         {/* moeda: gira rápido no eixo Y; ao "cair" (landing) desacelera até de
             frente, e no fim (ending) dá a piscadinha com brilho e some. PNG
             (raster): o SVG re-rasterizava a cada ângulo da rotação 3D e travava */}
