@@ -90,14 +90,31 @@
       vai executá-lo. Por isso o estilo vai inline e sem depender do CSS do
       app: nesse momento ele também pode não ter chegado.
 
+      Ele começa UMA TELA abaixo do topo de propósito. Nos navegadores de
+      dentro de app (o do Instagram, principalmente) o bundle demora, e o
+      visitante via o site em três atos: um texto com o nome, depois o loader,
+      depois a cena. Empurrado pra baixo da dobra, o que aparece nesse intervalo
+      é a tela escura de sempre, e o texto segue aqui pra quem lê o HTML.
+      Quem está sem JS não tem esse intervalo: o <noscript> abaixo desfaz o
+      empurrão, senão a página abriria numa tela vazia pra essa pessoa.
+
       Mantenha em dia com src/content/pt.js quando os textos mudarem.
     -->
+    <noscript>
+      <style>
+        .fallback-seo {
+          padding-top: 3rem !important;
+        }
+      </style>
+    </noscript>
     <div id="root">
       <main
+        class="fallback-seo"
         style="
           max-width: 44rem;
           margin: 0 auto;
-          padding: 12vh 1.5rem 4rem;
+          padding: calc(100vh + 3rem) 1.5rem 4rem;
+          background: #0a0a0f;
           color: #eae8e3;
           font-family: ui-sans-serif, system-ui, sans-serif;
           line-height: 1.6;
