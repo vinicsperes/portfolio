@@ -16,6 +16,14 @@ const palette = {
   metal: '#d4d4d4',
 }
 
+// Enquadramento do palco. A câmera é fixa (mais de cima, como no ghostfx: com o
+// chassi aberto dá pra ver o circuito) e mira um pouco acima da base.
+const CAM_POS = [-0.6, 4.6, 5.6]
+const CAM_TARGET = [0, 0.2, 0]
+// aspecto do palco a partir do qual o pedal aberto cabe com folga. Abaixo dele
+// a câmera recua o quanto faltar (ver FitPedal)
+const ASPECT_REF = 1.05
+
 // rotação máxima do chassi com o pedal totalmente aberto (só em Y — os clipping
 // planes são horizontais)
 const OPEN_ANGLE = 1.3
@@ -148,6 +156,40 @@ function CompileGate({ onReady }) {
   return null
 }
 
+// escratches: nada de alocar Vector3 a cada resize
+const _dir = new THREE.Vector3()
+const _target = new THREE.Vector3(...CAM_TARGET)
+
+/**
+ * Mantém o pedal DENTRO do palco quando ele fica estreito.
+ *
+ * O fov é vertical: numa caixa mais alta que larga, a largura que a câmera
+ * enxerga encolhe junto, e o pedal aberto (que é largo, ele gira 74°) saía
+ * pelos lados. O dono viu isso noutro computador: "cortado, sem as bordas,
+ * como se o container dele fosse menor". Reproduzido num palco de aspecto
+ * 0,68, que é o que dá numa janela estreita ou num tablet em pé.
+ *
+ * A correção recua a câmera na direção em que ela já olha, em vez de abrir o
+ * fov: assim a lente continua a mesma e o pedal só fica um pouco menor, sem
+ * ganhar a distorção de perspectiva que uma grande angular traria.
+ */
+function FitPedal() {
+  const camera = useThree((s) => s.camera)
+  const size = useThree((s) => s.size)
+  const invalidate = useThree((s) => s.invalidate)
+  useEffect(() => {
+    if (!size.width || !size.height) return
+    const aspect = size.width / size.height
+    const recuo = aspect < ASPECT_REF ? ASPECT_REF / aspect : 1
+    _dir.set(...CAM_POS).sub(_target)
+    camera.position.copy(_target).addScaledVector(_dir, recuo)
+    camera.lookAt(_target)
+    camera.updateProjectionMatrix()
+    invalidate()
+  }, [camera, size, invalidate])
+  return null
+}
+
 /**
  * Canvas contido da seção Ghost. Showcase: o pointer fica desligado (nenhuma
  * interação de knob/footswitch), o pedal só abre sozinho e permanece aberto.
@@ -163,8 +205,7 @@ export function SectionPedal({ onReady }) {
   }, [onReady])
   return (
     <Canvas
-      // mais de cima (como no ghostfx): com o chassi aberto dá pra ver o circuito
-      camera={{ position: [-0.6, 4.6, 5.6], fov: 40, near: 0.1, far: 60 }}
+      camera={{ position: CAM_POS, fov: 40, near: 0.1, far: 60 }}
       gl={{ antialias: true, alpha: true }}
       dpr={[1, 1.25]}
       // 'never' até o CompileGate liberar. Em 'demand' o R3F invalida sozinho no
@@ -179,9 +220,10 @@ export function SectionPedal({ onReady }) {
         // mesma história do canvas do hero: cada checagem de shader é uma
         // espera pelo driver (ver Scene.jsx)
         gl.debug.checkShaderErrors = import.meta.env.DEV
-        camera.lookAt(0, 0.2, 0)
+        camera.lookAt(...CAM_TARGET)
       }}
     >
+      <FitPedal />
       <ambientLight intensity={0.5} color="#f0e8d8" />
       <directionalLight position={[-4, 6, 3]} intensity={2} color="#e8dfc8" />
       <directionalLight position={[5, 4, -3]} intensity={1.2} color="#c8d8f0" />
