@@ -31,6 +31,9 @@ const EMBER = '#ff6b2b'
 
 // margem de pré-carga do palco do pedal em função da altura da tela
 const GHOST_MARGIN = `${Math.round((typeof window === 'undefined' ? 1600 : window.innerHeight) * 0.9)}px`
+// quanto o visitante pode ficar parado no hero antes de a seção do pedal
+// começar a montar por conta própria
+const PARADO_MS = 5000
 
 function initialView() {
   const v = new URLSearchParams(window.location.search).get('view')
@@ -86,18 +89,40 @@ export function Hero() {
   // mobile). Só liga na revelação do loader; até lá o CompileGate já compilou.
   const [sceneRevealed, setSceneRevealed] = useState(false)
   const revealScene = useCallback(() => setSceneRevealed(true), [])
-  // NADA abaixo da dobra monta enquanto o loader está na tela. O pedal do
-  // GHOSTFX sozinho custava ~2s de main thread ali (2º contexto WebGL, um
-  // shader compilado por preset + toDataURL, HDRI de 1.5MB) pra uma seção a
-  // duas telas de distância — era o que travava a moeda. Depois da revelação
-  // ainda espera um idle, pra não roubar os primeiros frames do hero.
+  // NADA abaixo da dobra monta enquanto o loader está na tela: o pedal do
+  // GHOSTFX sozinho custava ~2s de main thread ali, e era o que travava a
+  // moeda.
   //
-  // E não monta tudo no MESMO tick: a liberação é escalonada em estágios, um
-  // idle por vez. Antes, o instante em que belowFold virava true disparava de
-  // uma vez o fundo da seção, o canvas do pedal (2º contexto WebGL + HDRI) e o
-  // dos knobs (3º contexto + o mesmo HDRI de novo) — um dogpile que caía
-  // exatamente em cima do primeiro scroll do visitante.
-  const stage = useStagedMount(sceneRevealed, 3)
+  // E não basta esperar a revelação. Montar aquilo custa main thread, e a
+  // margem de pré-carga da seção a alcança mesmo com a página parada no topo:
+  // o visitante ficava olhando o hero e o fogo engasgava sozinho. Medido em
+  // dpr 2, nos primeiros 4,5s parado: com a seção montando junto o hero fazia
+  // 105 frames com uma trava de 1067ms; sem ela, 219 frames e nada acima de
+  // 50ms. Então a montagem espera um sinal de que o visitante está indo embora
+  // do hero (o primeiro scroll) ou de que já viu o que queria (PARADO_MS).
+  // Quem rola direto paga a montagem no caminho, que hoje são fatias de ~200ms
+  // (ver scene/warmup.js), não mais os segundos de antes.
+  const [belowFoldArmed, setBelowFoldArmed] = useState(false)
+  useEffect(() => {
+    if (!sceneRevealed || belowFoldArmed) return
+    const arm = () => setBelowFoldArmed(true)
+    const timer = setTimeout(arm, PARADO_MS)
+    const onScroll = () => {
+      if (window.scrollY > 40) arm()
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [sceneRevealed, belowFoldArmed])
+
+  // Liberado o sinal, ainda não monta tudo no MESMO tick: a liberação é
+  // escalonada em estágios, um idle por vez. Antes, o instante em que a seção
+  // ficava perto disparava de uma vez o fundo dela, o canvas do pedal (2º
+  // contexto WebGL + HDRI) e os cards — um dogpile que caía exatamente em cima
+  // do primeiro scroll do visitante.
+  const stage = useStagedMount(belowFoldArmed, 3)
 
   // onde a página estava antes de abrir o about (restaurado na volta)
   const returnScrollRef = useRef(null)
@@ -118,6 +143,7 @@ export function Hero() {
   useEffect(() => {
     if (ghostNear) setGhostSeen(true)
   }, [ghostNear])
+
   // pedal pintado de verdade (sinal do ReadyGate lá dentro): apaga o PedalLoader
   const [pedalReady, setPedalReady] = useState(false)
   const handlePedalReady = useCallback(() => setPedalReady(true), [])
