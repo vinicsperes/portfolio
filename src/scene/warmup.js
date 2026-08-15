@@ -1,3 +1,6 @@
+// teto de espera pelo driver antes de acender a cena de qualquer jeito
+const COMPILE_TIMEOUT_MS = 2500
+
 /**
  * Aquecimento de cena three: prepara tudo o que a GPU precisa ANTES de a cena
  * aparecer, sem travar a página no meio.
@@ -67,16 +70,32 @@ export function warmScene({ gl, scene, camera, advance, onReady, shadows = false
     warmNext()
   }
 
+  // Rede de segurança: nada aqui pode depender de uma promise que talvez nunca
+  // volte. O canvas do pedal fica em `frameloop="never"` até este aquecimento
+  // liberar, então um `compileAsync` que engasgue (driver estranho, contexto
+  // perdido no meio) deixaria o pedal invisível PRA SEMPRE, com o loader eterno
+  // por cima. Passado o teto, a cena acende do mesmo jeito: pior um frame
+  // pesado do que um pedal que não vem.
+  let began = false
+  const beginOnce = () => {
+    if (began) return
+    began = true
+    clearTimeout(guard)
+    start()
+  }
+  const guard = setTimeout(beginOnce, COMPILE_TIMEOUT_MS)
+
   // o link roda em paralelo no driver (KHR_parallel_shader_compile) enquanto a
   // thread segue livre; só depois vêm os frames de aquecimento
-  if (gl.compileAsync) gl.compileAsync(scene, camera).then(start)
+  if (gl.compileAsync) gl.compileAsync(scene, camera).then(beginOnce, beginOnce)
   else {
     gl.compile(scene, camera)
-    start()
+    beginOnce()
   }
 
   return () => {
     alive = false
+    clearTimeout(guard)
     cancelAnimationFrame(raf)
     for (const o of hidden) o.visible = true
   }
