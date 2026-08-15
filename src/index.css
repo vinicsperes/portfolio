@@ -87,31 +87,29 @@ body {
   }
 }
 
-/* espera do palco do pedal (PedalLoader): o fantasminha boia e uma barra fina
-   varre. Só transform, nada de layout — o pedal está compilando shaders nessa
-   hora e o indicador não pode disputar main thread */
-@keyframes pedal-loader-float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-4deg);
-  }
-  50% {
-    transform: translateY(-14%) rotate(5deg);
+/* espera do palco do pedal (PedalLoader): um anel fino girando, do tamanho de
+   um indicador comum. Era um fantasminha grande boiando com uma barra varrendo,
+   que o dono achou feio. Só transform, nada de layout — o pedal está compilando
+   shaders nessa hora e o indicador não pode disputar main thread */
+@keyframes pedal-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
-@keyframes pedal-loader-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(300%);
-  }
+.pedal-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(234, 232, 227, 0.14);
+  border-top-color: rgba(32, 240, 64, 0.75);
+  animation: pedal-spin 0.8s linear infinite;
 }
-.pedal-loader-ghost {
-  animation: pedal-loader-float 2.4s ease-in-out infinite;
-}
-.pedal-loader-bar {
-  animation: pedal-loader-sweep 1.4s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  .pedal-spinner {
+    animation: none;
+    border-color: rgba(234, 232, 227, 0.14);
+    border-top-color: rgba(32, 240, 64, 0.45);
+  }
 }
 
 /* logo girando como uma MOEDA no loader: rotateY rápido (uma camada só, transform

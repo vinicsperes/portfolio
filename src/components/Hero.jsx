@@ -575,19 +575,30 @@ export function Hero() {
                 </div>
               </Block>
 
-              {/* palco do pedal: monta cedo (Preload compila parado). O canvas
-                  roda em frameloop="demand" e o pedal abre sozinho pouco depois
-                  da seção entrar — parado (aberto) não custa nada */}
+              {/* palco do pedal: o canvas roda em frameloop="demand" e o pedal
+                  abre sozinho pouco depois da seção entrar — parado (aberto)
+                  não custa nada */}
               <div className="relative h-[40vh] min-h-[320px] md:h-[52vh]">
-                {/* estágio 2: o mais caro (chunk de 183KB, contexto WebGL, HDRI) */}
-                {stage >= 2 && (ghostNear || ghostSeen) && (
-                  <Suspense fallback={null}>
-                    <SectionPedal onReady={handlePedalReady} />
-                  </Suspense>
-                )}
-                {/* o palco demora: espera o loader liberar, o chunk baixar, o
-                    HDRI chegar e os shaders compilarem. O PedalLoader cobre as
-                    três fases e se apaga sozinho no sinal do ReadyGate */}
+                {/* O pedal entra em fade e SÓ DEPOIS que o indicador de espera
+                    saiu (delay = FADE_MS do PedalLoader): o dono não quer os
+                    dois na tela ao mesmo tempo. Ele já está pintado quando isso
+                    acontece, então o fade não esconde trabalho, só evita o
+                    corte seco. */}
+                <div
+                  className={`absolute inset-0 transition-opacity duration-500 ${
+                    pedalReady ? 'opacity-100 delay-150' : 'opacity-0'
+                  }`}
+                >
+                  {/* estágio 2: o mais caro (chunk do pedal, contexto WebGL, HDRI) */}
+                  {stage >= 2 && (ghostNear || ghostSeen) && (
+                    <Suspense fallback={null}>
+                      <SectionPedal onReady={handlePedalReady} />
+                    </Suspense>
+                  )}
+                </div>
+                {/* o palco demora: espera o chunk baixar, o HDRI chegar e os
+                    shaders compilarem. O indicador cobre as três fases e sai
+                    antes de o pedal aparecer */}
                 <PedalLoader done={pedalReady} />
               </div>
             </div>

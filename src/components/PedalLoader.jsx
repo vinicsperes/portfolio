@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react'
-import { useReducedMotion } from '../hooks/useReducedMotion.js'
 
 // só aparece se a espera passar disso: em conexão boa o pedal chega rápido e
 // um indicador piscando é pior que palco vazio por um instante
 const DELAY_MS = 250
-const FADE_MS = 320
+// saída curta de propósito: quem entra logo atrás é o pedal, e o dono não quer
+// os dois na tela ao mesmo tempo. O fade de entrada dele espera este tempo
+// (ver o `delay-150` no palco, em Hero.jsx)
+const FADE_MS = 150
 
 /**
- * Espera do palco do pedal. Cobre as três fases em que o palco ficaria vazio:
- * antes de o `belowFold` liberar a montagem, durante o download do chunk do
- * pedal e enquanto o HDRI carrega e os shaders compilam.
+ * Espera do palco do pedal. Cobre as fases em que o palco ficaria vazio: o
+ * download do chunk, o HDRI e a compilação dos shaders.
+ *
+ * Era um fantasminha grande boiando com uma barra varrendo embaixo. O dono
+ * achou feio, e ele ainda ficava por cima do pedal durante a saída. Agora é um
+ * anel fino girando, do tamanho de um indicador de carregamento comum, e some
+ * antes de o pedal aparecer.
  *
  * DOM e CSS puros de propósito: é o intervalo em que a GPU e a main thread
- * estão ocupadas justamente montando o pedal, então o próprio indicador de
- * espera não pode custar nada. O fantasminha é o mesmo do hover do CTA.
+ * estão ocupadas montando o pedal, então o indicador não pode custar nada.
  */
 export function PedalLoader({ done = false }) {
-  const reducedMotion = useReducedMotion()
   const [shown, setShown] = useState(false)
   const [gone, setGone] = useState(false)
 
@@ -38,37 +42,12 @@ export function PedalLoader({ done = false }) {
   return (
     <div
       data-pedal-loader=""
-      className={`pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-6 transition-opacity duration-300 ${
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-150 ${
         done ? 'opacity-0' : 'opacity-100'
       }`}
       aria-hidden="true"
     >
-      <svg
-        viewBox="13 6 38 52"
-        className={`h-14 w-auto sm:h-16 ${reducedMotion ? '' : 'pedal-loader-ghost'}`}
-      >
-        <path
-          d="M16 51 L16 28 C16 16 23 9 32 9 C41 9 48 16 48 28 L48 51 Q44 47 40 51 Q36 55 32 51 Q28 47 24 51 Q20 55 16 51 Z"
-          fill="#12161a"
-          stroke="#20f040"
-          strokeOpacity="0.45"
-          strokeWidth="1.5"
-        />
-        {/* o ghost de verdade tem um olho só: o LED */}
-        <circle cx="36" cy="27" r="9" fill="#41ff77" opacity="0.18" />
-        <circle cx="36" cy="27" r="5.5" fill="#41ff77" opacity="0.85" />
-      </svg>
-
-      {/* barra indeterminada: não temos progresso real pra prometer */}
-      <div className="h-px w-24 overflow-hidden bg-paper/10 sm:w-28">
-        <div
-          className={
-            reducedMotion
-              ? 'h-full w-full bg-[#20f040]/30'
-              : 'pedal-loader-bar h-full w-1/3 bg-[#20f040]/70'
-          }
-        />
-      </div>
+      <span className="pedal-spinner" />
     </div>
   )
 }
