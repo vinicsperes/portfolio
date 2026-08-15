@@ -75,6 +75,17 @@
         "knowsAbout": ["Desenvolvimento web", "WebGL", "Web Audio", "Rust", "React"]
       }
     </script>
+    <!-- O único pedaço do loader estático que uma media query resolve e o
+         atributo style não. Fica aqui no <head>, e não no CSS do app, porque
+         ele precisa valer no PRIMEIRO paint: o bundle de estilo chega depois.
+         13rem/18rem são as mesmas larguras do BootLoader.jsx (w-52 sm:w-72). -->
+    <style>
+      @media (min-width: 640px) {
+        .fallback-loader-col {
+          width: 18rem !important;
+        }
+      }
+    </style>
   </head>
   <!-- Sem rolagem na espera: o texto de fallback vive uma tela abaixo, e a
        barra de rolagem que ele criava aparecia por cima do loader estático (o
@@ -126,11 +137,17 @@
         até lá a tela ficava escura e vazia: o dono abriu o site pelo Instagram
         e reclamou que o loader não é a primeira coisa que acontece.
 
-        Este bloco é o mesmo loader em HTML puro, nas mesmas classes do
-        BootLoader.jsx, então ele nasce exatamente onde o React vai desenhar o
-        de verdade. Quando o bundle chega, a moeda simplesmente começa a girar.
-        (Por isso o BootLoader não tem mais fade de entrada: com ele, a moeda
-        sumia por um instante e voltava.) A imagem já vem com preload no head.
+        Este bloco repete o loader do BootLoader.jsx em HTML puro, nas mesmas
+        medidas, então a moeda nasce exatamente onde o React vai desenhar a de
+        verdade. Quando o bundle chega, ela simplesmente começa a girar. (Por
+        isso o BootLoader não tem mais fade de entrada: com ele, a moeda sumia
+        por um instante e voltava.) A imagem já vem com preload no head.
+
+        As medidas são INLINE, e o único breakpoint mora num <style> no <head>.
+        Elas já foram classe do Tailwind e não pode: o CSS do app chega depois
+        (em dev ele nem é arquivo, vem por JS), e até chegar a imagem renderiza
+        no tamanho natural dela, 900px de largura. Era a moeda gigante piscando
+        antes da animação.
 
         Se mexer nas medidas do loader lá, mexa aqui também.
       -->
@@ -146,11 +163,15 @@
         "
         aria-hidden="true"
       >
-        <div class="flex w-52 sm:w-72 flex-col items-center gap-8">
-          <div class="w-3/4">
-            <img src="/peres-globe-white.png" alt="" width="900" height="428" class="w-full" />
-          </div>
-          <div class="h-px w-full bg-paper/10"></div>
+        <div class="fallback-loader-col" style="display: flex; flex-direction: column; align-items: center; gap: 2rem; width: 13rem">
+          <img
+            src="/peres-globe-white.png"
+            alt=""
+            width="900"
+            height="428"
+            style="width: 75%; height: auto; display: block"
+          />
+          <div style="height: 1px; width: 100%; background: rgba(234, 232, 227, 0.1)"></div>
         </div>
       </div>
       <main
