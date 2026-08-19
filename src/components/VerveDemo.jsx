@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNearViewport } from '../hooks/useNearViewport.js'
+import { useReducedMotion } from '../hooks/useReducedMotion.js'
 
 const SENTENCES = [
   'speed comes from calm and steady hands',
@@ -9,6 +10,21 @@ const SENTENCES = [
 ]
 
 const EMBER = '#ff6b2b'
+
+// um caractere por tique; o relógio da corrida anda no mesmo passo
+const TICK_MS = 90
+const TICK_SECONDS = TICK_MS / 1000
+
+const wpmOf = (chars, time) => Math.min(210, Math.round((chars / 5 / Math.max(time, 0.1)) * 60))
+
+// Quadro parado pra quem pediu menos movimento: a primeira frase inteira, com
+// o wpm e o tempo que a digitação teria acumulado até a última letra dela.
+const STILL_RUN = {
+  idx: 0,
+  chars: SENTENCES[0].length,
+  time: SENTENCES[0].length * TICK_SECONDS,
+  wpm: wpmOf(SENTENCES[0].length, SENTENCES[0].length * TICK_SECONDS),
+}
 
 /**
  * Réplica visual do verve real: header "● verve N / M", caixa com a frase
@@ -23,6 +39,10 @@ export function VerveDemo() {
   // scroll inercial do celular. Agora só anda quando está visível de verdade.
   const [ref, near] = useNearViewport('0px')
   const [awake, setAwake] = useState(() => document.visibilityState !== 'hidden')
+  // Quem pediu menos movimento não tinha o que pausar aqui: a frase se digitava
+  // sozinha, em loop, pra sempre. O resto do site já respeita esse pedido (a
+  // moeda do loader, a seta do hero, o pedal abrindo), só esta caixa não.
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const onVisibility = () => setAwake(document.visibilityState !== 'hidden')
@@ -31,14 +51,14 @@ export function VerveDemo() {
   }, [])
 
   useEffect(() => {
-    if (!near || !awake) return
+    if (reducedMotion || !near || !awake) return
     const id = setInterval(() => {
       const st = s.current
       const sentence = SENTENCES[st.idx]
       if (st.chars < sentence.length) {
         st.chars++
-        st.time += 0.09
-        st.wpm = Math.min(210, Math.round((st.chars / 5 / Math.max(st.time, 0.1)) * 60))
+        st.time += TICK_SECONDS
+        st.wpm = wpmOf(st.chars, st.time)
       } else {
         st.idx = (st.idx + 1) % SENTENCES.length
         st.chars = 0
@@ -46,11 +66,11 @@ export function VerveDemo() {
         st.wpm = 0
       }
       setTick((t) => t + 1)
-    }, 90)
+    }, TICK_MS)
     return () => clearInterval(id)
-  }, [near, awake])
+  }, [near, awake, reducedMotion])
 
-  const { idx, chars, wpm, time } = s.current
+  const { idx, chars, wpm, time } = reducedMotion ? STILL_RUN : s.current
   const sentence = SENTENCES[idx]
   const typed = sentence.slice(0, chars)
   const rest = sentence.slice(chars)
