@@ -164,6 +164,42 @@ export function VerveTerminal({ mode = 'idle', statsRef, idleText }) {
     confettiRef.current = parts
   }
 
+  /**
+   * O frame parado do idle e desenhado UMA vez e nunca mais (idleFrozen), e ele
+   * escreve em IBM Plex Mono, que chega por webfont sem bloquear a renderizacao
+   * (index.html). Quando o desenho ganha essa corrida, o terminal fica na fonte
+   * de fallback PRA SEMPRE, porque nao existe nada no caminho que redesenhe.
+   *
+   * Medido em headless, segurando os arquivos de fonte do Google: o CRT desenhava
+   * aos ~890ms com a largura de glifo do monospace do sistema, a fonte chegava
+   * aos ~15s e o desenho seguia sendo aquele, unico. Com a espera daqui vem um
+   * segundo desenho junto com a fonte.
+   *
+   * Canvas nao dispara o carregamento de um @font-face sozinho: quem pede a
+   * fonte e o `fonts.load`. Depois dele, soltar o freeze basta, porque o
+   * frameloop do hero e 'always' enquanto a cena esta ativa (e se estiver
+   * pausada, redesenha quando voltar). Mesmo cuidado que a etiqueta do pedal
+   * ja toma em HangTag.tsx.
+   */
+  useEffect(() => {
+    if (mode === 'live') return
+    let alive = true
+    Promise.all([
+      // os dois pesos que o drawIdle usa; o @font-face declara 400 e 600, e o
+      // casamento de fonte resolve 500 e 700 pra eles
+      document.fonts.load('500 40px "IBM Plex Mono"'),
+      document.fonts.load('700 46px "IBM Plex Mono"'),
+    ])
+      .then(() => document.fonts.ready)
+      .then(() => {
+        if (alive) idleFrozen.current = false
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [mode])
+
   useEffect(() => {
     if (mode !== 'live') return
     reset()
