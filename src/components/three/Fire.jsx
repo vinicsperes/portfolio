@@ -68,7 +68,6 @@ const bakeFragment = /* glsl */ `
 `
 
 let cachedAtlas = null
-let cachedTarget = null
 // muda quando o atlas é invalidado; cada chama compara com a versão que usou
 let atlasVersion = 0
 
@@ -84,8 +83,7 @@ function invalidateAtlas() {
   // sem dispose(): isto só roda na restauração de contexto, e a essa altura os
   // objetos de GPU do target antigo já morreram junto com o contexto — pedir
   // pra deletar rende "INVALID_OPERATION: object does not belong to this
-  // context" no console. Basta soltar as referências.
-  cachedTarget = null
+  // context" no console. Basta soltar a referência.
   cachedAtlas = null
   atlasVersion++
 }
@@ -124,7 +122,10 @@ function getFlameAtlas(gl) {
   quad.geometry.dispose()
   material.dispose()
 
-  cachedTarget = target
+  // guardamos a TEXTURA, não o target: ele não é usado depois da assadura (a
+  // próxima só vem pela invalidação, que cria um novo) e a textura não depende
+  // dele pra viver — o three guarda o objeto de GPU dela na entrada dela, não
+  // na do target. Soltar o target deixa o navegador recolher o framebuffer.
   cachedAtlas = target.texture
   // `once`: a próxima assadura registra de novo, então não acumula listener
   gl.domElement.addEventListener('webglcontextrestored', invalidateAtlas, { once: true })
