@@ -302,8 +302,12 @@ function WallShelves() {
 export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   // assadas num worker (suspende até chegarem) — ver scene/roomTextures.js
   const { floor: woodTex, rug: rugTex, wall: wallTex, window: skyTex } = useRoomTextures(L.sky)
-  const collageTex = useTexture('/img/ghost-collage-tex.jpg')
-  const kidTex = useTexture('/img/vini-kid.jpg')
+  // WebP e não JPG: as duas são das maiores transferências do site e baixam
+  // durante o load da cena. 311KB -> 238KB no mesmo enquadramento e na mesma
+  // resolução (PSNR contra o JPG de origem: 40,6dB no pôster e 43,7dB na foto,
+  // diferença que não se vê num quadro desse tamanho na parede).
+  const collageTex = useTexture('/img/ghost-collage-tex.webp')
+  const kidTex = useTexture('/img/vini-kid.webp')
 
   /**
    * Tudo do quarto que NÃO depende da view, memoizado.
