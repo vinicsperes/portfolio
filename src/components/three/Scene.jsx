@@ -199,14 +199,26 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
       dpr={dpr}
       shadows
     >
-      {/* flipflops limita a 2 oscilações — evita "ticks" visíveis de resolução.
-          Teto = MAX_DPR (min(2, devicePixelRatio)): nunca supersample. Se a GPU
-          sofrer, cai proporcional pra segurar 60fps sem ficar preto/borrado. */}
+      {/* Teto = MAX_DPR (min(2, devicePixelRatio)): nunca supersample. Se a GPU
+          sofrer de verdade, cai proporcional pra segurar 60fps sem ficar borrado.
+
+          SEM onFallback, de propósito. O `flipped` do drei conta INCLINE junto
+          com decline, e incline dispara sempre que o fps encosta no topo da
+          faixa — ou seja, quando está tudo BEM. Num aparelho cravado em 60fps
+          numa tela de 60Hz são três inclines seguidos (~2,7s cada), o contador
+          passa de flipflops e o onFallback dispara aos ~8s. Ligado no dpr, ele
+          cortava a resolução de quem nunca perdeu um frame sequer. No desktop
+          isso nunca apareceu porque lá MAX_DPR é 1 e o corte dava 1 de novo; no
+          celular, onde MAX_DPR é 2, virava 1.2 permanente.
+
+          O flipflops fica: passar dele faz o drei parar de amostrar por frame,
+          e isso a gente quer. O que sai é só o corte pendurado nele. Quem baixa
+          o dpr agora é o onDecline, que é o único sinal que mede sofrimento de
+          verdade (média abaixo de 40fps). */}
       <PerformanceMonitor
         flipflops={2}
         onIncline={() => setDpr(MAX_DPR)}
         onDecline={() => setDpr(Math.max(1, MAX_DPR * 0.7))}
-        onFallback={() => setDpr(Math.max(1, MAX_DPR * 0.6))}
       />
       <CameraController view={view} />
 
