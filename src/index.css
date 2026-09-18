@@ -207,7 +207,17 @@ body {
   display: none;
 }
 
-/* wordmark GHOSTFX — mesma Saira 800 do app e do silkscreen do pedal */
+/* wordmark GHOSTFX — mesma Saira 800 do app e do silkscreen do pedal.
+   O arquivo é um SUBSET: só A-Z, 0-9 e pontuação (17KB -> 6,6KB). A família
+   inteira trazia 296 glifos pra escrever uma palavra. Se um dia esta fonte
+   precisar de MINÚSCULA ou acento, o subset tem que ser refeito a partir da
+   Saira ExtraBold original, senão sai quadradinho. Métricas e kerning dos
+   glifos que ficaram são os mesmos da fonte cheia.
+
+   E continua WOFF, não WOFF2: o mesmo arquivo é lido pelo troika no silkscreen
+   do pedal (PedalBody.tsx), e o parser dele recusa WOFF2 na cara dura
+   ("woff2 fonts not supported"). Uma URL só = os dois consumidores dividem o
+   download e o cache; dois formatos separariam isso por ~1,6KB de ganho. */
 @font-face {
   font-family: 'Saira';
   src: url('/fonts/saira-800.woff') format('woff');

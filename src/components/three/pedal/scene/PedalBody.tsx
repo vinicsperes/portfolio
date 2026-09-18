@@ -415,6 +415,8 @@ export function PedalBody({
         </group>
       </group>
 
+      {/* a Saira vem subsetada em A-Z/0-9/pontuação e em WOFF (não WOFF2) por
+          causa deste consumidor aqui — o porquê está no @font-face do index.css */}
       <LabelText
         font="/fonts/saira-800.woff"
         position={[0, H / 2 + 0.02, 0.55]}
