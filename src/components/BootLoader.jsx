@@ -81,11 +81,12 @@ export function BootLoader({ ready = false, onReveal }) {
           sumia por um instante e voltava. `mounted` continua movendo a barra. */}
       <div className="flex w-52 sm:w-72 flex-col items-center gap-8" style={{ perspective: '900px' }}>
         {/* moeda: gira rápido no eixo Y; ao "cair" (landing) desacelera até de
-            frente, e no fim (ending) dá a piscadinha com brilho e some. PNG
-            (raster): o SVG re-rasterizava a cada ângulo da rotação 3D e travava */}
+            frente, e no fim (ending) dá a piscadinha com brilho e some. Raster,
+            não SVG: o SVG re-rasterizava a cada ângulo da rotação 3D e travava.
+            WebP sem perda: os mesmos pixels do PNG que veio antes, metade do peso. */}
         <div className={`loader-coin-wrap w-3/4 ${!reducedMotion && ending ? 'flash' : ''}`}>
           <img
-            src="/peres-globe-white.png"
+            src="/peres-globe-white.webp"
             alt=""
             aria-hidden="true"
             width={900}
