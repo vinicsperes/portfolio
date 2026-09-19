@@ -270,12 +270,31 @@ body {
   }
 }
 
-/* títulos vazados (outline) — contraste tipográfico das seções */
+/* Títulos vazados (outline) — contraste tipográfico das seções.
+
+   Duas correções sobre o que era `2px` + `transparent`:
+
+   1. ESPESSURA PROPORCIONAL. O contorno era 2px fixo, mas estes títulos vão
+      de 76px (mobile) a 230px (o nome no hero). 2px num glifo de 230px é um
+      fio de cabelo: no hero o "VINICIUS" vazado cruza a janela do pôr do sol,
+      com prédios e mullions atrás, e as letras liam como arranhões em vez de
+      nome. Em `em` a espessura acompanha o corpo, e o `max()` segura um piso
+      de 2px pros tamanhos pequenos não afinarem.
+
+   2. MIOLO LEVEMENTE ESCURO em vez de `transparent`. Vazado sobre fundo chapado
+      funciona; sobre a cena 3D iluminada, o contorno disputa com o que passa
+      DENTRO das letras. Um véu escuro no miolo abaixa esse fundo sem fechar a
+      letra: continua vazado, mas o contorno passa a ter de onde saltar. Nas
+      seções de fundo chapado (#0a0a0f) o véu é da mesma cor do fundo, então
+      lá nada muda. */
+.text-stroke-paper,
+.text-stroke-ember {
+  -webkit-text-stroke-width: max(2px, 0.026em);
+  color: rgba(10, 10, 15, 0.45);
+}
 .text-stroke-paper {
-  -webkit-text-stroke: 2px var(--color-paper);
-  color: transparent;
+  -webkit-text-stroke-color: var(--color-paper);
 }
 .text-stroke-ember {
-  -webkit-text-stroke: 2px #ff6b2b;
-  color: transparent;
+  -webkit-text-stroke-color: #ff6b2b;
 }
