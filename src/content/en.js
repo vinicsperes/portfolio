@@ -80,7 +80,6 @@ export const en = {
 
   projects: {
     title: 'What I build',
-    sub: "From here down, the projects I've been building.",
   },
 
   sections: {

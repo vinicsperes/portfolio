@@ -80,7 +80,6 @@ export const pt = {
 
   projects: {
     title: 'O que eu construo',
-    sub: 'Daqui pra baixo, os projetos que andei construindo.',
   },
 
   sections: {

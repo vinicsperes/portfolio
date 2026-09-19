@@ -25,6 +25,19 @@ const SOCIALS = [
   { key: 'instagram', Icon: InstagramIcon },
 ]
 
+// índice de projetos da faixa #projects, na ordem em que aparecem na página.
+// `id` é a âncora da seção E a chave do dicionário de onde sai a tag técnica,
+// então nenhum texto é escrito duas vezes.
+const PROJETOS = [
+  { id: 'ghost', name: 'GHOSTFX' },
+  { id: 'verve', name: 'VERVE' },
+]
+
+// as tags do dicionário vêm com o prompt de terminal ("> RUST · TUI") porque
+// nas seções elas são escritas como linha de comando. No índice o prompt não
+// tem o que fazer: ali elas são etiqueta, não terminal.
+const semPrompt = (tag) => tag.replace(/^>\s*/, '')
+
 // única view com câmera própria além da home: o quadro do about
 const VALID_VIEWS = ['home', 'about']
 const GREEN = '#16a030'
@@ -489,7 +502,16 @@ export function Hero() {
 
       {/* ─────────── PÁGINA: seções roláveis ─────────── */}
       <main className="relative z-10 border-t border-paper/10">
-        {/* Sobre mim mora na CENA (view do quadro); daqui pra baixo: projetos */}
+        {/* Sobre mim mora na CENA (view do quadro); daqui pra baixo: projetos.
+
+            Esta faixa era um cabeçalho e uma linha de texto que descrevia o
+            layout ("daqui pra baixo, os projetos que andei construindo") —
+            copy que não diz nada que o título já não diga, gastando um quarto
+            de tela pra anunciar dois projetos.
+
+            Agora ela é um ÍNDICE: diz quantos projetos existem, como se chamam
+            e do que são feitos, antes de o visitante rolar. E cada linha leva
+            direto pra seção. É o mesmo espaço fazendo trabalho de verdade. */}
         <div id="projects" className="snap-section border-b border-paper/10">
           <div className="section-y mx-auto max-w-6xl px-6 sm:px-12">
             <Block>
@@ -499,9 +521,34 @@ export function Hero() {
               <h2 className="mt-3 font-poster uppercase leading-[0.95] text-3xl sm:text-5xl text-paper">
                 {t.projects.title}
               </h2>
-              <p className="mt-3 max-w-xl font-mono text-xs sm:text-sm text-paper/60 leading-relaxed">
-                {t.projects.sub}
-              </p>
+              <ol className="mt-8 border-t border-paper/10">
+                {PROJETOS.map((proj, i) => (
+                  <li key={proj.id}>
+                    <a
+                      href={`#${proj.id}`}
+                      className="group flex items-center gap-4 border-b border-paper/10 px-1 py-5 transition-colors hover:bg-paper/[0.03] focus-visible:bg-paper/[0.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber sm:gap-8"
+                    >
+                      <span className="font-mono text-[10px] tabular-nums text-paper/40">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-poster uppercase leading-none text-2xl sm:text-4xl text-paper transition-colors group-hover:text-amber">
+                          {proj.name}
+                        </span>
+                        <span className="mt-2 block font-mono text-[10px] tracking-[0.25em] text-paper/45">
+                          {semPrompt(t[proj.id].tag)}
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="font-mono text-paper/40 transition-all duration-300 group-hover:translate-x-1 group-hover:text-amber motion-reduce:transition-none"
+                      >
+                        →
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
             </Block>
           </div>
         </div>
