@@ -778,19 +778,37 @@ export function Hero() {
               <p className="mt-6 max-w-xl font-mono text-sm text-paper/70 leading-relaxed">
                 {t.contact.p}
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-4">
+              {/* items-END, não center: o chip de copiar é de 10px e o e-mail
+                  é de 48px, então centrar os dois pela altura da linha deixava
+                  o chip boiando acima da base do e-mail, parecendo solto em vez
+                  de pertencer à linha. Alinhado pelo pé, os dois assentam no
+                  mesmo chão. O `leading-none` é o que faz o pé da caixa do link
+                  coincidir com o pé do glifo. */}
+              <div className="mt-8 flex flex-wrap items-end gap-x-4 gap-y-3">
                 <a
                   href={`mailto:${links.email}`}
-                  className="font-poster text-2xl sm:text-5xl text-amber hover:underline break-all"
+                  className="break-all font-poster text-2xl leading-none text-amber underline decoration-transparent decoration-2 underline-offset-[6px] transition-colors hover:decoration-amber focus-visible:decoration-amber sm:text-5xl"
                 >
                   {links.email}
                 </a>
+                {/* copiado vira estado CHEIO, não só troca de palavra: a
+                    confirmação tem que ser vista pelo canto do olho, que é
+                    onde o chip está enquanto o visitante olha pro e-mail */}
                 <button
                   onClick={copyEmail}
-                  className="border border-paper/30 text-paper/80 px-3 py-2 font-mono text-[10px] font-bold tracking-widest hover:border-amber hover:text-amber transition-colors"
+                  className={`border px-3 py-2 font-mono text-[10px] font-bold tracking-widest transition-colors ${
+                    copied
+                      ? 'border-amber bg-amber text-ink'
+                      : 'border-paper/30 text-paper/80 hover:border-amber hover:text-amber'
+                  }`}
                 >
                   {copied ? t.contact.copied : t.contact.copy}
                 </button>
+                {/* trocar o rótulo de um botão não é anunciado de forma
+                    confiável; a confirmação em si mora aqui */}
+                <span className="sr-only" role="status">
+                  {copied ? t.contact.copied : ''}
+                </span>
               </div>
               {/* redes: ícone + rótulo, com o âmbar preenchendo de baixo pra
                   cima no hover. No mobile viram grade de 2 colunas alinhada
