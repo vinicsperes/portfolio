@@ -279,10 +279,10 @@ export function PedalBody({
     <meshPhysicalMaterial
       ref={matRef}
       color={palette.pedal}
-      roughness={0.2}
+      roughness={0.3}
       metalness={0.2}
-      envMapIntensity={0.8}
-      clearcoat={0.6}
+      envMapIntensity={0.5}
+      clearcoat={0.45}
       clearcoatRoughness={0.12}
       transparent={!opaque}
       opacity={opaque ? 1 : opacity}

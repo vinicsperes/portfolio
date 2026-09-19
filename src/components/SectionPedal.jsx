@@ -224,15 +224,27 @@ export function SectionPedal({ onReady }) {
       }}
     >
       <FitPedal />
-      <ambientLight intensity={0.5} color="#f0e8d8" />
-      <directionalLight position={[-4, 6, 3]} intensity={2} color="#e8dfc8" />
-      <directionalLight position={[5, 4, -3]} intensity={1.2} color="#c8d8f0" />
+      {/* Rig igual ao do app (ghostfx/src/Pedal3D.tsx), luz por luz.
+
+          O que havia aqui tinha o DOBRO de luz ambiente (0.5 contra 0.25) e as
+          direcionais mais fracas. Ambiente é luz chapada por definição: ela
+          entra igual em todo fragmento, não tem direção, e por isso não produz
+          brilho especular nenhum — só levanta o preto do chassi. Dobrar ela e
+          enfraquecer as direcionais é exatamente a receita de deixar um
+          objeto fosco, e foi o que o dono viu.
+
+          A point light de baixo e da frente é a que desenha o brilho na tampa
+          virada pra câmera. Ela não existia aqui. */}
+      <ambientLight intensity={0.25} />
+      <directionalLight position={[-4, 6, 3]} intensity={2.8} color="#e8dfc8" />
+      <directionalLight position={[5, 4, -3]} intensity={1.6} color="#c8d8f0" />
+      <pointLight position={[0, -3, 5]} intensity={1.2} color="#ffffff" />
       <Suspense fallback={null}>
         {/* 512x256 (era 1k, 1.5MB): serve só de IBL pro reflexo no chassi e nos
             knobs, nunca aparece como fundo. O que pesava não era o download e
             sim o decode RGBE + a geração do PMREM — e isso acontecia DUAS
             vezes, porque textura de GPU não atravessa contexto WebGL */}
-        <Environment files={HDRI} environmentIntensity={0.7} />
+        <Environment files={HDRI} environmentIntensity={0.8} />
         <AutoOpenPedal reducedMotion={reducedMotion} armed={ready} />
         <CompileGate onReady={handleReady} />
       </Suspense>
