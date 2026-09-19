@@ -93,8 +93,13 @@ export function GhostCards() {
           <h4 className="font-poster uppercase text-lg text-paper">{k.title}</h4>
           <p className="mt-1 font-mono text-[10px] text-paper/60 leading-relaxed">{k.p}</p>
         </div>
-        {/* pointer-events-none: os knobs aqui são vitrine, não controle */}
-        <div className="pointer-events-none flex h-44 flex-1 items-center">
+        {/* pointer-events-none: os knobs aqui são vitrine, não controle.
+            Ancorados embaixo (items-end), não centralizados: o card estica
+            pra acompanhar a altura da grade de presets ao lado, e com os
+            knobs centrados a sobra virava um buraco entre o texto e eles —
+            a peça ficava boiando no meio do card. Encostados na base, o card
+            lê como ficha técnica: o texto em cima, o hardware no pé. */}
+        <div className="pointer-events-none flex h-44 flex-1 items-end pb-4">
           {/* caixa com a proporção do still: assim os rótulos se ancoram na
               IMAGEM, não no card. Com `object-contain` num card mais largo que
               390px a imagem ficava centralizada com sobra dos lados e a
@@ -146,9 +151,16 @@ export function GhostCards() {
 
       {/* seis presets = seis colorways, com os shaders reais do app de fundo */}
       <div className="flex flex-col lg:col-span-8">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        {/* título e subtítulo EMPILHADOS. Lado a lado e alinhados pela base,
+            um poster de 18px e um mono de 10px liam como uma frase só que
+            troca de fonte no meio — e a linha do subtítulo ("cada um é um
+            pedal diferente por dentro") é boa demais pra virar rodapé do
+            título. Empilhado custa 16px de altura e ela passa a ser lida. */}
+        <div>
           <h4 className="font-poster uppercase text-lg text-paper">{presets.title}</h4>
-          <p className="font-mono text-[10px] text-paper/60 leading-relaxed">{presets.short}</p>
+          <p className="mt-1 max-w-lg font-mono text-[10px] text-paper/60 leading-relaxed">
+            {presets.short}
+          </p>
         </div>
         <div className="mt-3 grid grid-cols-1 flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {presets.list.map((p, i) => (
