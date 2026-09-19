@@ -4,6 +4,7 @@ import { AboutOverlay } from './AboutOverlay.jsx'
 import { BootLoader } from './BootLoader.jsx'
 import { PedalLoader } from './PedalLoader.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
+import { SectionRail } from './SectionRail.jsx'
 import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
@@ -293,7 +294,7 @@ export function Hero() {
       {/* ─────────── HERO: cena full-bleed + lockup tipográfico à esquerda ─────────── */}
       {/* svh (não dvh): a barra do navegador mobile recolhe no 1º scroll e o
           dvh mudaria a altura, redimensionando o canvas inteiro (lag visível) */}
-      <section ref={heroRef} className="snap-section relative min-h-[100svh] overflow-hidden">
+      <section id="top" ref={heroRef} className="snap-section relative min-h-[100svh] overflow-hidden">
         {/* A cena 3D é o fundo inteiro; a tela do CRT dentro dela passa o reel
             dos trabalhos (o "vídeo"). O texto vive por cima, à esquerda. */}
         <div className="absolute inset-0 z-0" aria-hidden="true">
@@ -475,6 +476,11 @@ export function Hero() {
           <div className="w-16" aria-hidden="true" />
         </div>
       </section>
+
+      {/* Trilho de navegação: fica FORA da section do hero de propósito. Ele é
+          `fixed`, e o hero tem overflow-hidden — hoje isso não recorta um
+          fixed, mas basta alguém pôr um transform ali pra passar a recortar. */}
+      <SectionRail hidden={view !== 'home' || !sceneRevealed} />
 
       {/* ─────────── PÁGINA: seções roláveis ─────────── */}
       <main className="relative z-10 border-t border-paper/10">

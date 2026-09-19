@@ -90,6 +90,8 @@ export const en = {
     socials: 'SOCIALS',
     backToRoom: '← BACK',
     scrollHint: 'SCROLL TO EXPLORE',
+    top: 'TOP',
+    sectionNav: 'Page sections',
     srIntro:
       'Vinicius Peres, fullstack creative developer. Ghost FX: a guitar pedal in the browser. Verve: a typing test in the terminal. Scroll down to explore the projects.',
   },
