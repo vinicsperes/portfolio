@@ -485,25 +485,25 @@ export function Hero() {
             O inset de safe area também entra no lockup acima, então os dois
             sobem juntos e o respiro entre eles não muda; sem isso a cue fica
             embaixo da barra dos navegadores in-app (Instagram) */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] sm:px-12">
-          <div className="w-16" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-center px-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] sm:px-12">
           <button
             onClick={() =>
               document
                 .getElementById('projects')
                 ?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
             }
-            className={`pointer-events-auto flex flex-col items-center gap-1 p-3 text-paper/55 hover:text-amber transition-colors ${reveal(
+            className={`group pointer-events-auto flex flex-col items-center gap-2.5 p-3 text-paper/80 transition-colors hover:text-amber focus-visible:text-amber focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber [filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.85))] ${reveal(
               view === 'home',
               'delay-500'
             )} ${view === 'home' ? '' : 'invisible'}`}
           >
-            <span className="font-mono text-[9px] tracking-[0.3em]">{t.ui.scrollHint}</span>
-            <span className={`text-xs ${reducedMotion ? '' : 'animate-bounce'}`} aria-hidden="true">
-              ↓
+            <span className="font-mono text-[10px] font-semibold tracking-[0.3em]">
+              {t.ui.scrollHint}
             </span>
+            {/* a linha com o ponto descendo substitui a seta quicando: o
+                movimento passa a ser o próprio gesto que se está pedindo */}
+            <span className="scroll-cue-track" aria-hidden="true" />
           </button>
-          <div className="w-16" aria-hidden="true" />
         </div>
       </section>
 

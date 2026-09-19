@@ -253,6 +253,56 @@ body {
   }
 }
 
+/* Cue de scroll do hero: um ponto de luz que DESCE por uma linha.
+
+   Era o `animate-bounce` do Tailwind num "↓", que é uma quicada elástica —
+   linguagem de app de celular chamando atenção, não desta página. E ficava em
+   text-paper/55 num corpo de 9px por cima do tapete iluminado da cena 3D: na
+   prática, invisível. A única coisa que avisa que a página continua abaixo da
+   dobra não pode ser a coisa menos visível da tela.
+
+   Agora o movimento DIZ o que ele quer: o ponto percorre a linha de cima pra
+   baixo, que é exatamente o gesto pedido. Só transform e opacity num elemento
+   de 1px, então não disputa nada com a cena. */
+@keyframes scroll-cue {
+  0% {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(34px);
+    opacity: 0;
+  }
+}
+.scroll-cue-track {
+  position: relative;
+  width: 1px;
+  height: 34px;
+  overflow: hidden;
+  background: rgba(234, 232, 227, 0.22);
+}
+.scroll-cue-track::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 14px;
+  background: linear-gradient(to bottom, transparent, var(--color-amber));
+  animation: scroll-cue 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue-track::after {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
 /* Ritmo vertical das seções, definido UMA vez.
    Antes cada seção escolhia o seu: 56px no cabeçalho de projetos, 64 no
    ghost, 128 no verve/blog/contato. Dois ritmos diferentes na mesma página,
