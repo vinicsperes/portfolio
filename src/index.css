@@ -253,6 +253,23 @@ body {
   }
 }
 
+/* Ritmo vertical das seções, definido UMA vez.
+   Antes cada seção escolhia o seu: 56px no cabeçalho de projetos, 64 no
+   ghost, 128 no verve/blog/contato. Dois ritmos diferentes na mesma página,
+   e eles SOMAM na fronteira — entre o verve e o blog davam 262px de nada
+   seguido, 29% de uma tela de 900px. Lido de cima pra baixo isso não parece
+   respiro, parece que a página acabou.
+   Aqui o intervalo entre duas seções é 128px no mobile e 160 no desktop, e a
+   separação de verdade fica por conta da borda que já existe entre elas. */
+.section-y {
+  padding-block: 4rem;
+}
+@media (min-width: 640px) {
+  .section-y {
+    padding-block: 5rem;
+  }
+}
+
 /* títulos vazados (outline) — contraste tipográfico das seções */
 .text-stroke-paper {
   -webkit-text-stroke: 2px var(--color-paper);

@@ -486,7 +486,7 @@ export function Hero() {
       <main className="relative z-10 border-t border-paper/10">
         {/* Sobre mim mora na CENA (view do quadro); daqui pra baixo: projetos */}
         <div id="projects" className="snap-section border-b border-paper/10">
-          <div className="mx-auto max-w-6xl px-6 sm:px-12 py-12 sm:py-14">
+          <div className="section-y mx-auto max-w-6xl px-6 sm:px-12">
             <Block>
               <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
                 {t.sections.projects}
@@ -509,7 +509,7 @@ export function Hero() {
               <GhostSectionBg />
             </Suspense>
           )}
-          <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12 py-14 sm:py-16">
+          <div className="section-y relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center gap-8 px-6 sm:px-12">
             {/* grid-cols-1 é obrigatório: sem template, o track auto dimensiona
                 pelo conteúdo (max-w-md = 448px) e estoura o viewport no mobile */}
             <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
@@ -624,7 +624,7 @@ export function Hero() {
             className="absolute inset-0"
             style={{ background: 'radial-gradient(55% 55% at 30% 50%, rgba(255,107,43,0.07), transparent 70%)' }}
           />
-          <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-10 px-6 sm:px-12 py-24 sm:py-32 md:grid-cols-2">
+          <div className="section-y relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 sm:px-12 md:grid-cols-2">
             <Block className="order-2 md:order-1">
               {stage >= 3 && (
                 <Suspense fallback={null}>
@@ -666,7 +666,7 @@ export function Hero() {
 
         {/* Blog */}
         <section id="blog" className="snap-section border-t border-paper/10">
-          <div className="mx-auto max-w-6xl px-6 sm:px-12 py-24 sm:py-32">
+          <div className="section-y mx-auto max-w-6xl px-6 sm:px-12">
             <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
               {t.sections.blog}
             </span>
@@ -683,7 +683,7 @@ export function Hero() {
 
         {/* Contato */}
         <section id="contact" className="snap-section border-t border-paper/10">
-          <div className="mx-auto max-w-6xl px-6 sm:px-12 py-24 sm:py-32">
+          <div className="section-y mx-auto max-w-6xl px-6 sm:px-12">
             <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
               {t.sections.contact}
             </span>
