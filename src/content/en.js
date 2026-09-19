@@ -72,6 +72,10 @@ export const en = {
   blog: {
     soon: 'COMING SOON',
     soonSub: 'Field notes on how these projects are built.',
+    // a seção não pode ser um beco sem saída: enquanto não há post, ela
+    // aponta pra onde os bastidores já existem de verdade
+    meanwhile: 'Until I write them up, the shortest path to the behind-the-scenes is the code itself.',
+    meanwhileCta: 'BROWSE ON GITHUB',
   },
 
   projects: {

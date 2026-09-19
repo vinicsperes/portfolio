@@ -72,6 +72,10 @@ export const pt = {
   blog: {
     soon: 'EM BREVE',
     soonSub: 'Notas de bastidores sobre como esses projetos são feitos.',
+    // a seção não pode ser um beco sem saída: enquanto não há post, ela
+    // aponta pra onde os bastidores já existem de verdade
+    meanwhile: 'Enquanto eu não escrevo, o caminho mais curto pros bastidores é o próprio código.',
+    meanwhileCta: 'VER NO GITHUB',
   },
 
   projects: {
