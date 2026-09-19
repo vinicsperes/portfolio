@@ -543,11 +543,19 @@ export function Hero() {
                       <span className="font-mono text-[10px] tabular-nums text-paper/40">
                         {String(i + 1).padStart(2, '0')}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-poster uppercase leading-none text-2xl sm:text-4xl text-paper transition-colors group-hover:text-amber">
+                      {/* No desktop o nome vai pra ESQUERDA e a etiqueta pra
+                          DIREITA, encostada na seta. Empilhados (nome e
+                          etiqueta juntos à esquerda) sobravam ~900px de vazio
+                          no meio da linha com a seta sozinha lá na ponta: lia
+                          como tabela esticada, não como índice. Com as duas
+                          pontas ancoradas, o vão vira intervalo de sumário.
+                          No mobile continuam empilhados, que é onde não há
+                          largura pra separar. */}
+                      <span className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+                        <span className="font-poster uppercase leading-none text-2xl sm:text-4xl text-paper transition-colors group-hover:text-amber">
                           {proj.name}
                         </span>
-                        <span className="mt-2 block font-mono text-[10px] tracking-[0.25em] text-paper/45">
+                        <span className="font-mono text-[10px] tracking-[0.25em] text-paper/45">
                           {semPrompt(t[proj.id].tag)}
                         </span>
                       </span>
