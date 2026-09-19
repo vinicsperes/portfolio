@@ -5,8 +5,10 @@ export const en = {
     badge: {
       l2: 'SANTA CATARINA · BRAZIL',
     },
+    // caixa de frase, não caixa alta: são 78 caracteres, e maiúscula nesse
+    // comprimento apaga a silhueta das palavras (ver o estilo no Hero)
     welcome:
-      "SOFTWARE DEVELOPER. THIS IS WHERE MY LATEST WORK LIVES. MAKE YOURSELF AT HOME!",
+      'Software developer. This is where my latest work lives. Make yourself at home!',
     // convite para trocar de idioma — escrito no OUTRO idioma, de propósito
     langCta: { label: 'fala português?', flag: '🇧🇷', to: 'pt' },
   },

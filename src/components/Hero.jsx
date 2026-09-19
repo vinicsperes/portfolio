@@ -397,9 +397,21 @@ export function Hero() {
               <img src="/peres-stamp-globe.svg" alt="" width={561} height={318} decoding="async" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
             </div>
 
-            {/* boas-vindas */}
+            {/* Boas-vindas em caixa de FRASE.
+
+                Eram 84 caracteres em caixa alta, negrito e tracking largo. A
+                etiqueta acima ("DEV CRIATIVO FULLSTACK") ganha caixa alta
+                porque são três palavras e ela funciona como carimbo; uma frase
+                inteira, não: maiúscula deixa toda palavra com o mesmo retângulo
+                e apaga a silhueta que o olho usa pra reconhecer palavra sem
+                soletrar. Em duas linhas de mono miúdo isso vira textura, e o
+                visitante pula.
+
+                Junto com a caixa saem o negrito e o tracking largo, que
+                existiam pra segurar a maiúscula, e entra um degrau de corpo,
+                porque minúscula tem altura-x menor que maiúscula. */}
             <p
-              className={`mt-7 max-w-lg font-mono text-[10px] sm:text-xs font-bold leading-relaxed tracking-wider text-paper/80 ${reveal(
+              className={`mt-7 max-w-lg font-mono text-[11px] sm:text-sm leading-relaxed text-paper/75 ${reveal(
                 view === 'home',
                 'delay-500'
               )}`}
