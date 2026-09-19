@@ -492,7 +492,7 @@ export function Hero() {
                 .getElementById('projects')
                 ?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
             }
-            className={`group pointer-events-auto flex flex-col items-center gap-2.5 p-3 text-paper/80 transition-colors hover:text-amber focus-visible:text-amber focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber [filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.85))] ${reveal(
+            className={`group pointer-events-auto flex flex-col items-center gap-2.5 p-3 text-paper/80 transition-colors hover:text-amber focus-visible:text-amber [filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.85))] ${reveal(
               view === 'home',
               'delay-500'
             )} ${view === 'home' ? '' : 'invisible'}`}
@@ -538,7 +538,7 @@ export function Hero() {
                   <li key={proj.id}>
                     <a
                       href={`#${proj.id}`}
-                      className="group flex items-center gap-4 border-b border-paper/10 px-1 py-5 transition-colors hover:bg-paper/[0.03] focus-visible:bg-paper/[0.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber sm:gap-8"
+                      className="group flex items-center gap-4 border-b border-paper/10 px-1 py-5 transition-colors hover:bg-paper/[0.03] focus-visible:bg-paper/[0.03] sm:gap-8"
                     >
                       <span className="font-mono text-[10px] tabular-nums text-paper/40">
                         {String(i + 1).padStart(2, '0')}

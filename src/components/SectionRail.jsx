@@ -83,7 +83,7 @@ export function SectionRail({ hidden = false }) {
                 <a
                   href={`#${p.id}`}
                   aria-current={ativo ? 'true' : undefined}
-                  className="flex items-center justify-end gap-3 py-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber"
+                  className="flex items-center justify-end gap-3 py-1"
                 >
                   <span
                     className={`whitespace-nowrap font-mono text-[10px] font-bold tracking-[0.2em] opacity-0 transition-all duration-300 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 motion-reduce:transition-none ${

@@ -46,6 +46,26 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Foco de teclado: um desenho só, pra tudo que é focável.
+
+   Metade dos controles tinha anel âmbar escrito à mão e a outra metade caía
+   no anel padrão do navegador. Quem navega por Tab via dois desenhos
+   diferentes pro MESMO estado, dependendo de em qual botão parou — e o padrão
+   do Chrome sobre este fundo escuro é bem mais fraco que o âmbar da casa.
+
+   Vai em `@layer base` DE PROPÓSITO. No Tailwind v4 o CSS solto (fora de
+   camada) vence o que está em camada, então uma regra solta aqui passaria por
+   cima dos utilitários focus-visible do JSX — inclusive do `outline-paper` da
+   CTA do hero, que é branco justamente porque ela tem fundo âmbar e um anel
+   âmbar ali seria invisível. Em `base`, cada botão que precisa de tratamento
+   próprio continua mandando no seu. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-amber);
+    outline-offset: 3px;
+  }
+}
+
 /* CTA do Ghost: fantasminha sobe assombrando o botão no hover e fica
    flutuando; o rótulo rola pra cima (roll-up) via utilitários no JSX */
 @keyframes ghost-rise {
