@@ -366,13 +366,18 @@ export function Hero() {
             </p>
 
             {/* faixa de selos sob o lockup (como a Jeleiz): marcas soltas e
-                nítidas — no mobile encolhem e perdem os pontos, mas FICAM */}
+                nítidas — no mobile encolhem e perdem os pontos, mas FICAM.
+
+                Eram TRÊS, e o do meio era o selo de wordmark, que escreve
+                "VINICIUS PERES" — o mesmo nome que já está logo acima em
+                230px de altura. Dizer o nome duas vezes na mesma coluna, uma
+                gigante e uma miúda, não é marca, é eco: gastava a atenção do
+                visitante repetindo o que ele acabou de ler. Ficaram os dois
+                que ACRESCENTAM alguma coisa, o monograma e o selo do
+                "creative code collection". O de wordmark segue no rodapé,
+                que é onde assinar faz sentido. */}
             <div className={`mt-5 sm:mt-8 flex items-center gap-3 sm:gap-5 ${reveal(view === 'home', 'delay-300')}`}>
               <img src="/peres-logo.svg" alt="" width={873} height={873} decoding="async" className="h-9 w-9 sm:h-16 sm:w-16" />
-              <span className="hidden sm:inline text-paper/35" aria-hidden="true">
-                ·
-              </span>
-              <img src="/peres-stamp-wordmark.svg" alt="" width={688} height={299} decoding="async" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
               <span className="hidden sm:inline text-paper/35" aria-hidden="true">
                 ·
               </span>
