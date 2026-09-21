@@ -60,6 +60,12 @@ export const en = {
     p2Prefix: 'Built with Rust, ',
     p2Suffix: '. Single self-contained binary.',
     source: 'SOURCE CODE',
+    demo: {
+      hint: 'click and type',
+      aria: 'Typing test: click the box and type the sentence shown.',
+      again: 'AGAIN',
+      accuracy: 'accuracy',
+    },
   },
 
   contact: {

@@ -60,6 +60,12 @@ export const pt = {
     p2Prefix: 'Feito com Rust, ',
     p2Suffix: '. Um único binário auto-contido.',
     source: 'CÓDIGO FONTE',
+    demo: {
+      hint: 'clique e digite',
+      aria: 'Teste de digitação: clique na caixa e digite a frase mostrada.',
+      again: 'DE NOVO',
+      accuracy: 'precisão',
+    },
   },
 
   contact: {
