@@ -678,6 +678,16 @@ export function Hero() {
                     shaders compilarem. O indicador cobre as três fases e sai
                     antes de o pedal aparecer */}
                 <PedalLoader done={pedalReady} />
+                {/* O footswitch é clicável, e no desktop o cursor avisa isso no
+                    hover. No celular não existe hover, então sem esta linha
+                    ninguém descobriria. Só entra com o pedal já na tela. */}
+                <p
+                  className={`pointer-events-none absolute inset-x-0 bottom-0 text-center font-mono text-[10px] tracking-[0.25em] text-paper/40 transition-opacity duration-500 ${
+                    pedalReady ? 'opacity-100 delay-700' : 'opacity-0'
+                  }`}
+                >
+                  {t.ghost.stompHint}
+                </p>
               </div>
             </div>
 

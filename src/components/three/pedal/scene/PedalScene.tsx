@@ -11,6 +11,7 @@ export function PedalScene({
   circuitOnly = false,
   showCircuit = true,
   simple = false,
+  interactive = true,
   split = false,
   spin = null,
   hideTag = false,
@@ -38,6 +39,7 @@ export function PedalScene({
   circuitOnly?: boolean;
   showCircuit?: boolean;
   simple?: boolean;
+  interactive?: boolean;
   split?: boolean;
   spin?: number | null;
   hideTag?: boolean;
@@ -72,6 +74,7 @@ export function PedalScene({
       circuitOnly={circuitOnly}
       showCircuit={showCircuit}
       simple={simple}
+      interactive={interactive}
       split={split}
       spin={spin}
       hideTag={hideTag}

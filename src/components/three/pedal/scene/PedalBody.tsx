@@ -99,6 +99,7 @@ export function PedalBody({
   circuitOnly = false,
   showCircuit = true,
   simple = false,
+  interactive = true,
   hideTag = false,
   split = false,
   spin = null,
@@ -132,6 +133,7 @@ export function PedalBody({
   /** LOD do pedal decorativo (quarto, ~40px na tela): sem jacks, silkscreen,
    *  furos nem pés — detalhes que nem chegam a um pixel ali. */
   simple?: boolean;
+  interactive?: boolean;
   hideTag?: boolean;
   split?: boolean;
   spin?: number | null;
@@ -536,6 +538,7 @@ export function PedalBody({
       {!circuitOnly && (
       <group ref={(g) => void (aboveGroups.current[0] = g)} position={[0, LY.above, 0]}>
       <Knob3D
+        interactive={interactive}
         position={kp.drive}
         value={knobDrive}
         onChange={(val) => onKnobChange("drive", val)}
@@ -550,6 +553,7 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <Knob3D
+        interactive={interactive}
         position={kp.echo}
         value={knobEcho}
         onChange={(val) => onKnobChange("echo", val)}
@@ -564,6 +568,7 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <Knob3D
+        interactive={interactive}
         position={kp.tone}
         value={knobTone}
         onChange={(val) => onKnobChange("tone", val)}
@@ -578,6 +583,7 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <Knob3D
+        interactive={interactive}
         position={kp.reverb}
         value={knobReverb}
         onChange={(val) => onKnobChange("reverb", val)}
@@ -592,6 +598,7 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <Knob3D
+        interactive={interactive}
         position={kp.mod}
         value={knobMod}
         onChange={(val) => onKnobChange("mod", val)}
@@ -606,6 +613,7 @@ export function PedalBody({
         showArc={v?.showArc}
       />
       <MasterKnob3D
+        interactive={interactive}
         position={kp.master}
         value={knobMaster}
         onChange={(val) => onKnobChange("master", val)}

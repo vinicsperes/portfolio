@@ -35,6 +35,7 @@ export const en = {
         p: 'Modeled piece by piece after the reference hardware, knob to circuit. In the app, you turn every one of them.',
       },
     },
+    stompHint: 'stomp the footswitch',
     presets: {
       title: 'Six voiced presets',
       short: 'Each one is a different pedal inside, not a saved knob position.',

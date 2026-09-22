@@ -45,6 +45,11 @@ function AutoOpenPedal({ reducedMotion, armed }) {
   const smooth = useRef(0)
   const opened = useRef(false)
   const [led, setLed] = useState(false)
+  // trava do acender AUTOMÁTICO da abertura. Sem ela, o `!led` testado a cada
+  // frame reacendia o LED no frame seguinte ao visitante desligar no pisão.
+  const ledAuto = useRef(false)
+  // até quando pedir frames por causa da mola do footswitch (ver aoPisar)
+  const pisadoAte = useRef(0)
   const gl = useThree((s) => s.gl)
   const invalidate = useThree((s) => s.invalidate)
 
@@ -54,6 +59,7 @@ function AutoOpenPedal({ reducedMotion, armed }) {
     opened.current = true
     smooth.current = 1
     explodeRef.current = 1.1
+    ledAuto.current = true
     setLed(true)
   }, [reducedMotion])
 
@@ -102,16 +108,44 @@ function AutoOpenPedal({ reducedMotion, armed }) {
     const p = smooth.current
     explodeRef.current = p * 1.1
     if (group.current) group.current.rotation.y = p * OPEN_ANGLE
-    if (!led && p > 0.4) setLed(true)
+    if (!ledAuto.current && p > 0.4) {
+      ledAuto.current = true
+      setLed(true)
+    }
     // segue renderizando enquanto a abertura não assentou; depois idle
     if (!reducedMotion && Math.abs(target - p) > 0.0005) invalidate()
+    // e enquanto a mola do footswitch estiver voltando
+    if (performance.now() < pisadoAte.current) invalidate()
   })
+
+  /**
+   * O pisão: acende e apaga o LED.
+   *
+   * A janela de frames existe porque o footswitch anima por mola num useFrame
+   * e este canvas roda em `frameloop="demand"`. A troca de estado rende UM
+   * frame (o commit do React invalida), e a peça congelaria no meio do curso.
+   * 900ms cobre o afundar e o voltar com folga, e depois o canvas volta a ficar
+   * ocioso como antes.
+   */
+  const aoPisar = useCallback(() => {
+    setLed((v) => !v)
+    pisadoAte.current = performance.now() + 900
+    invalidate()
+  }, [invalidate])
 
   return (
     <group ref={group}>
       <PedalScene
         palette={palette}
         explodeRef={explodeRef}
+        // os KNOBS seguem desligados de propósito. O arraste deles é vertical
+        // (`e.clientY`), então no celular ele disputa com o scroll da página; o
+        // `onWheel` sequestraria a roda do mouse de quem só quer rolar por cima
+        // do pedal; e o Knob3D não chama `invalidate`, então num canvas
+        // `demand` o knob nem redesenharia enquanto girasse. O footswitch não
+        // tem nenhum desses problemas: é um toque, não um arraste.
+        interactive={false}
+        onStomp={aoPisar}
         // SEMPRE partido, inclusive fechado. O latch antigo (split ao passar de
         // 2% da abertura) trocava o chassi inteiro no primeiro frame da
         // animação: dois RoundedBox novos com smoothness 8 (geometria +
@@ -214,9 +248,14 @@ export function SectionPedal({ onReady }) {
       // meio do primeiro scroll. Com 'never' quem desenha o 1º frame é o
       // CompileGate, por advance(), depois de compilar.
       frameloop={ready ? 'demand' : 'never'}
-      style={{ pointerEvents: 'none' }}
+      // sem pointerEvents none: o canvas precisa receber o toque do footswitch
       onCreated={({ gl, camera }) => {
         gl.localClippingEnabled = true
+        // `pan-y` no CANVAS, não no style do <Canvas/>: aquele prop vai no div
+        // container e touch-action não é herdado. Sem isto, o dedo que desliza
+        // pra cima em cima do pedal ficava preso no palco em vez de rolar a
+        // página. O toque do footswitch continua chegando: é toque, não arrasto.
+        gl.domElement.style.touchAction = 'pan-y'
         // mesma história do canvas do hero: cada checagem de shader é uma
         // espera pelo driver (ver Scene.jsx)
         gl.debug.checkShaderErrors = import.meta.env.DEV

@@ -35,6 +35,7 @@ export const pt = {
         p: 'Modelados peça por peça a partir do hardware de referência, do knob ao circuito. No app, você gira cada um.',
       },
     },
+    stompHint: 'pise no footswitch',
     presets: {
       title: 'Seis presets com voz própria',
       short: 'Cada um é um pedal diferente por dentro, não uma posição de knob salva.',

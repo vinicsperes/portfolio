@@ -17,12 +17,16 @@ export function MasterKnob3D({
   knobStyle = "default",
   showArc = false,
   mutedHint = false,
+  // mesmo interruptor que o Knob3D ja tinha: a vitrine do portfolio precisa
+  // do knob DESENHADO, nao operavel (ver SectionPedal.jsx)
+  interactive = true,
 }: {
   position: [number, number, number];
   value: number;
   onChange: (v: number) => void;
   accent: string;
   setControlsEnabled: (enabled: boolean) => void;
+  interactive?: boolean;
   bootTrigger?: number;
   delay?: number;
   knobTheme?: "dark" | "cream";
@@ -134,11 +138,13 @@ export function MasterKnob3D({
     <group
       position={position}
       onPointerEnter={() => {
+        if (!interactive) return;
         isHoveredRef.current = true;
         setControlsEnabled(false);
         document.body.style.cursor = "grab";
       }}
       onPointerLeave={() => {
+        if (!interactive) return;
         isHoveredRef.current = false;
         if (!dragRef.current) {
           setControlsEnabled(true);
@@ -146,12 +152,14 @@ export function MasterKnob3D({
         }
       }}
       onWheel={(e: ThreeEvent<WheelEvent>) => {
+        if (!interactive) return;
         e.stopPropagation();
         if (masterAnimRef.current.seenTrigger === 0) masterAnimRef.current.seenTrigger = 1;
         const step = e.deltaY < 0 ? 0.04 : -0.04;
         onChange(Math.max(0, Math.min(1, value + step)));
       }}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        if (!interactive) return;
         e.stopPropagation();
         if (masterAnimRef.current.seenTrigger === 0) masterAnimRef.current.seenTrigger = 1;
         const now = performance.now();
