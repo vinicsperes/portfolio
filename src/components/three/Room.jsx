@@ -445,27 +445,6 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
         </RoundedBox>
       </group>
 
-      {/* ─── Pôster colagem GHOSTFX: papel colado direto na parede (sem
-          moldura), levemente torto, com fita adesiva nos cantos. Deslocado
-          pra DIREITA das chamas do CRT (o glow do fogo estourava sobre ele) ─── */}
-      <group position={[5.75, 3.5, -5.965]} rotation-z={-0.028}>
-        <mesh castShadow>
-          <planeGeometry args={[2.5, 1.42]} />
-          <meshStandardMaterial map={collageTex} roughness={0.92} />
-        </mesh>
-        {[
-          [-1.17, 0.63, 0.7],
-          [1.17, 0.63, -0.7],
-          [-1.17, -0.63, -0.7],
-          [1.17, -0.63, 0.7],
-        ].map(([x, y, rz], i) => (
-          <mesh key={i} position={[x, y, 0.006]} rotation-z={rz}>
-            <planeGeometry args={[0.32, 0.11]} />
-            <meshStandardMaterial color="#d8d4c8" transparent opacity={0.5} roughness={0.45} />
-          </mesh>
-        ))}
-      </group>
-
       </>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -475,6 +454,50 @@ export function Room({ onNavigate, labels = {}, activeView, markers = {} }) {
   return (
     <group>
       {quarto}
+      {/* ─── Pôster colagem GHOSTFX = hotspot do projeto ───
+
+          Ele mora AQUI FORA do useMemo do quarto, e não junto do resto da
+          parede, porque virou hotspot: depende de onNavigate, labels e markers,
+          e pôr essas três nas dependências do memo desfaria a memoização que
+          existe pra evitar ~51ms de reconciliação a cada troca de view.
+
+          Papel colado direto na parede (sem moldura), levemente torto, com fita
+          nos cantos. Deslocado pra DIREITA das chamas do CRT, senão o glow do
+          fogo estoura por cima dele. ─── */}
+      <Hotspot
+        label={labels.poster}
+        labelPosition={[0, 1.05, 0.02]}
+        onActivate={() => onNavigate?.('ghost')}
+        marker={markers.ghost}
+        position={[5.75, 3.5, -5.965]}
+        rotation-z={-0.028}
+      >
+        {(hovered) => (
+          <>
+            <mesh castShadow>
+              <planeGeometry args={[2.5, 1.42]} />
+              <meshStandardMaterial
+                map={collageTex}
+                roughness={0.92}
+                emissive="#f5a623"
+                emissiveIntensity={hovered ? 0.22 : 0}
+              />
+            </mesh>
+            {[
+              [-1.17, 0.63, 0.7],
+              [1.17, 0.63, -0.7],
+              [-1.17, -0.63, -0.7],
+              [1.17, -0.63, 0.7],
+            ].map(([x, y, rz], i) => (
+              <mesh key={i} position={[x, y, 0.006]} rotation-z={rz}>
+                <planeGeometry args={[0.32, 0.11]} />
+                <meshStandardMaterial color="#d8d4c8" transparent opacity={0.5} roughness={0.45} />
+              </mesh>
+            ))}
+          </>
+        )}
+      </Hotspot>
+
       {/* ─── Estante + porta-retrato = hotspot do "sobre". A estante INTEIRA
           (prateleiras, livros, cubo mágico, foto) é clicável e faz hover, pra
           ser bem fácil de perceber ─── */}

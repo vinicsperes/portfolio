@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
 import { RetroPC } from './RetroPC.jsx'
+import { Hotspot } from './Hotspot.jsx'
 import { Room } from './Room.jsx'
 import { GuitarAmp } from './GuitarAmp.jsx'
 import { VinylCrate } from './VinylCrate.jsx'
@@ -275,13 +276,27 @@ export function Scene({ view, onNavigate, labels, reducedMotion, markers, active
           onNavigate={onNavigate}
           labels={labels}
           activeView={view}
-          markers={{ about: showMarkers && markers?.about }}
+          markers={{
+            about: showMarkers && markers?.about,
+            ghost: showMarkers && markers?.ghost,
+          }}
         />
 
-        {/* RetroPC na mesa — decorativo: a tela só passa o reel do verve
-            (não é mais clicável/jogável) */}
+        {/* RetroPC na mesa = hotspot do VERVE.
+
+            A tela dele já passa o reel do verve, então ele era o único objeto
+            do quarto que ANUNCIAVA um projeto sem levar a lugar nenhum. O
+            conceito da cena era "cada projeto é um objeto"; com só o
+            porta-retrato clicável, o quarto tinha virado foto. */}
         <group position={[3.2, 0, -4.2]} rotation-y={-0.22}>
-          <RetroPC dimRef={dimRef} />
+          <Hotspot
+            label={labels?.crt}
+            labelPosition={[0, 3.1, 0]}
+            onActivate={() => onNavigate?.('verve')}
+            marker={showMarkers && markers?.verve}
+          >
+            <RetroPC dimRef={dimRef} />
+          </Hotspot>
           <ContactShadows
             position={[0, 0.01, 0]}
             opacity={0.6}

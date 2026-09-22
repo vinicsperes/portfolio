@@ -190,14 +190,24 @@ export function Hero() {
     }
   }
 
-  // Único objeto interativo da cena: o quadro abre a view "about"
-  // (CRT e pedal são decoração, sem hover/clique).
+  // Objetos clicáveis da cena. O quadro abre a view "about", que mora na
+  // própria cena; o pôster e o CRT levam às seções dos projetos que eles
+  // anunciam, rolando a página como qualquer âncora.
+  //
+  // Antes só o quadro respondia, e o quarto tinha virado foto: o conceito da
+  // reforma era "cada projeto é um objeto no quarto", mas os dois objetos que
+  // mostram projeto (o pôster do GHOSTFX e o CRT com o terminal do verve) não
+  // levavam a lugar nenhum.
   const sceneNavigate = (target) => {
-    if (target === 'about') navigate('about')
+    if (target === 'about') return navigate('about')
+    document
+      .getElementById(target)
+      ?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
   }
 
-  // rótulo curto (bilíngue) que surge ao passar o mouse no quadro
-  const sceneLabels = { painting: t.sections.about }
+  // rótulos curtos que surgem no hover de cada objeto. GHOSTFX e VERVE são
+  // nome próprio, então não passam pelo dicionário (o trilho faz igual).
+  const sceneLabels = { painting: t.sections.about, poster: 'GHOSTFX', crt: 'VERVE' }
 
   const copyEmail = async () => {
     try {
@@ -317,7 +327,7 @@ export function Hero() {
             active={heroNear && sceneRevealed}
             onNavigate={sceneNavigate}
             labels={sceneLabels}
-            markers={{ about: true }}
+            markers={{ about: true, ghost: true, verve: true }}
             dimRef={dimRef}
             onReady={handleReady}
           />
