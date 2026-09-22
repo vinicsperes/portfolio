@@ -102,6 +102,7 @@ export const pt = {
     backToRoom: '← VOLTAR',
     scrollHint: 'ROLE PARA EXPLORAR',
     top: 'TOPO',
+    index: 'ÍNDICE',
     sectionNav: 'Seções da página',
     srIntro:
       'Vinicius Peres, desenvolvedor criativo fullstack. Ghost FX: um pedal de guitarra no navegador. Verve: teste de digitação no terminal. Role a página para explorar os projetos.',

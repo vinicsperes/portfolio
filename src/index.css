@@ -323,6 +323,19 @@ body {
   }
 }
 
+/* No celular a barra de navegação é fixa no topo, então um salto de âncora
+   levaria o começo da seção pra debaixo dela. Esta margem é a altura da barra
+   (fio de progresso + linha do rótulo) com uma folga. */
+@media (max-width: 767px) {
+  #projects,
+  #ghost,
+  #verve,
+  #blog,
+  #contact {
+    scroll-margin-top: 3.75rem;
+  }
+}
+
 /* Ritmo vertical das seções, definido UMA vez.
    Antes cada seção escolhia o seu: 56px no cabeçalho de projetos, 64 no
    ghost, 128 no verve/blog/contato. Dois ritmos diferentes na mesma página,
