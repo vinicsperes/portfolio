@@ -78,15 +78,6 @@ export const pt = {
     links: { github: 'GITHUB', linkedin: 'LINKEDIN', instagram: 'INSTAGRAM', cv: 'CURRÍCULO' },
   },
 
-  blog: {
-    soon: 'EM BREVE',
-    soonSub: 'Notas de bastidores sobre como esses projetos são feitos.',
-    // a seção não pode ser um beco sem saída: enquanto não há post, ela
-    // aponta pra onde os bastidores já existem de verdade
-    meanwhile: 'Enquanto eu não escrevo, o caminho mais curto pros bastidores é o próprio código.',
-    meanwhileCta: 'VER NO GITHUB',
-  },
-
   projects: {
     title: 'O que eu construo',
   },
@@ -94,7 +85,6 @@ export const pt = {
   sections: {
     about: 'SOBRE MIM',
     projects: 'PROJETOS',
-    blog: 'BLOG',
     contact: 'CONTATO',
   },
 

@@ -6,12 +6,12 @@ import { useLang } from '../i18n/LanguageContext.jsx'
  * Ordem das paradas, de cima pra baixo, igual à página. Precisa ser const de
  * MÓDULO: o useActiveSection remonta o observer quando essa referência muda.
  */
-const IDS = ['top', 'projects', 'ghost', 'verve', 'blog', 'contact']
+const IDS = ['top', 'projects', 'ghost', 'verve', 'contact']
 
 /**
  * Navegação da página, em duas apresentações que dividem o mesmo estado.
  *
- * A página tem seis telas e, antes disto, o único índice dela morava no
+ * A página tem cinco telas e, antes disto, o único índice dela morava no
  * rodapé — ou seja, o visitante só descobria o mapa do site depois de já ter
  * passado por ele inteiro. Não havia como saber onde se está, o que vem, nem
  * como chegar no contato sem rolar tudo.
@@ -69,7 +69,6 @@ export function SectionRail({ hidden = false }) {
     { id: 'projects', label: t.sections.projects },
     { id: 'ghost', label: 'GHOSTFX' },
     { id: 'verve', label: 'VERVE' },
-    { id: 'blog', label: t.sections.blog },
     { id: 'contact', label: t.sections.contact },
   ]
 

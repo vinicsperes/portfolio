@@ -78,15 +78,6 @@ export const en = {
     links: { github: 'GITHUB', linkedin: 'LINKEDIN', instagram: 'INSTAGRAM', cv: 'RESUME' },
   },
 
-  blog: {
-    soon: 'COMING SOON',
-    soonSub: 'Field notes on how these projects are built.',
-    // a seção não pode ser um beco sem saída: enquanto não há post, ela
-    // aponta pra onde os bastidores já existem de verdade
-    meanwhile: 'Until I write them up, the shortest path to the behind-the-scenes is the code itself.',
-    meanwhileCta: 'BROWSE ON GITHUB',
-  },
-
   projects: {
     title: 'What I build',
   },
@@ -94,7 +85,6 @@ export const en = {
   sections: {
     about: 'ABOUT ME',
     projects: 'PROJECTS',
-    blog: 'BLOG',
     contact: 'CONTACT',
   },
 

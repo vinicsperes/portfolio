@@ -756,55 +756,6 @@ export function Hero() {
           </div>
         </section>
 
-        {/* Blog.
-
-            Era meia tela cuja mensagem inteira era "ainda não tem nada aqui",
-            e logo antes do contato: a última coisa que o visitante lia antes
-            da CTA era uma promessa vazia. Num portfólio isso não comunica
-            "em breve", comunica "não termino as coisas".
-
-            Duas mudanças, sem inventar post nenhum. O bloco agora ocupa a
-            faixa em DUAS colunas, então ele preenche a linha em vez de deixar
-            um vão à direita do "EM BREVE". E deixa de ser beco sem saída: quem
-            veio atrás de bastidores sai daqui pro código, que é onde os
-            bastidores já existem de verdade. Seção sem saída é visita perdida. */}
-        <section id="blog" className="snap-section border-t border-paper/10">
-          <div className="section-y mx-auto max-w-6xl px-6 sm:px-12">
-            <span className="font-mono text-xs font-semibold tracking-[0.3em] text-amber">
-              {t.sections.blog}
-            </span>
-            <div className="mt-5 grid grid-cols-1 items-start gap-8 md:grid-cols-2 md:gap-12">
-              <Block>
-                <h2 className="font-poster uppercase leading-[0.9] text-[13vw] sm:text-7xl lg:text-8xl text-stroke-paper">
-                  {t.blog.soon}
-                </h2>
-              </Block>
-              <Block className="md:pt-2">
-                <p className="max-w-md font-mono text-sm text-paper/70 leading-relaxed">
-                  {t.blog.soonSub}
-                </p>
-                <p className="mt-4 max-w-md font-mono text-xs text-paper/50 leading-relaxed">
-                  {t.blog.meanwhile}
-                </p>
-                <a
-                  href={links.github}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group mt-6 inline-flex items-center gap-3 border border-paper/25 px-5 py-3 font-mono text-xs font-bold text-paper/80 transition-colors hover:border-amber hover:text-amber focus-visible:border-amber"
-                >
-                  {t.blog.meanwhileCta}
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none"
-                  >
-                    →
-                  </span>
-                </a>
-              </Block>
-            </div>
-          </div>
-        </section>
-
         {/* Contato */}
         <section id="contact" className="snap-section border-t border-paper/10">
           <div className="section-y mx-auto max-w-6xl px-6 sm:px-12">
@@ -934,9 +885,6 @@ export function Hero() {
                   </a>
                   <a href="#verve" className="font-mono text-xs text-paper/60 hover:text-amber transition-colors">
                     VERVE
-                  </a>
-                  <a href="#blog" className="font-mono text-xs text-paper/60 hover:text-amber transition-colors">
-                    {t.sections.blog}
                   </a>
                 </nav>
                 <nav className="flex flex-col gap-3" aria-label={t.ui.socials}>
