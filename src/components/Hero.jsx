@@ -5,6 +5,7 @@ import { BootLoader } from './BootLoader.jsx'
 import { PedalLoader } from './PedalLoader.jsx'
 import { StaticFallback } from './StaticFallback.jsx'
 import { SectionRail } from './SectionRail.jsx'
+import { HoopLink } from './HoopLink.jsx'
 import { GitHubIcon, LinkedInIcon, InstagramIcon } from './SocialIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { useReducedMotion } from '../hooks/useReducedMotion.js'
@@ -398,13 +399,20 @@ export function Hero() {
                 visitante repetindo o que ele acabou de ler. Ficaram os dois
                 que ACRESCENTAM alguma coisa, o monograma e o selo do
                 "creative code collection". O de wordmark segue no rodapé,
-                que é onde assinar faz sentido. */}
+                que é onde assinar faz sentido.
+
+                O terceiro agora é a foto da quadra, e é o único que se aperta:
+                leva pro GitHub (HoopLink.jsx). */}
             <div className={`mt-5 sm:mt-8 flex items-center gap-3 sm:gap-5 ${reveal(view === 'home', 'delay-300')}`}>
               <img src="/peres-logo.svg" alt="" width={873} height={873} decoding="async" className="h-9 w-9 sm:h-16 sm:w-16" />
               <span className="hidden sm:inline text-paper/35" aria-hidden="true">
                 ·
               </span>
               <img src="/peres-stamp-globe.svg" alt="" width={561} height={318} decoding="async" className="h-10 sm:h-[68px] w-auto invert opacity-90" />
+              <span className="hidden sm:inline text-paper/35" aria-hidden="true">
+                ·
+              </span>
+              <HoopLink className="ml-1 sm:ml-0" />
             </div>
 
             {/* Boas-vindas em caixa de FRASE.
